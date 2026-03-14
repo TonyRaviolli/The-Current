@@ -16,7 +16,7 @@
         "weight": 1,
         "orientation": "center",
         "sourceType": "primary",
-        "enabled": true
+        "enabled": false
       },
       {
         "id": "ap-top-news",
@@ -32,7 +32,7 @@
         "weight": 0.98,
         "orientation": "center",
         "sourceType": "primary",
-        "enabled": true
+        "enabled": false
       },
       {
         "id": "congress-bills-api",
@@ -247,7 +247,7 @@
         "weight": 1,
         "orientation": "center",
         "sourceType": "primary",
-        "enabled": true
+        "enabled": false
       },
       {
         "id": "federal-register-api",
@@ -280,7 +280,7 @@
         "id": "treasury-news",
         "name": "U.S. Treasury News",
         "type": "rss",
-        "url": "https://home.treasury.gov/news/press-releases/feed",
+        "url": "https://home.treasury.gov/rss.xml",
         "topics": [
           "economy",
           "finance",
@@ -294,9 +294,9 @@
       },
       {
         "id": "whitehouse-briefing",
-        "name": "White House Briefing Room",
+        "name": "White House News",
         "type": "rss",
-        "url": "https://www.whitehouse.gov/briefing-room/feed/",
+        "url": "https://www.whitehouse.gov/news/feed/",
         "topics": [
           "uspolitics",
           "law",
@@ -381,7 +381,7 @@
         "weight": 0.97,
         "orientation": "center",
         "sourceType": "primary",
-        "enabled": true,
+        "enabled": false,
         "region": "US"
       },
       {
@@ -516,7 +516,7 @@
         "weight": 0.82,
         "orientation": "center",
         "sourceType": "primary",
-        "enabled": true,
+        "enabled": false,
         "region": "CN"
       },
       {
@@ -550,7 +550,7 @@
         "weight": 0.84,
         "orientation": "center",
         "sourceType": "primary",
-        "enabled": true,
+        "enabled": false,
         "region": "SA"
       },
       {
@@ -567,7 +567,7 @@
         "weight": 0.86,
         "orientation": "center",
         "sourceType": "primary",
-        "enabled": true
+        "enabled": false
       }
     ],
     "2": [
@@ -680,7 +680,7 @@
         "weight": 0.76,
         "orientation": "center",
         "sourceType": "secondary",
-        "enabled": true
+        "enabled": false
       },
       {
         "id": "ars-technica",
@@ -760,7 +760,7 @@
         "weight": 0.76,
         "orientation": "center-left",
         "sourceType": "secondary",
-        "enabled": true
+        "enabled": false
       },
       {
         "id": "hill",
@@ -840,7 +840,7 @@
         "weight": 0.78,
         "orientation": "center",
         "sourceType": "primary",
-        "enabled": true
+        "enabled": false
       },
       {
         "id": "imf-news",
@@ -856,7 +856,7 @@
         "weight": 0.78,
         "orientation": "center",
         "sourceType": "primary",
-        "enabled": true
+        "enabled": false
       },
       {
         "id": "world-bank",
@@ -1108,7 +1108,7 @@
         "weight": 0.73,
         "orientation": "center",
         "sourceType": "secondary",
-        "enabled": true,
+        "enabled": false,
         "region": "IL"
       },
       {
@@ -1517,7 +1517,7 @@
         "weight": 0.5,
         "orientation": "center",
         "sourceType": "local",
-        "enabled": true,
+        "enabled": false,
         "region": "US-MI"
       },
       {
@@ -1534,7 +1534,7 @@
         "weight": 0.5,
         "orientation": "center",
         "sourceType": "local",
-        "enabled": true,
+        "enabled": false,
         "region": "US-CO"
       },
       {
@@ -1619,7 +1619,7 @@
         "weight": 0.48,
         "orientation": "center",
         "sourceType": "local",
-        "enabled": true,
+        "enabled": false,
         "region": "US-AK"
       },
       {
@@ -1736,7 +1736,7 @@
         "weight": 0.45,
         "orientation": "left",
         "sourceType": "secondary",
-        "enabled": true,
+        "enabled": false,
         "contentType": "cartoon"
       }
     ]

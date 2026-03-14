@@ -831,3 +831,12 @@ function shutdown(signal) {
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
+
+process.on('unhandledRejection', (reason) => {
+  error('unhandled_rejection', { message: String(reason?.message || reason) });
+});
+
+process.on('uncaughtException', (err) => {
+  error('uncaught_exception', { message: err.message, stack: err.stack });
+  process.exit(1);
+});

@@ -23,3 +23,7 @@ services:
         sync: false
       - key: API_DATA_GOV_KEY
         sync: false
+    disk:
+      name: the-undercurrent-data
+      mountPath: /var/data/the-undercurrent
+      sizeGB: 1

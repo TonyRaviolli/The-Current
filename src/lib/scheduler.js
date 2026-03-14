@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { refreshOnce } from '../refresh.js';
-import { info } from './logger.js';
+import { info, error } from './logger.js';
 
 function parseTimes(times = []) {
   return times
@@ -43,7 +43,11 @@ export async function scheduleRefreshLoop({ once = false, logPrefix = 'refresh' 
     const waitMs = msUntilNext(config.schedule);
     info('schedule_wait', { logPrefix, waitMs });
     setTimeout(async () => {
-      await refreshOnce();
+      try {
+        await refreshOnce();
+      } catch (err) {
+        error('scheduled_refresh_failed', { message: err.message });
+      }
       loop();
     }, waitMs);
   };
