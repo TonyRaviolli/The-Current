@@ -1,6 +1,10 @@
 import http from 'node:http';
 import https from 'node:https';
+import { gunzip } from 'node:zlib';
+import { promisify } from 'node:util';
 import { info, warn } from './logger.js';
+
+const gunzipAsync = promisify(gunzip);
 
 function getAgent(url) {
   return url.startsWith('https') ? https : http;
@@ -14,14 +18,18 @@ function requestOnce(url, options = {}) {
     const req = agent.get(url, { headers }, (res) => {
       const chunks = [];
       res.on('data', (chunk) => chunks.push(chunk));
-      res.on('end', () => {
-        const body = Buffer.concat(chunks);
+      res.on('end', async () => {
+        let body = Buffer.concat(chunks);
+        if (res.headers['content-encoding'] === 'gzip') {
+          try { body = await gunzipAsync(body); } catch { /* leave as-is if decompression fails */ }
+        }
         resolve({
           status: res.statusCode || 0,
           headers: res.headers,
           body
         });
       });
+      res.on('error', reject);
     });
 
     req.on('error', reject);

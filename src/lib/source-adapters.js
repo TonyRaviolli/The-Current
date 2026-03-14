@@ -340,19 +340,20 @@ function buildFederalRegisterUrl(source = {}) {
 function buildCongressBillsUrl(source = {}) {
   const url = new URL(source.url || 'https://api.congress.gov/v3/bill');
   const days = Math.max(7, Math.min(Number(source.apiDays || 30), 365));
-  const start = new Date(Date.now() - days * 86400000).toISOString();
+  const start = new Date(Date.now() - days * 86400000).toISOString().slice(0, 19) + 'Z';
   url.searchParams.set('format', 'json');
   url.searchParams.set('limit', String(Math.max(20, Math.min(Number(source.limit || 100), 250))));
   url.searchParams.set('fromDateTime', start);
-  url.searchParams.set('sort', 'updateDate+desc');
   url.searchParams.set('api_key', congressApiKey());
-  return url.toString();
+  // Append sort manually — URLSearchParams encodes '+' as '%2B' which the Congress API rejects
+  return url.toString() + '&sort=updateDate+desc';
 }
 
 function buildGovInfoBillsCollectionUrl(source = {}) {
   const days = Math.max(7, Math.min(Number(source.apiDays || 30), 365));
-  const start = new Date(Date.now() - days * 86400000).toISOString();
-  const url = new URL(source.url || `https://api.govinfo.gov/collections/BILLS/${start}`);
+  // GovInfo requires no milliseconds in the path date
+  const start = new Date(Date.now() - days * 86400000).toISOString().slice(0, 19) + 'Z';
+  const url = new URL(`https://api.govinfo.gov/collections/BILLS/${start}`);
   url.searchParams.set('pageSize', String(Math.max(10, Math.min(Number(source.pageSize || 25), 100))));
   url.searchParams.set('offsetMark', '*');
   url.searchParams.set('api_key', govInfoApiKey());
