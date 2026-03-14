@@ -144,6 +144,7 @@ export async function refreshOnce(options = {}) {
 
   const collectedCount = collected.length;
   metrics.articlesIngested = collectedCount;
+  info('pipeline_checkpoint', { phase: 'dedup', collected: collectedCount, memMB: Math.round(process.memoryUsage().rss / 1e6) });
   const { unique } = dedupeArticles(collected);
 
   const scored = unique.map((article) => {
@@ -157,15 +158,18 @@ export async function refreshOnce(options = {}) {
 
   const sorted = scored.sort((a, b) => b.score - a.score || b.publishedAt.localeCompare(a.publishedAt));
   const recent = sorted.filter((item) => withinHours(item.publishedAt, 72));
+  info('pipeline_checkpoint', { phase: 'cluster', unique: unique.length, recent: recent.length, memMB: Math.round(process.memoryUsage().rss / 1e6) });
   const clusters = clusterArticles(recent, refreshConfig.clustering || {});
   const rawStories = buildStories(clusters, { baseUrl: process.env.BASE_URL || 'http://localhost:5173' });
   metrics.clustersCreated = clusters.length;
+  info('pipeline_checkpoint', { phase: 'enrich', clusters: clusters.length, memMB: Math.round(process.memoryUsage().rss / 1e6) });
 
   // Build a cache map from the previous store so enrichStories can skip re-generation
   const prevById = new Map((store.stories || []).map((s) => [s.id, s]));
 
   // AI enrichment: classify topics, generate whyItMatters, whatsNext
   const stories = await enrichStories(rawStories, prevById);
+  info('pipeline_checkpoint', { phase: 'select', stories: stories.length, memMB: Math.round(process.memoryUsage().rss / 1e6) });
 
   linkRelatedStories(stories);
   const daily = selectDailyStories(stories, refreshConfig);
@@ -173,6 +177,7 @@ export async function refreshOnce(options = {}) {
   const topicPool = buildTopicPool(stories, archiveStore);
   const topics = buildTopics(topicPool);
   const weeklyDigests = buildWeeklyDigests(stories);
+  info('pipeline_checkpoint', { phase: 'brief', daily: daily.length, memMB: Math.round(process.memoryUsage().rss / 1e6) });
   const brief = await buildBrief(daily);
   const topicBlocks = buildTopicBlocks(stories);
   const digest = buildWeeklyDigest(stories);
