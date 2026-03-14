@@ -77,7 +77,7 @@ export async function refreshOnce(options = {}) {
         continue;
       }
 
-      const items = response.items || [];
+      const items = (response.items || []).slice(0, source.maxItems || 30);
       for (const item of items) {
         const url = normalizeUrl(item.link);
         const title = safeText(item.title);
@@ -157,7 +157,7 @@ export async function refreshOnce(options = {}) {
   });
 
   const sorted = scored.sort((a, b) => b.score - a.score || b.publishedAt.localeCompare(a.publishedAt));
-  const recent = sorted.filter((item) => withinHours(item.publishedAt, 72));
+  const recent = sorted.filter((item) => withinHours(item.publishedAt, 72)).slice(0, 500);
   info('pipeline_checkpoint', { phase: 'cluster', unique: unique.length, recent: recent.length, memMB: Math.round(process.memoryUsage().rss / 1e6) });
   const clusters = clusterArticles(recent, refreshConfig.clustering || {});
   const rawStories = buildStories(clusters, { baseUrl: process.env.BASE_URL || 'http://localhost:5173' });
