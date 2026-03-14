@@ -1,0 +1,65 @@
+{
+  "schedule": [
+    "06:30",
+    "11:45",
+    "16:30",
+    "20:15"
+  ],
+  "budget": {
+    "maxSources": 90,
+    "maxRequests": 260,
+    "maxRunMs": 240000
+  },
+  "timeouts": {
+    "requestMs": 8000
+  },
+  "retries": {
+    "max": 2,
+    "backoffMs": 600
+  },
+  "circuitBreaker": {
+    "failureThreshold": 3,
+    "cooldownMs": 1800000
+  },
+  "sourceIntervalMs": 45000,
+  "scoring": {
+    "recencyHalfLifeHours": 10,
+    "topicBoosts": {
+      "economy": 0.12,
+      "geopolitics": 0.06,
+      "uspolitics": 0.13,
+      "law": 0.09,
+      "global_trade": 0.07,
+      "tech": 0.08,
+      "defense": 0.08,
+      "health": 0.05,
+      "local": 0.07
+    },
+    "localRegionBoost": 0.08,
+    "usPriorityBoost": 0.12,
+    "strategicIntlBoost": 0.04,
+    "foreignLocalPenalty": 0.14,
+    "maxTopicBoost": 0.18,
+    "baselinePenalty": 0.18,
+    "scoreExponent": 1.18,
+    "duplicatePenalty": 0.15,
+    "tierWeights": {
+      "1": 1,
+      "2": 0.78,
+      "3": 0.58
+    }
+  },
+  "importance": {
+    "scoreThreshold": 0.72,
+    "topicTriggers": [
+      "geopolitics",
+      "economy",
+      "uspolitics",
+      "defense"
+    ]
+  },
+  "clustering": {
+    "similarityThreshold": 0.68,
+    "maxHours": 72
+  }
+}

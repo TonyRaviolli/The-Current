@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: the-undercurrent
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/status
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data/the-undercurrent
+      - key: BASE_URL
+        sync: false
+      - key: ADMIN_TOKEN
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CONGRESS_API_KEY
+        sync: false
+      - key: GOVINFO_API_KEY
+        sync: false
+      - key: API_DATA_GOV_KEY
+        sync: false
+    disks:
+      - name: the-undercurrent-data
+        mountPath: /var/data/the-undercurrent
+        sizeGB: 5

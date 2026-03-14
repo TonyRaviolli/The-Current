@@ -1,0 +1,1744 @@
+{
+  "localRegion": "US-CA",
+  "tiers": {
+    "1": [
+      {
+        "id": "reuters-top-news",
+        "name": "Reuters Top News",
+        "type": "rss",
+        "url": "https://feeds.reuters.com/reuters/topNews",
+        "topics": [
+          "economy",
+          "geopolitics",
+          "uspolitics"
+        ],
+        "tier": 1,
+        "weight": 1,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "ap-top-news",
+        "name": "AP Top News",
+        "type": "rss",
+        "url": "https://feeds.apnews.com/apf-topnews",
+        "topics": [
+          "uspolitics",
+          "geopolitics",
+          "science"
+        ],
+        "tier": 1,
+        "weight": 0.98,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "congress-bills-api",
+        "name": "Congress Bills API",
+        "type": "api",
+        "adapter": "congress-bills-api",
+        "url": "https://api.congress.gov/v3/bill",
+        "topics": [
+          "law",
+          "uspolitics",
+          "global_trade"
+        ],
+        "tier": 1,
+        "weight": 0.99,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true,
+        "historyMode": "official-feed",
+        "apiDays": 45,
+        "limit": 100,
+        "region": "US"
+      },
+      {
+        "id": "govinfo-bills-api",
+        "name": "GovInfo Bills Collection",
+        "type": "api",
+        "adapter": "govinfo-bills-api",
+        "url": "https://api.govinfo.gov/collections/BILLS",
+        "topics": [
+          "law",
+          "uspolitics"
+        ],
+        "tier": 1,
+        "weight": 0.97,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true,
+        "historyMode": "official-feed",
+        "apiDays": 45,
+        "pageSize": 25,
+        "summaryLimit": 12,
+        "region": "US"
+      },
+      {
+        "id": "ft-world",
+        "name": "Financial Times World",
+        "type": "rss",
+        "url": "https://www.ft.com/world?format=rss",
+        "topics": [
+          "economy",
+          "geopolitics"
+        ],
+        "tier": 1,
+        "weight": 0.98,
+        "orientation": "center-right",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "bloomberg-markets",
+        "name": "Bloomberg Markets",
+        "type": "rss",
+        "url": "https://feeds.bloomberg.com/markets/news.rss",
+        "topics": [
+          "economy",
+          "finance",
+          "macroeconomics"
+        ],
+        "tier": 1,
+        "weight": 0.96,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "wsj-world",
+        "name": "Wall Street Journal World",
+        "type": "rss",
+        "url": "https://feeds.a.dj.com/rss/RSSWorldNews.xml",
+        "topics": [
+          "economy",
+          "geopolitics",
+          "global_trade"
+        ],
+        "tier": 1,
+        "weight": 0.95,
+        "orientation": "center-right",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "guardian-world",
+        "name": "Guardian World",
+        "type": "rss",
+        "url": "https://www.theguardian.com/world/rss",
+        "topics": [
+          "geopolitics",
+          "climate",
+          "law"
+        ],
+        "tier": 1,
+        "weight": 0.93,
+        "orientation": "center-left",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "economist-intl",
+        "name": "The Economist International",
+        "type": "rss",
+        "url": "https://www.economist.com/international/rss.xml",
+        "topics": [
+          "geopolitics",
+          "economy"
+        ],
+        "tier": 1,
+        "weight": 0.93,
+        "orientation": "center-right",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "bbc-world",
+        "name": "BBC World",
+        "type": "rss",
+        "url": "http://feeds.bbci.co.uk/news/world/rss.xml",
+        "topics": [
+          "geopolitics",
+          "science",
+          "climate"
+        ],
+        "tier": 1,
+        "weight": 0.92,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "npr-news",
+        "name": "NPR News",
+        "type": "rss",
+        "url": "https://feeds.npr.org/1001/rss.xml",
+        "topics": [
+          "uspolitics",
+          "economy",
+          "education"
+        ],
+        "tier": 1,
+        "weight": 0.9,
+        "orientation": "center-left",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "nikkei-asia",
+        "name": "Nikkei Asia",
+        "type": "rss",
+        "url": "https://asia.nikkei.com/rss/feed/nar",
+        "topics": [
+          "global_trade",
+          "economy",
+          "geopolitics"
+        ],
+        "tier": 1,
+        "weight": 0.9,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "aljazeera",
+        "name": "Al Jazeera English",
+        "type": "rss",
+        "url": "https://www.aljazeera.com/xml/rss/all.xml",
+        "topics": [
+          "geopolitics",
+          "climate"
+        ],
+        "tier": 1,
+        "weight": 0.9,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "federal-reserve",
+        "name": "Federal Reserve Press",
+        "type": "rss",
+        "url": "https://www.federalreserve.gov/feeds/press_monetary.xml",
+        "topics": [
+          "economy",
+          "finance",
+          "macroeconomics"
+        ],
+        "tier": 1,
+        "weight": 1,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "sec-press",
+        "name": "SEC Press Releases",
+        "type": "rss",
+        "url": "https://www.sec.gov/rss/news/press.xml",
+        "topics": [
+          "law",
+          "finance",
+          "uspolitics"
+        ],
+        "tier": 1,
+        "weight": 1,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "federal-register-api",
+        "name": "Federal Register Documents",
+        "type": "api",
+        "adapter": "federal-register-api",
+        "url": "https://www.federalregister.gov/api/v1/documents.json",
+        "topics": [
+          "law",
+          "uspolitics",
+          "global_trade"
+        ],
+        "tier": 1,
+        "weight": 0.98,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true,
+        "historyMode": "official-feed",
+        "apiDays": 45,
+        "perPage": 100,
+        "documentTypes": [
+          "RULE",
+          "PRORULE",
+          "NOTICE",
+          "PRESDOCU"
+        ],
+        "region": "US"
+      },
+      {
+        "id": "treasury-news",
+        "name": "U.S. Treasury News",
+        "type": "rss",
+        "url": "https://home.treasury.gov/news/press-releases/feed",
+        "topics": [
+          "economy",
+          "finance",
+          "global_trade"
+        ],
+        "tier": 1,
+        "weight": 0.96,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "whitehouse-briefing",
+        "name": "White House Briefing Room",
+        "type": "rss",
+        "url": "https://www.whitehouse.gov/briefing-room/feed/",
+        "topics": [
+          "uspolitics",
+          "law",
+          "global_trade"
+        ],
+        "tier": 1,
+        "weight": 0.95,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "whitehouse-archive",
+        "name": "White House Briefing Archive",
+        "type": "html",
+        "adapter": "whitehouse-archive",
+        "url": "https://www.whitehouse.gov/briefing-room/",
+        "topics": [
+          "uspolitics",
+          "law",
+          "global_trade"
+        ],
+        "tier": 1,
+        "weight": 0.92,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true,
+        "historyMode": "official-feed",
+        "historyPages": 4,
+        "region": "US"
+      },
+      {
+        "id": "supreme-court-opinions",
+        "name": "Supreme Court Slip Opinions",
+        "type": "html",
+        "adapter": "supreme-court-opinions",
+        "url": "https://www.supremecourt.gov/opinions/slipopinion/",
+        "topics": [
+          "law",
+          "uspolitics"
+        ],
+        "tier": 1,
+        "weight": 0.97,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true,
+        "historyMode": "official-feed",
+        "region": "US"
+      },
+      {
+        "id": "fema-openfema-api",
+        "name": "FEMA Disaster Declarations",
+        "type": "api",
+        "adapter": "fema-openfema-api",
+        "url": "https://www.fema.gov/api/open/v2/DisasterDeclarationsSummaries",
+        "topics": [
+          "uspolitics",
+          "climate",
+          "infrastructure"
+        ],
+        "tier": 1,
+        "weight": 0.93,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true,
+        "historyMode": "official-feed",
+        "apiDays": 60,
+        "limit": 50,
+        "region": "US"
+      },
+      {
+        "id": "fbi-news",
+        "name": "FBI News",
+        "type": "rss",
+        "url": "https://www.fbi.gov/services/operational-technology/news/RSS",
+        "topics": [
+          "law",
+          "defense",
+          "uspolitics"
+        ],
+        "tier": 1,
+        "weight": 0.97,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true,
+        "region": "US"
+      },
+      {
+        "id": "dod-releases",
+        "name": "U.S. Department of Defense Releases",
+        "type": "rss",
+        "url": "https://www.defense.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=945&max=20",
+        "topics": [
+          "defense",
+          "geopolitics",
+          "international"
+        ],
+        "tier": 1,
+        "weight": 0.98,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true,
+        "region": "US"
+      },
+      {
+        "id": "cdc-mmwr",
+        "name": "CDC MMWR",
+        "type": "rss",
+        "url": "https://tools.cdc.gov/api/v2/resources/media/342778.rss",
+        "topics": [
+          "health",
+          "science",
+          "uspolitics"
+        ],
+        "tier": 1,
+        "weight": 0.95,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true,
+        "region": "US"
+      },
+      {
+        "id": "france24-en",
+        "name": "France 24 English",
+        "type": "rss",
+        "url": "https://www.france24.com/en/rss",
+        "topics": [
+          "geopolitics",
+          "international",
+          "economy"
+        ],
+        "tier": 1,
+        "weight": 0.89,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true,
+        "region": "EU-FR"
+      },
+      {
+        "id": "dw-world",
+        "name": "Deutsche Welle World",
+        "type": "rss",
+        "url": "https://rss.dw.com/rdf/rss-en-all",
+        "topics": [
+          "geopolitics",
+          "international",
+          "economy"
+        ],
+        "tier": 1,
+        "weight": 0.89,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true,
+        "region": "EU-DE"
+      },
+      {
+        "id": "nhk-world",
+        "name": "NHK World",
+        "type": "rss",
+        "url": "https://www3.nhk.or.jp/rss/news/cat0.xml",
+        "topics": [
+          "geopolitics",
+          "international",
+          "economy"
+        ],
+        "tier": 1,
+        "weight": 0.88,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true,
+        "region": "JP"
+      },
+      {
+        "id": "sky-news-world",
+        "name": "Sky News World",
+        "type": "rss",
+        "url": "https://feeds.skynews.com/feeds/rss/world.xml",
+        "topics": [
+          "geopolitics",
+          "international",
+          "economy"
+        ],
+        "tier": 1,
+        "weight": 0.87,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true,
+        "region": "EU-GB"
+      },
+      {
+        "id": "un-news",
+        "name": "UN News",
+        "type": "rss",
+        "url": "https://news.un.org/feed/subscribe/en/news/all/rss.xml",
+        "topics": [
+          "geopolitics",
+          "international",
+          "climate"
+        ],
+        "tier": 1,
+        "weight": 0.88,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "xinhua-world",
+        "name": "Xinhua World (EN)",
+        "type": "rss",
+        "url": "https://english.news.cn/rss/world.xml",
+        "topics": [
+          "geopolitics",
+          "international",
+          "economy"
+        ],
+        "tier": 1,
+        "weight": 0.82,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true,
+        "region": "CN"
+      },
+      {
+        "id": "yonhap-en",
+        "name": "Yonhap News (Korea)",
+        "type": "rss",
+        "url": "https://en.yna.co.kr/RSS/news.xml",
+        "topics": [
+          "geopolitics",
+          "international",
+          "defense"
+        ],
+        "tier": 1,
+        "weight": 0.85,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true,
+        "region": "KR"
+      },
+      {
+        "id": "arab-news",
+        "name": "Arab News",
+        "type": "rss",
+        "url": "https://www.arabnews.com/rss.xml",
+        "topics": [
+          "geopolitics",
+          "economy",
+          "international"
+        ],
+        "tier": 1,
+        "weight": 0.84,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true,
+        "region": "SA"
+      },
+      {
+        "id": "rferl",
+        "name": "Radio Free Europe / RL",
+        "type": "rss",
+        "url": "https://www.rferl.org/api/zpqoutlmoir",
+        "topics": [
+          "geopolitics",
+          "international",
+          "defense"
+        ],
+        "tier": 1,
+        "weight": 0.86,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true
+      }
+    ],
+    "2": [
+      {
+        "id": "mit-tech-review",
+        "name": "MIT Technology Review",
+        "type": "rss",
+        "url": "https://www.technologyreview.com/feed/",
+        "topics": [
+          "tech",
+          "ai",
+          "science"
+        ],
+        "tier": 2,
+        "weight": 0.8,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true
+      },
+      {
+        "id": "stat-news",
+        "name": "STAT",
+        "type": "rss",
+        "url": "https://www.statnews.com/feed/",
+        "topics": [
+          "health",
+          "biotech"
+        ],
+        "tier": 2,
+        "weight": 0.78,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true
+      },
+      {
+        "id": "defense-one",
+        "name": "Defense One",
+        "type": "rss",
+        "url": "https://www.defenseone.com/rss/all/",
+        "topics": [
+          "defense",
+          "geopolitics",
+          "cyber"
+        ],
+        "tier": 2,
+        "weight": 0.78,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true
+      },
+      {
+        "id": "propublica",
+        "name": "ProPublica",
+        "type": "rss",
+        "url": "https://www.propublica.org/feeds/propublica/main",
+        "topics": [
+          "law",
+          "uspolitics",
+          "labor"
+        ],
+        "tier": 2,
+        "weight": 0.8,
+        "orientation": "center-left",
+        "sourceType": "secondary",
+        "enabled": true
+      },
+      {
+        "id": "intercept",
+        "name": "The Intercept",
+        "type": "rss",
+        "url": "https://theintercept.com/feed/?lang=en",
+        "topics": [
+          "law",
+          "geopolitics",
+          "cyber"
+        ],
+        "tier": 2,
+        "weight": 0.75,
+        "orientation": "left",
+        "sourceType": "secondary",
+        "enabled": true
+      },
+      {
+        "id": "bellingcat",
+        "name": "Bellingcat",
+        "type": "rss",
+        "url": "https://www.bellingcat.com/feed/",
+        "topics": [
+          "geopolitics",
+          "defense",
+          "cyber"
+        ],
+        "tier": 2,
+        "weight": 0.78,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true
+      },
+      {
+        "id": "icij",
+        "name": "ICIJ",
+        "type": "rss",
+        "url": "https://www.icij.org/feed/",
+        "topics": [
+          "law",
+          "finance",
+          "global_trade"
+        ],
+        "tier": 2,
+        "weight": 0.76,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true
+      },
+      {
+        "id": "ars-technica",
+        "name": "Ars Technica",
+        "type": "rss",
+        "url": "http://feeds.arstechnica.com/arstechnica/index",
+        "topics": [
+          "tech",
+          "ai",
+          "cyber"
+        ],
+        "tier": 2,
+        "weight": 0.76,
+        "orientation": "center-left",
+        "sourceType": "secondary",
+        "enabled": true
+      },
+      {
+        "id": "wired",
+        "name": "Wired",
+        "type": "rss",
+        "url": "https://www.wired.com/feed/rss",
+        "topics": [
+          "tech",
+          "ai",
+          "cyber"
+        ],
+        "tier": 2,
+        "weight": 0.74,
+        "orientation": "center-left",
+        "sourceType": "secondary",
+        "enabled": true
+      },
+      {
+        "id": "cnbc-top",
+        "name": "CNBC Top News",
+        "type": "rss",
+        "url": "https://www.cnbc.com/id/100003114/device/rss/rss.html",
+        "topics": [
+          "finance",
+          "economy",
+          "macroeconomics"
+        ],
+        "tier": 2,
+        "weight": 0.74,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true
+      },
+      {
+        "id": "marketwatch",
+        "name": "MarketWatch",
+        "type": "rss",
+        "url": "https://feeds.marketwatch.com/marketwatch/topstories/",
+        "topics": [
+          "finance",
+          "economy",
+          "housing"
+        ],
+        "tier": 2,
+        "weight": 0.73,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true
+      },
+      {
+        "id": "politico",
+        "name": "Politico",
+        "type": "rss",
+        "url": "https://www.politico.com/rss/politicopicks.xml",
+        "topics": [
+          "uspolitics",
+          "elections",
+          "law"
+        ],
+        "tier": 2,
+        "weight": 0.76,
+        "orientation": "center-left",
+        "sourceType": "secondary",
+        "enabled": true
+      },
+      {
+        "id": "hill",
+        "name": "The Hill",
+        "type": "rss",
+        "url": "https://thehill.com/feed/",
+        "topics": [
+          "uspolitics",
+          "law",
+          "elections"
+        ],
+        "tier": 2,
+        "weight": 0.72,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true
+      },
+      {
+        "id": "axios",
+        "name": "Axios",
+        "type": "rss",
+        "url": "https://api.axios.com/feed/",
+        "topics": [
+          "uspolitics",
+          "tech",
+          "economy"
+        ],
+        "tier": 2,
+        "weight": 0.71,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true
+      },
+      {
+        "id": "foreign-policy",
+        "name": "Foreign Policy",
+        "type": "rss",
+        "url": "https://foreignpolicy.com/feed/",
+        "topics": [
+          "geopolitics",
+          "global_trade",
+          "defense"
+        ],
+        "tier": 2,
+        "weight": 0.77,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true
+      },
+      {
+        "id": "foreign-affairs",
+        "name": "Foreign Affairs",
+        "type": "rss",
+        "url": "https://www.foreignaffairs.com/rss.xml",
+        "topics": [
+          "geopolitics",
+          "global_trade",
+          "defense"
+        ],
+        "tier": 2,
+        "weight": 0.77,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true
+      },
+      {
+        "id": "oecd-news",
+        "name": "OECD News",
+        "type": "rss",
+        "url": "https://www.oecd.org/newsroom/rss.xml",
+        "topics": [
+          "economy",
+          "global_trade",
+          "education"
+        ],
+        "tier": 2,
+        "weight": 0.78,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "imf-news",
+        "name": "IMF News",
+        "type": "rss",
+        "url": "https://www.imf.org/en/News/RSS",
+        "topics": [
+          "economy",
+          "finance",
+          "global_trade"
+        ],
+        "tier": 2,
+        "weight": 0.78,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "world-bank",
+        "name": "World Bank News",
+        "type": "rss",
+        "url": "https://www.worldbank.org/en/news/all?format=rss",
+        "topics": [
+          "economy",
+          "infrastructure",
+          "climate"
+        ],
+        "tier": 2,
+        "weight": 0.77,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "ecb-press",
+        "name": "ECB Press",
+        "type": "rss",
+        "url": "https://www.ecb.europa.eu/rss/press.html",
+        "topics": [
+          "finance",
+          "macroeconomics",
+          "economy"
+        ],
+        "tier": 2,
+        "weight": 0.77,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true
+      },
+      {
+        "id": "fox-news-world",
+        "name": "Fox News World",
+        "type": "rss",
+        "url": "https://moxie.foxnews.com/google-publisher/world.xml",
+        "topics": [
+          "geopolitics",
+          "uspolitics",
+          "international"
+        ],
+        "tier": 2,
+        "weight": 0.72,
+        "orientation": "right",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "US"
+      },
+      {
+        "id": "national-review",
+        "name": "National Review",
+        "type": "rss",
+        "url": "https://www.nationalreview.com/feed/",
+        "topics": [
+          "uspolitics",
+          "law",
+          "economy"
+        ],
+        "tier": 2,
+        "weight": 0.7,
+        "orientation": "right",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "US"
+      },
+      {
+        "id": "the-nation",
+        "name": "The Nation",
+        "type": "rss",
+        "url": "https://www.thenation.com/feed/?post_type=article",
+        "topics": [
+          "uspolitics",
+          "labor",
+          "law"
+        ],
+        "tier": 2,
+        "weight": 0.7,
+        "orientation": "left",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "US"
+      },
+      {
+        "id": "mother-jones",
+        "name": "Mother Jones",
+        "type": "rss",
+        "url": "https://www.motherjones.com/feed/",
+        "topics": [
+          "uspolitics",
+          "labor",
+          "climate"
+        ],
+        "tier": 2,
+        "weight": 0.69,
+        "orientation": "left",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "US"
+      },
+      {
+        "id": "the-atlantic",
+        "name": "The Atlantic",
+        "type": "rss",
+        "url": "https://www.theatlantic.com/feed/all/",
+        "topics": [
+          "uspolitics",
+          "science",
+          "economy"
+        ],
+        "tier": 2,
+        "weight": 0.74,
+        "orientation": "center-left",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "US"
+      },
+      {
+        "id": "vox",
+        "name": "Vox",
+        "type": "rss",
+        "url": "https://www.vox.com/rss/index.xml",
+        "topics": [
+          "uspolitics",
+          "economy",
+          "health"
+        ],
+        "tier": 2,
+        "weight": 0.71,
+        "orientation": "center-left",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "US"
+      },
+      {
+        "id": "spiegel-intl",
+        "name": "Der Spiegel International",
+        "type": "rss",
+        "url": "https://www.spiegel.de/international/index.rss",
+        "topics": [
+          "geopolitics",
+          "international",
+          "economy"
+        ],
+        "tier": 2,
+        "weight": 0.76,
+        "orientation": "center-left",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "EU-DE"
+      },
+      {
+        "id": "politico-eu",
+        "name": "Politico Europe",
+        "type": "rss",
+        "url": "https://www.politico.eu/feed/",
+        "topics": [
+          "geopolitics",
+          "elections",
+          "economy"
+        ],
+        "tier": 2,
+        "weight": 0.75,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "EU"
+      },
+      {
+        "id": "euronews",
+        "name": "Euronews",
+        "type": "rss",
+        "url": "https://www.euronews.com/rss?level=theme&name=news",
+        "topics": [
+          "geopolitics",
+          "international",
+          "economy"
+        ],
+        "tier": 2,
+        "weight": 0.73,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "EU"
+      },
+      {
+        "id": "euractiv",
+        "name": "Euractiv",
+        "type": "rss",
+        "url": "https://www.euractiv.com/feed/",
+        "topics": [
+          "elections",
+          "law",
+          "economy"
+        ],
+        "tier": 2,
+        "weight": 0.72,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": false,
+        "region": "EU"
+      },
+      {
+        "id": "the-local-se",
+        "name": "The Local Sweden",
+        "type": "rss",
+        "url": "https://www.thelocal.se/feed/",
+        "topics": [
+          "international",
+          "labor",
+          "economy"
+        ],
+        "tier": 2,
+        "weight": 0.65,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": false,
+        "region": "EU-SE"
+      },
+      {
+        "id": "jerusalem-post",
+        "name": "Jerusalem Post",
+        "type": "rss",
+        "url": "https://www.jpost.com/rss/rssfeedsfrontpage.aspx",
+        "topics": [
+          "geopolitics",
+          "defense",
+          "international"
+        ],
+        "tier": 2,
+        "weight": 0.74,
+        "orientation": "center-right",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "IL"
+      },
+      {
+        "id": "times-of-israel",
+        "name": "Times of Israel",
+        "type": "rss",
+        "url": "https://www.timesofisrael.com/feed/",
+        "topics": [
+          "geopolitics",
+          "defense",
+          "international"
+        ],
+        "tier": 2,
+        "weight": 0.73,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "IL"
+      },
+      {
+        "id": "tehran-times",
+        "name": "Tehran Times",
+        "type": "rss",
+        "url": "https://www.tehrantimes.com/rss",
+        "topics": [
+          "geopolitics",
+          "international",
+          "defense"
+        ],
+        "tier": 2,
+        "weight": 0.65,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "IR"
+      },
+      {
+        "id": "moscow-times",
+        "name": "Moscow Times (Exile)",
+        "type": "rss",
+        "url": "https://www.themoscowtimes.com/rss/news",
+        "topics": [
+          "geopolitics",
+          "international",
+          "economy"
+        ],
+        "tier": 2,
+        "weight": 0.72,
+        "orientation": "center-left",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "RU"
+      },
+      {
+        "id": "meduza-en",
+        "name": "Meduza (EN)",
+        "type": "rss",
+        "url": "https://meduza.io/en/rss/all",
+        "topics": [
+          "geopolitics",
+          "international",
+          "law"
+        ],
+        "tier": 2,
+        "weight": 0.71,
+        "orientation": "center-left",
+        "sourceType": "secondary",
+        "enabled": false,
+        "region": "RU"
+      },
+      {
+        "id": "japan-times",
+        "name": "Japan Times",
+        "type": "rss",
+        "url": "https://japantimes.co.jp/feed/",
+        "topics": [
+          "geopolitics",
+          "economy",
+          "international"
+        ],
+        "tier": 2,
+        "weight": 0.74,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "JP"
+      },
+      {
+        "id": "global-times",
+        "name": "Global Times (China)",
+        "type": "rss",
+        "url": "https://www.globaltimes.cn/rss/outbrain.xml",
+        "topics": [
+          "geopolitics",
+          "international",
+          "economy"
+        ],
+        "tier": 2,
+        "weight": 0.65,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "CN"
+      },
+      {
+        "id": "scmp-world",
+        "name": "South China Morning Post",
+        "type": "rss",
+        "url": "https://www.scmp.com/rss/91/feed",
+        "topics": [
+          "geopolitics",
+          "economy",
+          "international"
+        ],
+        "tier": 2,
+        "weight": 0.75,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "HK"
+      },
+      {
+        "id": "38-north",
+        "name": "38 North (NK Analysis)",
+        "type": "rss",
+        "url": "https://www.38north.org/feed/",
+        "topics": [
+          "geopolitics",
+          "defense",
+          "international"
+        ],
+        "tier": 2,
+        "weight": 0.72,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": false,
+        "region": "KP"
+      },
+      {
+        "id": "kcna-watch",
+        "name": "KCNA Watch",
+        "type": "rss",
+        "url": "https://kcnawatch.org/newsfeed/",
+        "topics": [
+          "geopolitics",
+          "defense",
+          "international"
+        ],
+        "tier": 2,
+        "weight": 0.66,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": false,
+        "region": "KP"
+      },
+      {
+        "id": "mercopress",
+        "name": "Mercopress (Latin America)",
+        "type": "rss",
+        "url": "https://en.mercopress.com/rss.xml",
+        "topics": [
+          "geopolitics",
+          "international",
+          "economy"
+        ],
+        "tier": 2,
+        "weight": 0.68,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": false,
+        "region": "LATAM"
+      },
+      {
+        "id": "punch-nigeria",
+        "name": "The Punch Nigeria",
+        "type": "rss",
+        "url": "https://punchng.com/feed/",
+        "topics": [
+          "international",
+          "economy",
+          "geopolitics"
+        ],
+        "tier": 2,
+        "weight": 0.67,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": false,
+        "region": "NG"
+      },
+      {
+        "id": "qatar-tribune",
+        "name": "Qatar Tribune",
+        "type": "rss",
+        "url": "https://www.qatar-tribune.com/rss.xml",
+        "topics": [
+          "geopolitics",
+          "international",
+          "economy"
+        ],
+        "tier": 2,
+        "weight": 0.64,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": false,
+        "region": "QA"
+      },
+      {
+        "id": "naharnet",
+        "name": "Naharnet (Lebanon)",
+        "type": "rss",
+        "url": "https://www.naharnet.com/stories/en.rss",
+        "topics": [
+          "geopolitics",
+          "international",
+          "defense"
+        ],
+        "tier": 2,
+        "weight": 0.65,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "LB"
+      },
+      {
+        "id": "insight-crime",
+        "name": "InSight Crime",
+        "type": "rss",
+        "url": "https://insightcrime.org/feed/",
+        "topics": [
+          "law",
+          "geopolitics",
+          "international"
+        ],
+        "tier": 2,
+        "weight": 0.67,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "LATAM"
+      },
+      {
+        "id": "bis-news",
+        "name": "BIS (Bank for Intl Settlements)",
+        "type": "rss",
+        "url": "https://www.bis.org/list/rss/index.htm",
+        "topics": [
+          "finance",
+          "macroeconomics",
+          "economy"
+        ],
+        "tier": 2,
+        "weight": 0.8,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": false
+      },
+      {
+        "id": "boe-publications",
+        "name": "Bank of England",
+        "type": "rss",
+        "url": "https://www.bankofengland.co.uk/rss/all-publications",
+        "topics": [
+          "finance",
+          "macroeconomics",
+          "economy"
+        ],
+        "tier": 2,
+        "weight": 0.8,
+        "orientation": "center",
+        "sourceType": "primary",
+        "enabled": true,
+        "region": "EU-GB"
+      }
+    ],
+    "3": [
+      {
+        "id": "la-times",
+        "name": "LA Times",
+        "type": "rss",
+        "url": "https://www.latimes.com/world/rss2.0.xml",
+        "topics": [
+          "local",
+          "housing",
+          "economy"
+        ],
+        "tier": 3,
+        "weight": 0.56,
+        "orientation": "center-left",
+        "sourceType": "local",
+        "enabled": true,
+        "region": "US-CA"
+      },
+      {
+        "id": "sf-chronicle",
+        "name": "SF Chronicle",
+        "type": "rss",
+        "url": "https://www.sfchronicle.com/bayarea/feed/Bay-Area-News-429.php",
+        "topics": [
+          "local",
+          "housing",
+          "labor"
+        ],
+        "tier": 3,
+        "weight": 0.54,
+        "orientation": "center-left",
+        "sourceType": "local",
+        "enabled": true,
+        "region": "US-CA"
+      },
+      {
+        "id": "calmatters",
+        "name": "CalMatters",
+        "type": "rss",
+        "url": "https://calmatters.org/feed/",
+        "topics": [
+          "local",
+          "law",
+          "education"
+        ],
+        "tier": 3,
+        "weight": 0.56,
+        "orientation": "center-left",
+        "sourceType": "local",
+        "enabled": true,
+        "region": "US-CA"
+      },
+      {
+        "id": "texas-tribune",
+        "name": "Texas Tribune",
+        "type": "rss",
+        "url": "https://www.texastribune.org/feeds/",
+        "topics": [
+          "uspolitics",
+          "law",
+          "energy"
+        ],
+        "tier": 3,
+        "weight": 0.56,
+        "orientation": "center",
+        "sourceType": "local",
+        "enabled": true,
+        "region": "US-TX"
+      },
+      {
+        "id": "chicago-tribune",
+        "name": "Chicago Tribune",
+        "type": "rss",
+        "url": "https://www.chicagotribune.com/arcio/rss/category/news/",
+        "topics": [
+          "local",
+          "labor",
+          "housing"
+        ],
+        "tier": 3,
+        "weight": 0.52,
+        "orientation": "center-left",
+        "sourceType": "local",
+        "enabled": true,
+        "region": "US-IL"
+      },
+      {
+        "id": "boston-globe",
+        "name": "Boston Globe",
+        "type": "rss",
+        "url": "https://www.bostonglobe.com/rss/feed.xml",
+        "topics": [
+          "local",
+          "education",
+          "health"
+        ],
+        "tier": 3,
+        "weight": 0.52,
+        "orientation": "center-left",
+        "sourceType": "local",
+        "enabled": false,
+        "region": "US-MA"
+      },
+      {
+        "id": "seattle-times",
+        "name": "Seattle Times",
+        "type": "rss",
+        "url": "https://www.seattletimes.com/feed/",
+        "topics": [
+          "local",
+          "tech",
+          "housing"
+        ],
+        "tier": 3,
+        "weight": 0.52,
+        "orientation": "center-left",
+        "sourceType": "local",
+        "enabled": false,
+        "region": "US-WA"
+      },
+      {
+        "id": "miami-herald",
+        "name": "Miami Herald",
+        "type": "rss",
+        "url": "https://www.miamiherald.com/latest-news/?widgetName=rssfeed&widgetContentId=712015&getXmlFeed=true",
+        "topics": [
+          "local",
+          "climate",
+          "economy"
+        ],
+        "tier": 3,
+        "weight": 0.51,
+        "orientation": "center-left",
+        "sourceType": "local",
+        "enabled": false,
+        "region": "US-FL"
+      },
+      {
+        "id": "detroit-news",
+        "name": "Detroit News",
+        "type": "rss",
+        "url": "https://www.detroitnews.com/feeds/news/",
+        "topics": [
+          "local",
+          "labor",
+          "infrastructure"
+        ],
+        "tier": 3,
+        "weight": 0.5,
+        "orientation": "center",
+        "sourceType": "local",
+        "enabled": true,
+        "region": "US-MI"
+      },
+      {
+        "id": "denver-post",
+        "name": "Denver Post",
+        "type": "rss",
+        "url": "https://www.denverpost.com/feed/",
+        "topics": [
+          "local",
+          "climate",
+          "energy"
+        ],
+        "tier": 3,
+        "weight": 0.5,
+        "orientation": "center",
+        "sourceType": "local",
+        "enabled": true,
+        "region": "US-CO"
+      },
+      {
+        "id": "toronto-star",
+        "name": "Toronto Star",
+        "type": "rss",
+        "url": "https://www.thestar.com/content/thestar/feed.RSSManagerServlet.articles.news.rss",
+        "topics": [
+          "economy",
+          "global_trade",
+          "housing"
+        ],
+        "tier": 3,
+        "weight": 0.5,
+        "orientation": "center-left",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "CA-ON"
+      },
+      {
+        "id": "abc-australia",
+        "name": "ABC Australia",
+        "type": "rss",
+        "url": "https://www.abc.net.au/news/feed/45910/rss.xml",
+        "topics": [
+          "geopolitics",
+          "climate",
+          "science"
+        ],
+        "tier": 3,
+        "weight": 0.5,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "AU-NSW"
+      },
+      {
+        "id": "globe-and-mail",
+        "name": "Globe and Mail",
+        "type": "rss",
+        "url": "https://www.theglobeandmail.com/arc/outboundfeeds/rss/category/canada/",
+        "topics": [
+          "economy",
+          "elections",
+          "global_trade"
+        ],
+        "tier": 3,
+        "weight": 0.54,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "CA"
+      },
+      {
+        "id": "national-post",
+        "name": "National Post",
+        "type": "rss",
+        "url": "https://nationalpost.com/feed/",
+        "topics": [
+          "uspolitics",
+          "economy",
+          "law"
+        ],
+        "tier": 3,
+        "weight": 0.52,
+        "orientation": "center-right",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "CA"
+      },
+      {
+        "id": "anchorage-daily-news",
+        "name": "Anchorage Daily News",
+        "type": "rss",
+        "url": "https://www.adn.com/feed/",
+        "topics": [
+          "local",
+          "climate",
+          "energy"
+        ],
+        "tier": 3,
+        "weight": 0.48,
+        "orientation": "center",
+        "sourceType": "local",
+        "enabled": true,
+        "region": "US-AK"
+      },
+      {
+        "id": "buenos-aires-herald",
+        "name": "Buenos Aires Herald",
+        "type": "rss",
+        "url": "https://buenosairesherald.com/feed/",
+        "topics": [
+          "international",
+          "economy",
+          "geopolitics"
+        ],
+        "tier": 3,
+        "weight": 0.55,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": false,
+        "region": "AR"
+      },
+      {
+        "id": "caracas-chronicles",
+        "name": "Caracas Chronicles",
+        "type": "rss",
+        "url": "https://www.caracaschronicles.com/feed/",
+        "topics": [
+          "geopolitics",
+          "international",
+          "elections"
+        ],
+        "tier": 3,
+        "weight": 0.54,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": false,
+        "region": "VE"
+      },
+      {
+        "id": "allafrica",
+        "name": "AllAfrica",
+        "type": "rss",
+        "url": "https://allafrica.com/tools/headlines/rdf/latest/headlines.rdf",
+        "topics": [
+          "international",
+          "geopolitics",
+          "economy"
+        ],
+        "tier": 3,
+        "weight": 0.52,
+        "orientation": "center",
+        "sourceType": "secondary",
+        "enabled": false,
+        "region": "AF"
+      },
+      {
+        "id": "daily-wire",
+        "name": "Daily Wire",
+        "type": "rss",
+        "url": "https://www.dailywire.com/feeds/rss.xml",
+        "topics": [
+          "uspolitics",
+          "law",
+          "elections"
+        ],
+        "tier": 3,
+        "weight": 0.5,
+        "orientation": "right",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "US"
+      },
+      {
+        "id": "washington-examiner",
+        "name": "Washington Examiner",
+        "type": "rss",
+        "url": "https://www.washingtonexaminer.com/news.rss",
+        "topics": [
+          "uspolitics",
+          "law",
+          "economy"
+        ],
+        "tier": 3,
+        "weight": 0.52,
+        "orientation": "center-right",
+        "sourceType": "secondary",
+        "enabled": true,
+        "region": "US"
+      },
+      {
+        "id": "xkcd",
+        "name": "XKCD",
+        "type": "rss",
+        "url": "https://xkcd.com/rss.xml",
+        "topics": [
+          "tech",
+          "science"
+        ],
+        "tier": 3,
+        "weight": 0.4,
+        "orientation": "center-left",
+        "sourceType": "secondary",
+        "enabled": true,
+        "contentType": "cartoon"
+      },
+      {
+        "id": "the-nib",
+        "name": "The Nib",
+        "type": "rss",
+        "url": "https://thenib.com/feed/rss.xml",
+        "topics": [
+          "uspolitics",
+          "geopolitics"
+        ],
+        "tier": 3,
+        "weight": 0.45,
+        "orientation": "left",
+        "sourceType": "secondary",
+        "enabled": true,
+        "contentType": "cartoon"
+      }
+    ]
+  }
+}

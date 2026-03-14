@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{PAGE_TITLE}}</title>
+<meta name="description" content="{{PAGE_DESCRIPTION}}">
+<link rel="canonical" href="{{PAGE_CANONICAL}}">
+<meta name="robots" content="index,follow">
+<meta property="og:title" content="{{PAGE_TITLE}}">
+<meta property="og:description" content="{{PAGE_DESCRIPTION}}">
+<meta property="og:type" content="website">
+<meta property="og:image" content="{{PAGE_OG_IMAGE}}">
+<meta property="og:image:type" content="{{PAGE_OG_IMAGE_TYPE}}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="{{PAGE_CANONICAL}}">
+<meta property="twitter:card" content="summary_large_image">
+<meta property="twitter:image" content="{{PAGE_OG_IMAGE}}">
+<meta property="twitter:title" content="{{PAGE_TITLE}}">
+<meta property="twitter:description" content="{{PAGE_DESCRIPTION}}">
+<link rel="alternate" type="application/rss+xml" title="The UnderCurrent Feed" href="/site-feed.xml">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"The UnderCurrent","url":"http://localhost:5173","potentialAction":{"@type":"SearchAction","target":"http://localhost:5173/?q={search_term_string}","query-input":"required name=search_term_string"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"The UnderCurrent","url":"http://localhost:5173","logo":"http://localhost:5173/shot.png"}</script>
+<script id="jsonLdArticle" type="application/ld+json">{}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/styles.css">
+<style>
+html{font-size:16px;-webkit-font-smoothing:antialiased;scroll-behavior:smooth;color-scheme:light}
+body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-serif;background:#f8f9fb;color:#1a2332;line-height:1.65;min-height:100vh;overflow-x:hidden}
+.loader-overlay{position:fixed;inset:0;z-index:10000;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#storyList">Skip to main content</a>
+<div class="depth-bg"></div>
+<div class="depth-particles" id="depthParticles"></div>
+
+<div class="loader-overlay" id="loader">
+  <div class="loader-creature" id="loaderCreature"></div>
+  <div class="loader-label" id="loaderLabel">Surfacing intelligence</div>
+  <div class="loader-depth" id="loaderDepth"></div>
+  <div class="loader-bar"><div class="loader-bar-fill" id="loaderBar"></div></div>
+</div>
+
+<div class="mobile-nav" id="mobileNav" aria-hidden="true">
+  <button class="mobile-nav-close" id="mobileNavClose" type="button" aria-label="Close menu">&#10005;</button>
+  <button class="mobile-nav-link" type="button" data-nav-target="home">Daily Briefings</button>
+  <button class="mobile-nav-link" type="button" data-nav-target="archive">Archive</button>
+  <button class="mobile-nav-link" type="button" data-nav-target="topics">Topics</button>
+  <button class="mobile-nav-link" type="button" data-nav-target="about">About</button>
+  <button class="mobile-nav-link" type="button" data-nav-target="resources">Resources</button>
+  <button class="mobile-nav-link" type="button" data-nav-target="contact">Contact</button>
+</div>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <button class="masthead" id="mastheadButton" type="button" aria-label="Go to daily briefings">
+        <span class="masthead-mark">UC</span>
+        <span class="masthead-title">The <span>Under</span>Current</span>
+      </button>
+      <ul class="nav-links">
+        <li class="nav-link active" data-page="home">Daily Briefings</li>
+        <li class="nav-link" data-page="archive">Archive</li>
+        <li class="nav-link" data-page="topics">Topics</li>
+        <li class="nav-link" data-page="about">About</li>
+        <li class="nav-link" data-page="resources">Resources</li>
+        <li class="nav-link" data-page="contact">Contact</li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <div class="run-selector">
+        <button class="run-btn active" data-run="morning" type="button">AM</button>
+        <button class="run-btn" data-run="midday" type="button">MID</button>
+        <button class="run-btn" data-run="evening" type="button">PM</button>
+      </div>
+      <button class="refresh-btn" id="refreshButton" type="button" title="Refresh feed">&#8635;</button>
+      <div class="nav-divider"></div>
+      <span class="nav-dateline" id="navDateline"></span>
+      <button class="mobile-menu-btn" id="mobileNavOpen" type="button" aria-label="Open menu" aria-controls="mobileNav" aria-expanded="false">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5h12M3 9h12M3 13h12"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div id="liveUpdateBanner" class="live-update-banner" style="display:none" role="status" aria-live="polite"></div>
+
+<main class="main">
+
+<!-- ===== DAILY BRIEFINGS ===== -->
+<div class="page active" id="page-home"><div class="container">
+
+<section class="hero"><div class="hero-inner">
+  <div class="hero-kicker"><span id="heroKicker">Lead Intelligence &middot; Latest Run</span></div>
+  <h1 class="hero-headline interactive-heading" id="heroHeadline">Loading today&rsquo;s lead story&hellip;</h1>
+  <p class="hero-subhead" id="heroSubhead">Refreshing signals, sources, and ranked priorities.</p>
+  <div class="hero-meta" id="heroMeta">
+    <span style="display:inline-block;width:5px;height:5px;background:var(--accent-gold);border-radius:50%"></span>
+    <span>Awaiting refresh</span>
+  </div>
+  <div class="hero-depth-layer hero-depth-layer-gold" aria-hidden="true"></div>
+  <div class="hero-depth-layer hero-depth-layer-teal" aria-hidden="true"></div>
+  <div class="citation" id="heroCitation" style="opacity:0;animation:fadeUp var(--dur-reveal) var(--ease-out) 0.5s forwards"></div>
+</div></section>
+
+<hr class="editorial-rule-double">
+
+<section class="top3-section">
+  <div class="section-header">
+    <span class="section-title">Top 3 &mdash; Priority Intelligence</span>
+    <span class="section-badge">Ranked by 7-criteria composite</span>
+  </div>
+  <div class="top3-grid" id="topStories"></div>
+</section>
+
+<section class="market-section">
+  <div class="section-header">
+    <span class="section-title">Market Indicators</span>
+    <span class="section-badge">15-min delay</span>
+  </div>
+  <div class="market-strip">
+    <button class="market-tile" type="button" aria-expanded="false">
+      <div class="market-tile-header"><span class="market-tile-label">S&amp;P 500</span><span class="market-tile-change down">&minus;1.2%</span></div>
+      <div class="market-tile-value">4,891.27</div>
+      <div class="market-sparkline"><svg viewBox="0 0 120 24" preserveAspectRatio="none"><polyline points="0,6 15,5 30,8 45,6 60,12 75,16 90,14 105,19 120,17" fill="none" stroke="#c94040" stroke-width="1.5" opacity="0.7"/></svg></div>
+      <div class="market-intel-toggle">&#9654; INTEL</div>
+      <div class="market-intel-panel">CPI miss triggered broad selloff. Tech leading. VIX +18%.</div>
+    </button>
+    <button class="market-tile" type="button" aria-expanded="false">
+      <div class="market-tile-header"><span class="market-tile-label">10Y Yield</span><span class="market-tile-change up">+8bp</span></div>
+      <div class="market-tile-value">4.32%</div>
+      <div class="market-sparkline"><svg viewBox="0 0 120 24" preserveAspectRatio="none"><polyline points="0,19 15,17 30,15 45,13 60,12 75,9 90,7 105,5 120,6" fill="none" stroke="#2a9460" stroke-width="1.5" opacity="0.7"/></svg></div>
+      <div class="market-intel-toggle">&#9654; INTEL</div>
+      <div class="market-intel-panel">Yields spiking on hot CPI. Zero March cuts priced.</div>
+    </button>
+    <button class="market-tile" type="button" aria-expanded="false">
+      <div class="market-tile-header"><span class="market-tile-label">DXY</span><span class="market-tile-change up">+0.6%</span></div>
+      <div class="market-tile-value">104.82</div>
+      <div class="market-sparkline"><svg viewBox="0 0 120 24" preserveAspectRatio="none"><polyline points="0,18 15,16 30,14 45,15 60,12 75,10 90,8 105,6 120,5" fill="none" stroke="#2a9460" stroke-width="1.5" opacity="0.7"/></svg></div>
+      <div class="market-intel-toggle">&#9654; INTEL</div>
+      <div class="market-intel-panel">Dollar strengthening across G10. EUR/USD below 1.07.</div>
+    </button>
+    <button class="market-tile" type="button" aria-expanded="false">
+      <div class="market-tile-header"><span class="market-tile-label">Gold</span><span class="market-tile-change down">&minus;0.4%</span></div>
+      <div class="market-tile-value">$2,148</div>
+      <div class="market-sparkline"><svg viewBox="0 0 120 24" preserveAspectRatio="none"><polyline points="0,8 15,6 30,10 45,12 60,9 75,11 90,14 105,13 120,16" fill="none" stroke="#c94040" stroke-width="1.5" opacity="0.7"/></svg></div>
+      <div class="market-intel-toggle">&#9654; INTEL</div>
+      <div class="market-intel-panel">Retreating on dollar strength. Central bank buying as floor.</div>
+    </button>
+    <button class="market-tile" type="button" aria-expanded="false">
+      <div class="market-tile-header"><span class="market-tile-label">BTC</span><span class="market-tile-change down">&minus;2.8%</span></div>
+      <div class="market-tile-value">$51,240</div>
+      <div class="market-sparkline"><svg viewBox="0 0 120 24" preserveAspectRatio="none"><polyline points="0,5 15,7 30,4 45,8 60,10 75,14 90,17 105,15 120,20" fill="none" stroke="#c94040" stroke-width="1.5" opacity="0.7"/></svg></div>
+      <div class="market-intel-toggle">&#9654; INTEL</div>
+      <div class="market-intel-panel">Risk-off hitting crypto. ETF inflows slowing.</div>
+    </button>
+    <button class="market-tile" type="button" aria-expanded="false">
+      <div class="market-tile-header"><span class="market-tile-label">WTI</span><span class="market-tile-change up">+1.1%</span></div>
+      <div class="market-tile-value">$78.34</div>
+      <div class="market-sparkline"><svg viewBox="0 0 120 24" preserveAspectRatio="none"><polyline points="0,16 15,14 30,12 45,14 60,10 75,8 90,6 105,8 120,5" fill="none" stroke="#2a9460" stroke-width="1.5" opacity="0.7"/></svg></div>
+      <div class="market-intel-toggle">&#9654; INTEL</div>
+      <div class="market-intel-panel">Inflation boosting commodities. OPEC+ discipline holding.</div>
+    </button>
+  </div>
+</section>
+
+<section id="marketIntelSection" style="display:none">
+  <div class="section-header" style="padding-top:var(--sp-6)">
+    <span class="section-title">Market Intelligence</span>
+    <span class="section-badge">AI-generated</span>
+  </div>
+  <div id="marketIntelCard"></div>
+</section>
+
+<section id="cartoonsSection" style="display:none">
+  <div class="section-header" style="padding-top:var(--sp-6)">
+    <span class="section-title">Cartoons &amp; Commentary</span>
+    <span class="section-badge">Visual perspective</span>
+  </div>
+  <div class="cartoons-strip" id="cartoonsStrip"></div>
+</section>
+
+<section class="tier-section">
+  <div class="section-header">
+    <span class="section-title">Intelligence Feed</span>
+    <div class="section-header-right">
+      <span class="section-badge" id="unreadCount"></span>
+      <button id="unreadToggle" class="unread-toggle" type="button">Unread Only</button>
+      <span class="section-badge">Latest 48 hrs</span>
+    </div>
+  </div>
+  <div id="sinceLastVisit" class="since-last-visit" style="display:none" role="status" aria-live="polite"></div>
+  <div class="archive-controls">
+    <input type="text" class="archive-search" id="searchInput" placeholder="Search headlines, sources&hellip;">
+    <select class="form-input" id="searchTier" style="appearance:auto">
+      <option value="">All tiers</option>
+      <option value="1">Tier 1</option>
+      <option value="2">Tier 2</option>
+      <option value="3">Tier 3</option>
+    </select>
+    <input type="text" class="archive-search" id="searchSource" placeholder="Source">
+    <input type="text" class="archive-search" id="searchTopic" placeholder="Topic">
+    <input type="date" class="form-input" id="searchFrom">
+    <input type="date" class="form-input" id="searchTo">
+  </div>
+  <div class="tier-tabs">
+    <button class="tier-tab active" data-tier="all" type="button">All Stories</button>
+    <button class="tier-tab" data-tier="1" type="button">Tier 1</button>
+    <button class="tier-tab" data-tier="2" type="button">Tier 2</button>
+    <button class="tier-tab" data-tier="3" type="button">Tier 3</button>
+  </div>
+  <div class="stories-grid">
+    <div class="story-list" id="storyList"></div>
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h4 class="sidebar-card-title">Source Spectrum &mdash; This Run</h4>
+        <div class="source-spectrum">
+          <div class="spectrum-row"><span class="spectrum-label">Left</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:18%;background:#4a90d9"></div></div><span class="spectrum-count">3</span></div>
+          <div class="spectrum-row"><span class="spectrum-label">Ctr-L</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:30%;background:#6eb5ff"></div></div><span class="spectrum-count">5</span></div>
+          <div class="spectrum-row"><span class="spectrum-label">Center</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:42%;background:#a0a0a0"></div></div><span class="spectrum-count">7</span></div>
+          <div class="spectrum-row"><span class="spectrum-label">Ctr-R</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:24%;background:#e8923a"></div></div><span class="spectrum-count">4</span></div>
+          <div class="spectrum-row"><span class="spectrum-label">Right</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:12%;background:#d45454"></div></div><span class="spectrum-count">2</span></div>
+        </div>
+      </div>
+      <div class="sidebar-card">
+        <h4 class="sidebar-card-title">Legislative Tracker</h4>
+        <div class="legis-list" id="highImportanceList"></div>
+      </div>
+      <div class="sidebar-card" style="display:none">
+        <h4 class="sidebar-card-title">Political Cartoons</h4>
+        <div class="cartoon-rail" id="cartoonsRail"></div>
+      </div>
+      <div style="text-align:center;padding:var(--sp-3) 0"><span class="coord-label">36&deg;51.2&#8242;N 014&deg;31.4&#8242;E &middot; DEPTH 2,400M</span></div>
+    </aside>
+  </div>
+</section>
+
+</div><footer class="site-footer"><div class="container"><div class="footer-inner">
+  <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
+  <div class="footer-right">
+    <a href="#" onclick="window.navigateTo('about');return false">Methodology</a>
+    <a href="#" onclick="window.navigateTo('contact');return false">Contact</a>
+    <a href="#">Privacy</a>
+  </div>
+</div></div></footer></div>
+
+<!-- ===== STORY ===== -->
+<div class="page" id="page-story"><div class="container">
+<section class="story-hero">
+  <div class="story-hero-meta">
+    <span class="story-hero-tag" id="storyVerification">Verification</span>
+    <span class="story-hero-tag" id="storyConfidence">Confidence</span>
+    <span class="story-hero-updated" id="storyUpdated">Updated</span>
+  </div>
+  <h1 class="story-hero-title" id="storyTitle">Story headline</h1>
+  <p class="story-hero-dek" id="storyDek">Story dek goes here.</p>
+  <div class="story-hero-tags" id="storyTags"></div>
+  <div class="story-hero-actions">
+    <button class="cta-btn ghost" id="storySaveBtn" type="button" data-save>Save story</button>
+    <button class="cta-btn secondary" id="storyFollowBtn" type="button" data-follow>Follow topic</button>
+  </div>
+</section>
+<section class="story-grid">
+  <div class="story-main">
+    <div class="story-section"><h2 class="story-section-title">Why it matters</h2><p id="storyWhy"></p></div>
+    <div class="story-section"><h2 class="story-section-title">What&rsquo;s next</h2><p id="storyNext"></p></div>
+    <div class="story-section"><h2 class="story-section-title">Timeline</h2><div class="story-timeline" id="storyTimeline"></div></div>
+    <div class="story-section"><h2 class="story-section-title">Sources</h2><div class="story-sources" id="storySources"></div></div>
+    <div class="story-section" id="storyCorrectionsSection" style="display:none"><h2 class="story-section-title">Corrections &amp; Updates</h2><div class="story-corrections" id="storyCorrections"></div></div>
+  </div>
+  <aside class="story-sidebar">
+    <div class="sidebar-card"><h4 class="sidebar-card-title">Source Spectrum</h4><div class="source-spectrum" id="storySpectrum"></div></div>
+    <div class="sidebar-card"><h4 class="sidebar-card-title">Primary Documents</h4><div class="story-docs" id="storyDocs"></div></div>
+    <div class="sidebar-card"><h4 class="sidebar-card-title">Related Coverage</h4><div class="story-related" id="storyRelated"></div></div>
+  </aside>
+</section>
+</div><footer class="site-footer"><div class="container"><div class="footer-inner">
+  <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
+  <div class="footer-right"><a href="#" onclick="window.navigateTo('home');return false">Briefings</a><a href="#" onclick="window.navigateTo('archive');return false">Archive</a></div>
+</div></div></footer></div>
+
+<!-- ===== DIGEST ===== -->
+<div class="page" id="page-digest"><div class="container">
+<section class="about-hero"><div class="about-kicker">Weekly Digest</div><h1 class="about-headline" id="digestTitle">Weekly Intelligence Digest</h1><p class="about-intro" id="digestIntro">Executive summary, top 10, market recap, and policy highlights.</p></section>
+<section class="about-section"><div class="about-section-label">Digest</div><h2 class="about-section-title">Week in Review</h2><div id="digestPageContent"></div></section>
+</div><footer class="site-footer"><div class="container"><div class="footer-inner">
+  <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
+  <div class="footer-right"><a href="#" onclick="window.navigateTo('home');return false">Briefings</a></div>
+</div></div></footer></div>
+
+<!-- ===== ARCHIVE ===== -->
+<div class="page" id="page-archive"><div class="container">
+<section style="padding:var(--sp-10) 0 var(--sp-6)">
+  <div class="about-kicker">Briefing Archive</div>
+  <h1 class="about-headline">Past Intelligence Runs</h1>
+  <p style="font-size:var(--text-base);color:var(--text-secondary);max-width:560px;line-height:1.7;margin-bottom:var(--sp-6)">Navigate previous daily briefings. Each run preserved with full ranking, scores, and source attribution.</p>
+  <div class="archive-controls">
+    <input type="text" class="archive-search" id="archiveSearch" placeholder="Search by headline, category, or keyword&hellip;">
+    <div class="month-selector">
+      <button class="month-btn active" type="button">Mar 2026</button>
+      <button class="month-btn" type="button">Feb 2026</button>
+      <button class="month-btn" type="button">Jan 2026</button>
+    </div>
+  </div>
+  <div class="archive-filters">
+    <button class="archive-filter active" data-range="week" type="button">This Week</button>
+    <button class="archive-filter" data-range="month" type="button">This Month</button>
+    <button class="archive-filter" data-range="quarter" type="button">This Quarter</button>
+    <button class="archive-filter" data-range="all" type="button">All</button>
+  </div>
+</section>
+<div id="archiveContent"></div>
+</div><footer class="site-footer"><div class="container"><div class="footer-inner">
+  <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
+  <div class="footer-right"><a href="#" onclick="window.navigateTo('home');return false">Briefings</a><a href="#" onclick="window.navigateTo('about');return false">About</a></div>
+</div></div></footer></div>
+
+<!-- ===== TOPICS ===== -->
+<div class="page" id="page-topics"><div class="container">
+<section class="topics-header">
+  <div class="about-kicker">Topics</div>
+  <h1 class="about-headline">News by Category</h1>
+  <p style="font-size:var(--text-base);color:var(--text-secondary);max-width:560px;line-height:1.7">Browse intelligence by subject. Rolling 4-month window with continuing story tracking.</p>
+  <input type="text" class="topics-search" id="topicsSearch" placeholder="Search across all topics&hellip;">
+</section>
+<div class="topics-nav" id="topicsNav">
+  <button class="topic-chip active" data-topic="all" type="button">All Topics</button>
+  <button class="topic-chip" data-topic="today" type="button">Today</button>
+  <button class="topic-chip" data-topic="ai" type="button">AI</button>
+  <button class="topic-chip" data-topic="tech" type="button">Technology</button>
+  <button class="topic-chip" data-topic="biotech" type="button">Biotech</button>
+  <button class="topic-chip" data-topic="health" type="button">Health</button>
+  <button class="topic-chip" data-topic="finance" type="button">Finance</button>
+  <button class="topic-chip" data-topic="macroeconomics" type="button">Macroeconomics</button>
+  <button class="topic-chip" data-topic="economy" type="button">Economy</button>
+  <button class="topic-chip" data-topic="housing" type="button">Housing</button>
+  <button class="topic-chip" data-topic="labor" type="button">Labor</button>
+  <button class="topic-chip" data-topic="law" type="button">Law &amp; Regulation</button>
+  <button class="topic-chip" data-topic="uspolitics" type="button">U.S. Politics</button>
+  <button class="topic-chip" data-topic="elections" type="button">Elections</button>
+  <button class="topic-chip" data-topic="geopolitics" type="button">Geopolitics</button>
+  <button class="topic-chip" data-topic="global_trade" type="button">Global Trade</button>
+  <button class="topic-chip" data-topic="defense" type="button">Defense</button>
+  <button class="topic-chip" data-topic="cyber" type="button">Cyber</button>
+  <button class="topic-chip" data-topic="infrastructure" type="button">Infrastructure</button>
+  <button class="topic-chip" data-topic="energy" type="button">Energy</button>
+  <button class="topic-chip" data-topic="climate" type="button">Climate</button>
+  <button class="topic-chip" data-topic="science" type="button">Science</button>
+  <button class="topic-chip" data-topic="engineering" type="button">Engineering</button>
+  <button class="topic-chip" data-topic="education" type="button">Education</button>
+  <button class="topic-chip" data-topic="banking" type="button">Banking</button>
+  <button class="topic-chip" data-topic="international" type="button">International</button>
+</div>
+<div id="topicsContent"></div>
+</div><footer class="site-footer"><div class="container"><div class="footer-inner">
+  <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
+  <div class="footer-right"><a href="#" onclick="window.navigateTo('home');return false">Briefings</a><a href="#" onclick="window.navigateTo('about');return false">About</a></div>
+</div></div></footer></div>
+
+<!-- ===== ABOUT ===== -->
+<div class="page" id="page-about"><div class="container">
+<section class="about-hero">
+  <div class="about-kicker">About The UnderCurrent</div>
+  <h1 class="about-headline">Intelligence that respects your time, your judgment, and <em>the truth</em></h1>
+  <p class="about-intro">The UnderCurrent is a daily intelligence briefing for professionals who need to know what matters &mdash; without opinion masquerading as analysis, without algorithmic engagement traps, and without the noise that makes modern news adversarial.</p>
+</section>
+
+<section class="about-section">
+  <div class="about-section-label">Our Mission</div>
+  <h2 class="about-section-title">What we stand for &mdash; and what we refuse to do</h2>
+  <div class="about-body">
+    <p>The information crisis isn&rsquo;t about too little news &mdash; it&rsquo;s about too much noise. Every day, thousands of stories compete for attention using every psychological lever available. Most don&rsquo;t deserve it. The UnderCurrent exists to solve that with rigorous prioritization, transparent methodology, and editorial discipline.</p>
+    <p>We don&rsquo;t publish opinion. We don&rsquo;t editorialize headlines. We don&rsquo;t optimize for engagement. We optimize for one metric: did you walk away knowing exactly what matters today and why?</p>
+  </div>
+  <div class="principles-grid">
+    <div class="principle-card"><div class="principle-number">01</div><div class="principle-title">Primary Sources First</div><p class="principle-desc">Every claim traced to original source &mdash; government filings, earnings transcripts, official statements. We cite the document, not the interpretation.</p></div>
+    <div class="principle-card"><div class="principle-number">02</div><div class="principle-title">No Opinion, No Sensationalism</div><p class="principle-desc">Headlines describe what happened. Analysis explains context. We never tell you how to feel about it.</p></div>
+    <div class="principle-card"><div class="principle-number">03</div><div class="principle-title">Source Spectrum Transparency</div><p class="principle-desc">Every run shows the political orientation of cited sources. You see where information comes from &mdash; and where it doesn&rsquo;t.</p></div>
+  </div>
+</section>
+
+<section class="about-section">
+  <div class="about-section-label">Methodology</div>
+  <h2 class="about-section-title">The 7-Criteria Ranking System</h2>
+  <div class="about-body"><p>Every story is scored against seven objective criteria. The composite score determines tier placement and ranking.</p></div>
+  <div class="criteria-grid">
+    <div class="criteria-item"><span class="criteria-num">01</span><div><div class="criteria-name">Systemic Impact</div><p class="criteria-desc">How many systems, markets, or populations affected?</p></div></div>
+    <div class="criteria-item"><span class="criteria-num">02</span><div><div class="criteria-name">Irreversibility</div><p class="criteria-desc">Can this be undone? Structural shifts score higher.</p></div></div>
+    <div class="criteria-item"><span class="criteria-num">03</span><div><div class="criteria-name">Source Strength</div><p class="criteria-desc">How reliable and proximate? Primary documents outrank single-source.</p></div></div>
+    <div class="criteria-item"><span class="criteria-num">04</span><div><div class="criteria-name">Cross-verification</div><p class="criteria-desc">Confirmed by independent sources? Three-source minimum for Tier 1.</p></div></div>
+    <div class="criteria-item"><span class="criteria-num">05</span><div><div class="criteria-name">Decision Relevance</div><p class="criteria-desc">Does this change decisions for policymakers, investors, or leaders?</p></div></div>
+    <div class="criteria-item"><span class="criteria-num">06</span><div><div class="criteria-name">Temporal Urgency</div><p class="criteria-desc">Time-sensitive? Market-moving data and deadlines score higher.</p></div></div>
+    <div class="criteria-item"><span class="criteria-num">07</span><div><div class="criteria-name">Narrative Displacement</div><p class="criteria-desc">Is media attention proportional? Underreported stories get a bonus.</p></div></div>
+  </div>
+</section>
+
+<section class="about-section">
+  <div class="about-section-label">Daily Rhythm</div>
+  <h2 class="about-section-title">Three Runs, Complete Coverage</h2>
+  <div class="about-body"><p>Intelligence is time-sensitive. Three runs align to the decision points that matter.</p></div>
+  <div class="principles-grid" style="margin-top:var(--sp-6)">
+    <div class="principle-card"><div class="principle-number" style="color:var(--accent-gold);opacity:0.6">AM</div><div class="principle-title">Morning &middot; 06:00 EST</div><p class="principle-desc">Overnight developments, Asian/European close, pre-market. Sets your agenda.</p></div>
+    <div class="principle-card"><div class="principle-number" style="color:var(--accent-teal);opacity:0.6">MID</div><div class="principle-title">Midday &middot; 12:00 EST</div><p class="principle-desc">Data releases, legislative action, market reactions. Recalibrates priorities.</p></div>
+    <div class="principle-card"><div class="principle-number" style="color:var(--text-muted);opacity:0.6">PM</div><div class="principle-title">Evening &middot; 18:00 EST</div><p class="principle-desc">Complete picture. After-hours, policy, tomorrow&rsquo;s preview.</p></div>
+  </div>
+</section>
+
+<section class="about-section">
+  <div class="about-section-label">Keyword Watches</div>
+  <h2 class="about-section-title">Personalized Alerts</h2>
+  <div class="about-body"><p>Set keyword watches to get notified when matching stories surface in live refreshes. Watches are stored in your browser.</p></div>
+  <div class="watches-panel" id="watchesPanel" style="margin-top:var(--sp-5)">
+    <div style="display:flex;gap:var(--sp-2)">
+      <input type="text" class="archive-search" id="watchInput" placeholder="Add keyword (e.g. Fed, inflation, AI)&hellip;" style="flex:1">
+      <button class="cta-btn" id="watchAddBtn" type="button">Add Watch</button>
+    </div>
+    <div id="watchesList" style="margin-top:var(--sp-4)"></div>
+  </div>
+</section>
+
+<section class="about-section">
+  <div class="about-section-label">Our Sources</div>
+  <h2 class="about-section-title">The Source Network</h2>
+  <div class="about-body"><p>We monitor sources across the full political and editorial spectrum. Each carries an orientation label. State-affiliated media is clearly flagged.</p></div>
+  <div class="source-region"><div class="source-region-header">Americas</div><div class="sources-grid">
+    <div class="source-item"><span class="source-orient" style="color:#a0a0a0">C</span> Associated Press</div>
+    <div class="source-item"><span class="source-orient" style="color:#a0a0a0">C</span> Reuters</div>
+    <div class="source-item"><span class="source-orient" style="color:#6eb5ff">CL</span> New York Times</div>
+    <div class="source-item"><span class="source-orient" style="color:#6eb5ff">CL</span> Washington Post</div>
+    <div class="source-item"><span class="source-orient" style="color:#e8923a">CR</span> Wall Street Journal</div>
+    <div class="source-item"><span class="source-orient" style="color:#a0a0a0">C</span> Bloomberg</div>
+    <div class="source-item"><span class="source-orient" style="color:#a0a0a0">C</span> CNBC</div>
+    <div class="source-item"><span class="source-orient" style="color:#e8923a">CR</span> The Economist</div>
+    <div class="source-item"><span class="source-orient" style="color:#6eb5ff">CL</span> Politico</div>
+    <div class="source-item"><span class="source-orient" style="color:#a0a0a0">C</span> Axios</div>
+    <div class="source-item"><span class="source-orient" style="color:#6eb5ff">CL</span> The Atlantic</div>
+    <div class="source-item"><span class="source-orient" style="color:#6eb5ff">CL</span> Wired</div>
+    <div class="source-item"><span class="source-orient" style="color:#a0a0a0">C</span> MIT Tech Review</div>
+    <div class="source-item"><span class="source-orient" style="color:#a0a0a0">C</span> Foreign Affairs</div>
+    <div class="source-item"><span class="source-orient" style="color:#a0a0a0">C</span> SEC.gov / EDGAR</div>
+    <div class="source-item"><span class="source-orient" style="color:#a0a0a0">C</span> Federal Reserve</div>
+  </div></div>
+  <div class="source-region"><div class="source-region-header">Europe &amp; Asia-Pacific</div><div class="sources-grid">
+    <div class="source-item"><span class="source-orient" style="color:#a0a0a0">C</span> Financial Times</div>
+    <div class="source-item"><span class="source-orient" style="color:#6eb5ff">CL</span> The Guardian</div>
+    <div class="source-item"><span class="source-orient" style="color:#a0a0a0">C</span> BBC News</div>
+    <div class="source-item"><span class="source-orient" style="color:#6eb5ff">CL</span> Der Spiegel</div>
+    <div class="source-item"><span class="source-orient" style="color:#6eb5ff">CL</span> Le Monde</div>
+    <div class="source-item"><span class="source-orient" style="color:#a0a0a0">C</span> Nikkei Asia</div>
+    <div class="source-item"><span class="source-orient" style="color:#e8923a">CR</span> SCMP</div>
+    <div class="source-item"><span class="source-orient" style="color:#6eb5ff">CL</span> The Hindu</div>
+    <div class="source-item"><span class="source-orient" style="color:#a0a0a0">C</span> Al Jazeera English</div>
+    <div class="source-item"><span class="source-orient" style="color:#a0a0a0">C</span> AFP</div>
+    <div class="source-item"><span class="source-orient" style="color:#a0a0a0">C</span> Xinhua <span class="source-note">STATE</span></div>
+    <div class="source-item"><span class="source-orient" style="color:#a0a0a0">C</span> TASS <span class="source-note">STATE</span></div>
+  </div></div>
+</section>
+
+</div><footer class="site-footer"><div class="container"><div class="footer-inner">
+  <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
+  <div class="footer-right">
+    <a href="#" onclick="window.navigateTo('home');return false">Briefings</a>
+    <a href="#" onclick="window.navigateTo('contact');return false">Contact</a>
+    <a href="#">Privacy</a>
+  </div>
+</div></div></footer></div>
+
+<!-- ===== RESOURCES ===== -->
+<div class="page" id="page-resources"><div class="container">
+<section class="about-hero"><div class="about-kicker">Resources</div><h1 class="about-headline">Intelligence Tools &amp; Reference</h1><p class="about-intro">Curated tools, data sources, and analytical frameworks used in the briefing process.</p></section>
+<section class="about-section"><div id="resourcesContent"></div></section>
+<section class="about-section" id="scoringPanel" style="display:none">
+  <div class="about-section-label">Scoring</div>
+  <h2 class="about-section-title">Ranking Weights</h2>
+  <div id="scBoostGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:var(--sp-2);margin-bottom:var(--sp-4)"></div>
+  <div id="sc-imp-triggers"></div>
+  <div style="display:flex;gap:var(--sp-2);margin-top:var(--sp-4)">
+    <button class="cta-btn ghost" id="scResetBtn" type="button">Reset</button>
+    <button class="cta-btn" id="scSaveBtn" type="button">Save</button>
+    <span id="scStatus" style="align-self:center;font-family:var(--font-mono);font-size:var(--text-xs);color:var(--text-muted)"></span>
+  </div>
+</section>
+<section class="about-section">
+  <div class="about-section-label">Source Manager</div>
+  <h2 class="about-section-title">Manage Sources</h2>
+  <div id="sourceManagerStats" style="margin-bottom:var(--sp-4)"></div>
+  <div id="sourceManagerList"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-2);margin-top:var(--sp-5);max-width:500px">
+    <input class="form-input" id="smName" placeholder="Source name">
+    <input class="form-input" id="smUrl" placeholder="RSS URL">
+    <input class="form-input" id="smOrientation" placeholder="Orientation (C/CL/CR/L/R)">
+    <select class="form-input" id="smTier" style="appearance:auto"><option value="1">Tier 1</option><option value="2">Tier 2</option><option value="3">Tier 3</option></select>
+    <input class="form-input" id="smTopics" placeholder="Topics (comma-separated)" style="grid-column:1/-1">
+    <div style="display:flex;gap:var(--sp-2);grid-column:1/-1">
+      <button class="cta-btn" id="smAddBtn" type="button">Add Source</button>
+      <span id="smAddStatus" style="align-self:center;font-family:var(--font-mono);font-size:var(--text-xs);color:var(--text-muted)"></span>
+    </div>
+  </div>
+</section>
+<section class="about-section">
+  <div class="about-section-label">Operations</div>
+  <h2 class="about-section-title">Quality Metrics</h2>
+  <div id="opsMetrics"></div>
+</section>
+</div><footer class="site-footer"><div class="container"><div class="footer-inner">
+  <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
+  <div class="footer-right"><a href="#" onclick="window.navigateTo('home');return false">Briefings</a></div>
+</div></div></footer></div>
+
+<!-- ===== CONTACT ===== -->
+<div class="page" id="page-contact"><div class="container">
+<section class="about-hero">
+  <div class="about-kicker">Contact</div>
+  <h1 class="about-headline">Get in Touch</h1>
+  <p style="font-size:var(--text-base);color:var(--text-secondary);max-width:560px;line-height:1.7">Questions about methodology, source disputes, or partnership inquiries. We read everything.</p>
+</section>
+<section class="about-section">
+  <div class="contact-form">
+    <div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" placeholder="Your name"></div>
+    <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" placeholder="you@example.com"></div>
+    <div class="form-group"><label class="form-label">Category</label><select class="form-input" style="appearance:auto"><option>General Inquiry</option><option>Source Dispute</option><option>Methodology Question</option><option>Partnership</option><option>Bug Report</option></select></div>
+    <div class="form-group"><label class="form-label">Message</label><textarea class="form-textarea" placeholder="Your message&hellip;"></textarea></div>
+    <button class="form-submit" id="contactSubmit" type="button">Send Message</button>
+    <p class="form-note">We typically respond within 24 hours.</p>
+  </div>
+</section>
+</div><footer class="site-footer"><div class="container"><div class="footer-inner">
+  <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
+  <div class="footer-right"><a href="#" onclick="window.navigateTo('home');return false">Briefings</a><a href="#" onclick="window.navigateTo('about');return false">About</a></div>
+</div></div></footer></div>
+
+</main>
+
+{{BOOT_DATA}}
+<script type="module" src="/assets/app.js"></script>
+</body>
+</html>

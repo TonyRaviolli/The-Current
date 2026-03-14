@@ -1,0 +1,23 @@
+{
+  "name": "the-current",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node src/server.js",
+    "start": "NODE_ENV=production node src/server.js",
+    "refresh": "node src/refresh.js",
+    "backfill": "node src/backfill.js",
+    "schedule": "node scripts/refresh-scheduler.js",
+    "health": "node scripts/health-check.js",
+    "test": "node --test tests/pipeline.test.js tests/integration.test.js tests/archive.test.js tests/source-history.test.js tests/source-adapters.test.js",
+    "smoke": "node scripts/smoke-test.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.58.2"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "fast-xml-parser": "^5.3.7",
+    "marked": "^12.0.2"
+  }
+}
