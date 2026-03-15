@@ -126,12 +126,10 @@ export function initTierTabs() {
     if (tab.dataset.bound === '1') return;
     tab.dataset.bound = '1';
     tab.addEventListener('click', () => {
-      // Only affect tier-tabs and story-cards within the same container
       const container = tab.closest('.tier-section') || document;
       container.querySelectorAll('.tier-tab').forEach((t) => t.classList.remove('active'));
       tab.classList.add('active');
       const tier = tab.dataset.tier;
-      // Also respect active topic pills when re-filtering
       const activePills = [...document.querySelectorAll('#trending-bar .topic-pill.active')].map((p) => p.dataset.topic);
       const storyList = container.querySelector('#storyList') || container;
       storyList.querySelectorAll('.story-card').forEach((card) => {
@@ -740,13 +738,14 @@ export function renderTrendingBar(stories) {
   if (!top5.length) { bar.style.display = 'none'; return; }
   bar.style.display = 'flex';
   bar.innerHTML = `<span class="trending-label">Trending:</span>` +
-    top5.map(([id]) =>
-      `<button class="topic-pill" data-topic="${escapeHtmlUi(id)}">${escapeHtmlUi(labelMap[id] || id)}</button>`
-    ).join('');
+    top5.map(([id]) => {
+      const TOPIC_COLORS = { economy:'#22c55e',uspolitics:'#6366f1',geopolitics:'#38bdf8',tech:'#a78bfa',defense:'#f59e0b',health:'#34d399',law:'#f97316',finance:'#0ea5e9',global_trade:'#e879f9',elections:'#ef4444' };
+      const color = TOPIC_COLORS[id] || '#94a3b8';
+      return `<button class="topic-pill" data-topic="${escapeHtmlUi(id)}" style="border-left:3px solid ${color}">${escapeHtmlUi(labelMap[id] || id)}</button>`;
+    }).join('');
   bar.querySelectorAll('.topic-pill').forEach((pill) => {
     pill.addEventListener('click', () => {
-      pill.classList.toggle('active');
-      filterFeedByTopic();
+      filterFeedByTopic(pill.dataset.topic);
     });
   });
 }
@@ -791,18 +790,26 @@ function showRefreshBanner(storyCount, briefLead) {
 }
 
 // Topic-based feed filter
-function filterFeedByTopic() {
-  const cards = document.querySelectorAll('.story-card[data-topics]');
-  const activePills = [...document.querySelectorAll('.topic-pill.active')].map((p) => p.dataset.topic);
-  if (!activePills.length) {
-    cards.forEach((c) => c.style.display = '');
-    return;
+export function filterFeedByTopic(topicId) {
+  const bar = document.getElementById('trending-bar');
+  if (topicId !== undefined) {
+    // Toggle active on the pill
+    const pill = bar?.querySelector(`.topic-pill[data-topic="${CSS.escape(topicId)}"]`);
+    if (pill) pill.classList.toggle('active');
   }
-  cards.forEach((c) => {
-    const topics = (c.dataset.topics || '').split(',');
-    c.style.display = activePills.some((t) => topics.includes(t)) ? '' : 'none';
+  const activePills = bar ? [...bar.querySelectorAll('.topic-pill.active')].map((p) => p.dataset.topic) : [];
+  const storyList = document.getElementById('storyList');
+  if (!storyList) return;
+  const activeTierTab = document.querySelector('.tier-tab.active');
+  const activeTier = activeTierTab ? activeTierTab.dataset.tier : 'all';
+  storyList.querySelectorAll('.story-card').forEach((card) => {
+    const topicMatch = !activePills.length || (card.dataset.topics || '').split(',').some((t) => activePills.includes(t));
+    const tierMatch = activeTier === 'all' || card.dataset.tier === activeTier;
+    card.style.display = topicMatch && tierMatch ? '' : 'none';
   });
 }
+
+window._filterFeedByTopic = filterFeedByTopic;
 
 // Search navigation helper
 export function navigateSearch(query) {
@@ -824,5 +831,16 @@ function navigateTo(page) {
   }
   document.querySelectorAll('.nav-link').forEach((l) => {
     if (l.dataset.page === page) l.classList.add('active');
+  });
+}
+
+export function initTopicBreakdownStrip() {
+  const strip = document.getElementById('topicBreakdownStrip');
+  if (!strip || strip.dataset.bound === '1') return;
+  strip.dataset.bound = '1';
+  strip.addEventListener('click', (e) => {
+    const chip = e.target.closest('.topic-breakdown-chip');
+    if (!chip) return;
+    filterFeedByTopic(chip.dataset.topic);
   });
 }

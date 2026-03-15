@@ -454,6 +454,22 @@ export function renderDailyFeed(store, saved = new Set(), followed = new Set(), 
   return { newCount };
 }
 
+export function renderTopicBreakdownStrip(store) {
+  const target = document.getElementById('topicBreakdownStrip');
+  if (!target) return;
+  const degrees = {};
+  (store.stories || []).forEach((s) => (s.topics || []).forEach((t) => { degrees[t] = (degrees[t] || 0) + 1; }));
+  const TOPIC_COLORS = { economy:'#22c55e',uspolitics:'#6366f1',geopolitics:'#38bdf8',tech:'#a78bfa',defense:'#f59e0b',health:'#34d399',law:'#f97316',finance:'#0ea5e9',global_trade:'#e879f9',elections:'#ef4444' };
+  const TOPIC_LABELS = { economy:'Economy',uspolitics:'U.S. Politics',geopolitics:'Geopolitics',tech:'Technology',defense:'Defense',health:'Health',law:'Law',finance:'Finance',global_trade:'Trade',elections:'Elections' };
+  const chips = Object.entries(degrees).filter(([id, n]) => n > 0 && TOPIC_LABELS[id]).map(([id, count]) => {
+    const color = TOPIC_COLORS[id] || '#94a3b8';
+    return `<button class="topic-breakdown-chip" data-topic="${escapeHtml(id)}" style="border-left-color:${color}" type="button">${escapeHtml(TOPIC_LABELS[id] || id)} <span class="topic-breakdown-count">${count}</span></button>`;
+  });
+  if (chips.length < 2) { target.style.display = 'none'; return; }
+  target.style.display = '';
+  target.innerHTML = chips.join('');
+}
+
 /**
  * Render a "since last visit" notification banner above the feed.
  */
