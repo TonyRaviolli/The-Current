@@ -894,6 +894,88 @@ body{background:linear-gradient(180deg,#fbf7ef 0%,#f4ede1 100%);color:var(--text
   .archive-grid-body{padding:var(--sp-3)}
 }
 
+/* ── Task 7: Full mobile responsiveness ─────────────────────────────────── */
+
+/* 1. Tier tabs: horizontal scroll instead of overflowing the viewport */
+.tier-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;max-width:100%}
+.tier-tabs::-webkit-scrollbar{display:none}
+.tier-tab{flex-shrink:0;white-space:nowrap}
+
+/* 2. Touch targets: all interactive controls ≥ 44px on mobile */
+@media(max-width:900px){
+  .story-btn,
+  .archive-filter,
+  .archive-date-chip,
+  .topic-story-link,
+  .legis-card-action,
+  .cta-btn,
+  .form-submit,
+  .archive-select,
+  .run-btn{min-height:44px}
+  .mobile-menu-btn{width:44px;height:44px}
+  .topic-chip{min-height:72px}
+}
+
+/* 3. Story card excerpt: ensure ≥ 15px on mobile */
+@media(max-width:900px){
+  .story-card-excerpt{font-size:0.9375rem}  /* 15px */
+  .story-card-title{font-size:clamp(1.05rem,3.5vw,var(--text-xl))}
+}
+
+/* 4. Nav: hide run-selector at very narrow widths to prevent crowding */
+@media(max-width:480px){
+  .run-selector{display:none}
+  .nav-inner{padding:0 var(--sp-3)}
+  .refresh-status{display:none}
+  .container{padding:0 var(--sp-3)}
+}
+
+/* 5. Hero actions: full-width stacked buttons on small screens */
+@media(max-width:480px){
+  .hero-actions{flex-direction:column;gap:var(--sp-2)}
+  .hero-actions .cta-btn{width:100%;text-align:center;justify-content:center;display:flex}
+  .hero-headline{font-size:clamp(1.75rem,8vw,2.4rem)}
+}
+
+/* 6. Legis section header: stack vertically on mobile */
+@media(max-width:560px){
+  .legis-section-header{flex-direction:column;align-items:flex-start;gap:var(--sp-2)}
+  .legis-section-title{font-size:1.25rem}
+}
+
+/* 7. Market tiles: ensure adequate touch targets */
+@media(max-width:560px){
+  .market-tile{min-width:140px;min-height:44px}
+}
+
+/* 8. Topic story: prevent side column from crowding on very small screens */
+@media(max-width:480px){
+  .topic-story{grid-template-columns:40px minmax(0,1fr)!important}
+  .topic-story-side{display:none}
+}
+
+/* 9. Archive day section header: stack on small screens */
+@media(max-width:480px){
+  .archive-day-section-header{flex-direction:column;align-items:flex-start;gap:var(--sp-1)}
+  .archive-day-section-title{font-size:1rem}
+}
+
+/* 10. Archive date chips: bump to 44px touch target */
+@media(max-width:560px){
+  .archive-date-chip{min-height:44px}
+}
+
+/* 11. Prevent any section from causing horizontal scroll */
+@media(max-width:600px){
+  .stories-grid,.top3-grid,.legis-grid,.archive-grid,.topics-nav{max-width:100%;overflow-x:hidden}
+  .spectrum-mini{display:none}
+}
+
+/* 12. Refresh button stays accessible on mobile (in nav-right) */
+@media(max-width:900px){
+  .refresh-btn{min-height:44px;padding:8px 14px}
+}
+
 /* ── Dark mode (opt-in only via [data-theme="dark"] — not auto-triggered) ── */
 [data-theme="dark"]{
   :root{
