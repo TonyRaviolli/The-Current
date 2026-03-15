@@ -660,7 +660,7 @@ body{background:linear-gradient(180deg,#fbf7ef 0%,#f4ede1 100%);color:var(--text
   object-fit:cover;object-position:center;
   display:block;
 }
-/* Lock main feed thumb to consistent 16/9 aspect ratio */
+/* Lock standalone thumb to consistent 16/9 aspect ratio */
 .story-card-thumb{aspect-ratio:16/9}
 .top3-thumb{aspect-ratio:16/9}
 /* Prevent any thumb from overflowing its container */
@@ -668,6 +668,28 @@ body{background:linear-gradient(180deg,#fbf7ef 0%,#f4ede1 100%);color:var(--text
 .top3-thumb,
 .topic-story-thumb,
 .archive-story-thumb{overflow:hidden}
+
+/* ── Task 2: Fix thumb in two-column grid layout ─────────────────────────── */
+/* Span all 8 content rows (was 7 — missed the citation row) so the image
+   grid area covers the full card height. Then stretch the figure to fill
+   that area rather than stopping at a fixed aspect-ratio height. */
+.story-card--has-thumb .story-card-thumb{
+  grid-row:1 / span 8;
+  aspect-ratio:unset;
+  align-self:stretch;
+  min-height:130px;
+  max-width:none;
+}
+/* On mobile the grid is single-column — restore aspect ratio for normal flow */
+@media(max-width:920px){
+  .story-card--has-thumb .story-card-thumb{
+    grid-row:auto;
+    aspect-ratio:16/9;
+    align-self:start;
+    min-height:unset;
+    max-width:none;
+  }
+}
 
 /* ── Dark mode (opt-in only via [data-theme="dark"] — not auto-triggered) ── */
 [data-theme="dark"]{
