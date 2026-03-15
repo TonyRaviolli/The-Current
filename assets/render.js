@@ -476,6 +476,7 @@ export function renderCartoons(store) {
 
 export function renderHighImportance(store) {
   const list = document.getElementById('highImportanceList');
+  const section = document.getElementById('legisSection');
   if (!list) return;
   const pool = [...(store.highImportance || []), ...(store.stories || [])];
   const seen = new Set();
@@ -483,7 +484,14 @@ export function renderHighImportance(store) {
     .filter((story) => story?.id && !seen.has(story.id) && isLegislativeStory(story) && findGovernmentDoc(story) && seen.add(story.id))
     .sort((a, b) => legislativeRank(b) - legislativeRank(a))
     .slice(0, 8);
-  list.innerHTML = items.length ? items.map((story) => {
+
+  if (!items.length) {
+    if (section) section.style.display = 'none';
+    return;
+  }
+  if (section) section.style.display = '';
+
+  list.innerHTML = items.map((story) => {
     const primary = findGovernmentDoc(story);
     const bill = primary?.title?.match(/\b(H\.R\.|S\.|H\.J\.Res\.|S\.J\.Res\.)\s?\d+\b/i)?.[0]
       || (story.headline || story.title || '').match(/\b(H\.R\.|S\.|H\.J\.Res\.|S\.J\.Res\.)\s?\d+\b/i)?.[0]
@@ -494,25 +502,32 @@ export function renderHighImportance(store) {
       : (story.url ? escapeHtml(story.url) : '');
     const storyAction = storyUrl
       ? (story.slug
-        ? `<a class="legis-action secondary" href="${storyUrl}" onclick="window.openStory('${escapeHtml(story.slug)}');return false;">Coverage</a>`
-        : `<a class="legis-action secondary" href="${storyUrl}" target="_blank" rel="noopener">Coverage</a>`)
+        ? `<a class="legis-card-action legis-card-action--secondary" href="${storyUrl}" onclick="window.openStory('${escapeHtml(story.slug)}');return false;">Coverage</a>`
+        : `<a class="legis-card-action legis-card-action--secondary" href="${storyUrl}" target="_blank" rel="noopener">Coverage</a>`)
       : '';
     const docAction = primary?.url
-      ? `<a class="legis-action" href="${escapeHtml(primary.url)}" target="_blank" rel="noopener">${escapeHtml(governmentDocLabel(primary))}</a>`
+      ? `<a class="legis-card-action" href="${escapeHtml(primary.url)}" target="_blank" rel="noopener">${escapeHtml(governmentDocLabel(primary))}</a>`
       : '';
-    const docLabel = primary?.label || story.sources?.[0]?.name || story.source || '';
+    const sourceName = primary?.label || story.sources?.[0]?.name || story.source || '';
     const updated = formatDate(story.updatedAt || story.publishedAt);
-    return `<div class="legis-item">
-      <div class="legis-item-header">
-        <span class="legis-bill">${escapeHtml(String(bill).replace(/_/g, ' '))}</span>
-        <span class="legis-status">Score ${scoreLabel(story.score)}</span>
+    const topic = (story.topics?.[0] || 'legislation').replace(/_/g, ' ');
+    const score = scoreLabel(story.score);
+    return `<div class="legis-card">
+      <div class="legis-card-top">
+        <span class="legis-card-bill-num">${escapeHtml(String(bill).replace(/_/g, ' '))}</span>
+        <span class="legis-card-score-badge">${score}</span>
       </div>
-      <div class="legis-title">${escapeHtml(story.headline || story.title)}</div>
-      <div class="legis-subcategory">${escapeHtml(docLabel)}</div>
-      <div class="legis-meta"><span>${escapeHtml(updated)}</span><span>${escapeHtml(story.topics?.[0] || 'Legislation').replace(/_/g, ' ')}</span></div>
-      <div class="legis-actions">${docAction}${storyAction}</div>
+      <h3 class="legis-card-title">${escapeHtml(story.headline || story.title)}</h3>
+      ${story.dek ? `<p class="legis-card-dek">${escapeHtml(story.dek)}</p>` : ''}
+      <div class="legis-card-meta">
+        ${sourceName ? `<span class="legis-card-source">${escapeHtml(sourceName)}</span><span class="legis-card-dot">&middot;</span>` : ''}
+        <span class="legis-card-date">${escapeHtml(updated)}</span>
+        <span class="legis-card-dot">&middot;</span>
+        <span class="legis-card-topic">${escapeHtml(topic)}</span>
+      </div>
+      <div class="legis-card-actions">${docAction}${storyAction}</div>
     </div>`;
-  }).join('') : '<div class="legis-item"><div class="legis-title">No active high-importance legislative items yet.</div><div class="legis-subcategory">Official government links and dates appear here when available.</div></div>';
+  }).join('');
 }
 
 export function renderArchive(store) {

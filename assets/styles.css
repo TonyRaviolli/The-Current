@@ -632,6 +632,148 @@ body{background:linear-gradient(180deg,#fbf7ef 0%,#f4ede1 100%);color:var(--text
   .topic-story-thumb,.archive-story-thumb{display:none}
 }
 
+/* ── Task 3: Legislative Intelligence — full-width featured section ──────── */
+.legis-section{
+  padding:var(--sp-10) 0 var(--sp-8);
+  border-top:2px solid var(--accent-gold);
+  border-bottom:1px solid var(--border-rule);
+  margin-bottom:var(--sp-8);
+  background:linear-gradient(180deg,rgba(180,138,58,0.04) 0%,transparent 60%);
+}
+.legis-section-header{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:var(--sp-4);
+  margin-bottom:var(--sp-6);
+}
+.legis-section-title-group{
+  display:flex;align-items:center;gap:var(--sp-3);
+}
+.legis-section-icon{color:var(--accent-gold)}
+.legis-section-title{
+  font-family:var(--font-serif);
+  font-size:clamp(1.5rem,2.5vw,2rem);
+  font-weight:600;
+  color:var(--text-primary);
+  line-height:1.1;
+  letter-spacing:-0.01em;
+}
+/* Card grid — responsive, 2-3 columns on desktop */
+.legis-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:var(--sp-4);
+}
+/* Individual bill card */
+.legis-card{
+  background:var(--bg-surface);
+  border:1px solid var(--border-subtle);
+  border-left:4px solid var(--accent-gold);
+  border-radius:0 var(--radius-md) var(--radius-md) 0;
+  padding:var(--sp-5) var(--sp-5) var(--sp-4);
+  display:flex;flex-direction:column;gap:var(--sp-3);
+  transition:border-color var(--dur-fast),box-shadow var(--dur-fast),background var(--dur-fast);
+  cursor:default;
+}
+.legis-card:hover{
+  border-color:rgba(180,138,58,0.40);
+  border-left-color:var(--accent-gold-dim);
+  background:rgba(255,252,247,0.98);
+  box-shadow:0 4px 16px rgba(73,56,27,0.08);
+}
+/* Bill number + score badge row */
+.legis-card-top{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);
+}
+.legis-card-bill-num{
+  font-family:var(--font-mono);
+  font-size:0.72rem;
+  font-weight:700;
+  letter-spacing:0.10em;
+  text-transform:uppercase;
+  color:var(--accent-gold-dim);
+  background:rgba(180,138,58,0.08);
+  border:1px solid rgba(180,138,58,0.20);
+  padding:3px 10px;
+  border-radius:4px;
+}
+.legis-card-score-badge{
+  font-family:var(--font-mono);
+  font-size:0.68rem;
+  font-weight:600;
+  color:var(--text-muted);
+  padding:2px 8px;
+  border-radius:999px;
+  border:1px solid var(--border-subtle);
+  background:var(--bg-elevated);
+}
+/* Title */
+.legis-card-title{
+  font-family:var(--font-serif);
+  font-size:clamp(1rem,1.4vw,1.18rem);
+  font-weight:600;
+  line-height:1.35;
+  color:var(--text-primary);
+  margin:0;
+}
+/* Optional dek excerpt */
+.legis-card-dek{
+  font-size:clamp(0.9rem,1.1vw,0.97rem);
+  line-height:1.65;
+  color:var(--text-secondary);
+  margin:0;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+/* Meta row: source · date · topic */
+.legis-card-meta{
+  display:flex;align-items:center;flex-wrap:wrap;
+  gap:var(--sp-1) var(--sp-2);
+  font-family:var(--font-mono);
+  font-size:0.72rem;
+  color:var(--text-muted);
+  margin-top:auto;
+}
+.legis-card-dot{opacity:0.4}
+.legis-card-source{color:var(--text-secondary);font-weight:500}
+.legis-card-topic{
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  color:var(--accent-teal-dim);
+}
+/* Action links */
+.legis-card-actions{
+  display:flex;gap:var(--sp-2);flex-wrap:wrap;padding-top:var(--sp-2);
+  border-top:1px solid var(--border-subtle);
+}
+.legis-card-action{
+  display:inline-flex;align-items:center;
+  padding:5px 12px;
+  border-radius:999px;
+  border:1px solid rgba(180,138,58,0.30);
+  background:rgba(180,138,58,0.08);
+  font-family:var(--font-mono);
+  font-size:0.68rem;
+  font-weight:700;
+  letter-spacing:0.04em;
+  color:var(--accent-gold-dim);
+  transition:background var(--dur-fast),border-color var(--dur-fast);
+}
+.legis-card-action:hover{background:rgba(180,138,58,0.16);border-color:rgba(180,138,58,0.46)}
+.legis-card-action--secondary{
+  border-color:rgba(73,56,27,0.14);
+  background:rgba(73,56,27,0.04);
+  color:var(--text-secondary);
+}
+.legis-card-action--secondary:hover{background:rgba(73,56,27,0.10);border-color:rgba(73,56,27,0.28)}
+/* Mobile: single column */
+@media(max-width:760px){
+  .legis-section{padding:var(--sp-6) 0}
+  .legis-grid{grid-template-columns:1fr}
+  .legis-card-title{font-size:1rem}
+}
+
 /* ── Task 1A: Lead intelligence card layout fixes ───────────────────────── */
 /* Increase line-height so multi-line headlines breathe (was 1.02 — too tight) */
 .hero-headline{line-height:1.12}
