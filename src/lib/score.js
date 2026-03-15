@@ -6,7 +6,7 @@ export function scoreArticle(article, config, localRegion) {
   const recency = Math.pow(0.5, ageHours / halfLife);
 
   const tierWeight = config.tierWeights[String(article.tier)] || 0.6;
-  const topicBoosts = article.topics.reduce((sum, topic) => sum + (config.topicBoosts[topic] || 0), 0);
+  const topicBoosts = (article.topics || []).reduce((sum, topic) => sum + (config.topicBoosts[topic] || 0), 0);
   const cappedTopicBoosts = Math.min(topicBoosts, config.maxTopicBoost || 0.18);
   const localBoost = article.region && article.region === localRegion ? config.localRegionBoost : 0;
   const duplicatePenalty = article.duplicate ? config.duplicatePenalty : 0;
@@ -38,7 +38,7 @@ export function scoreArticle(article, config, localRegion) {
 
 export function isHighImportance(article, importanceConfig) {
   if (article.score >= importanceConfig.scoreThreshold) return true;
-  return article.topics.some((topic) => importanceConfig.topicTriggers.includes(topic));
+  return (article.topics || []).some((topic) => importanceConfig.topicTriggers.includes(topic));
 }
 
 function isUsPriority(article, localRegion) {
