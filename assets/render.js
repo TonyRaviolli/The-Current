@@ -1,6 +1,6 @@
 // ── Feed size caps (adjust here to change across all tier sections) ───────────
-const FEED_MAX_STORIES = 15; // total articles shown across Tier 1/2/3
-const FEED_MAX_PER_TIER = 5; // target per tier before overflow fills remaining slots
+const FEED_MAX_STORIES = 6; // total articles shown across Tier 1/2/3 on briefing tab
+const FEED_MAX_PER_TIER = 2; // target per tier before overflow fills remaining slots
 
 function escapeHtml(text) {
   return String(text)
@@ -271,10 +271,23 @@ export function renderDailyFeed(store, saved = new Set(), followed = new Set(), 
     return { newCount: 0 };
   }
 
+  // Relevance pre-filter: exclude foreign-local stories with no US angle.
+  // Only removes stories where topics are exclusively local/housing/labor/education
+  // AND regions does not include 'US' or 'US-CA'.
+  const LOCAL_ONLY_TOPICS = new Set(['local', 'housing', 'labor', 'education']);
+  const relevantItems = rawItems.filter((s) => {
+    const topics = s.topics || [];
+    if (!topics.length) return true;
+    const allLocal = topics.every((t) => LOCAL_ONLY_TOPICS.has(t));
+    if (!allLocal) return true;
+    const regions = s.regions || [];
+    return regions.some((r) => r === 'US' || r === 'US-CA');
+  });
+
   // Cap feed: take up to FEED_MAX_PER_TIER from each tier, then fill remaining
   // slots from whichever tiers have surplus (highest-score first).
   const byTier = { 1: [], 2: [], 3: [] };
-  for (const s of rawItems) {
+  for (const s of relevantItems) {
     const t = s.tier in byTier ? s.tier : 3;
     byTier[t].push(s);
   }
@@ -638,7 +651,7 @@ export function renderTopics(store) {
   if (!container) return;
   const topics = store.topics || [];
   if (!topics.length) {
-    container.innerHTML = '<div class=\"story-card\">No topic clusters available yet. Refresh to generate category views.</div>';
+    container.innerHTML = '<div class="story-empty-state"><p>No topic clusters available yet. Trigger a refresh to generate category views.</p></div>';
     return;
   }
   const today = new Date().toISOString().slice(0, 10);
@@ -678,7 +691,19 @@ export function renderTopics(store) {
       }).join('');
       return `<section class="topic-date-group${gi > 0 ? ' collapsed' : ''}" data-topic-date="${escapeHtml(group.date)}"><div class="topic-date-group-header" data-toggle-topic-group><span class="topic-date-group-title">${escapeHtml(group.label)}</span><span class="topic-date-group-meta">${group.items.length} stor${group.items.length === 1 ? 'y' : 'ies'}</span><span class="topic-date-group-toggle" aria-hidden="true">&#9662;</span></div>${items}</section>`;
     }).join('');
-    return `<div class="topic-section" data-topic-section="${escapeHtml(topic.topic)}"><div class="topic-section-header"><h2 class="topic-section-title">${escapeHtml(topic.label || topic.topic)}</h2><span class="topic-section-meta">${topic.count} stories${todayCount ? ` · ${todayCount} today` : ''}${range}</span></div>${clusterIntro}${groups}</div>`;
+    // Date navigation pills
+    const dateGroups = groupStoriesByDate(topic.items);
+    const datePills = dateGroups.map((group, gi) => {
+      const short = group.date && group.date !== 'unknown'
+        ? new Date(group.date + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+        : group.label;
+      return `<button class="topic-date-pill${gi === 0 ? ' active' : ''}" data-target-date="${escapeHtml(group.date || '')}" type="button">${escapeHtml(short)}</button>`;
+    }).join('');
+    const dateNav = dateGroups.length > 1
+      ? `<div class="topic-date-nav" data-topic-nav="${escapeHtml(topic.topic)}">${datePills}</div>`
+      : '';
+
+    return `<div class="topic-section" data-topic-section="${escapeHtml(topic.topic)}"><div class="topic-section-header"><h2 class="topic-section-title">${escapeHtml(topic.label || topic.topic)}</h2><span class="topic-section-meta">${topic.count} stories${todayCount ? ` · ${todayCount} today` : ''}${range}</span></div>${clusterIntro}${dateNav}${groups}</div>`;
   }).join('');
 }
 
@@ -711,7 +736,11 @@ export function renderDigestPage(digest) {
   const title = document.getElementById('digestTitle');
   const intro = document.getElementById('digestIntro');
   const container = document.getElementById('digestPageContent');
-  if (!container || !digest) return;
+  if (!container) return;
+  if (!digest) {
+    container.innerHTML = '<div class="story-empty-state"><p>No digest available yet. Check back after the next scheduled briefing run.</p></div>';
+    return;
+  }
   if (title) title.textContent = digest.label || 'Weekly Intelligence Digest';
   if (intro) intro.textContent = digest.summary || 'Executive summary and highlights.';
 
@@ -1032,7 +1061,11 @@ export function renderArchiveDays(days = []) {
   // Per-day sections with card grid
   const sections = days.map((day) => {
     const stories = (day.stories || []).slice().sort((a, b) => (b.score || 0) - (a.score || 0));
-    const cards = stories.map((story) => {
+
+    const label = formatArchiveDate(day.date);
+    const dateStr = day.date ? new Date(day.date + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : label;
+
+    const cardList = stories.map((story, idx) => {
       const score = story.score != null ? Math.round(story.score * 100) : '--';
       const sourceName = story.sources?.[0]?.name || story.source || '';
       const topic = (story.topics?.[0] || '').replace(/_/g, ' ');
@@ -1045,7 +1078,10 @@ export function renderArchiveDays(days = []) {
       const titleHtml = slug
         ? `<a href="/story/${slug}" onclick="window.openStory('${slug}');return false;">${escapeHtml(story.headline)}</a>`
         : escapeHtml(story.headline);
-      return `<article class="archive-grid-card" data-topic="${escapeHtml(topicRaw)}" data-tier="${escapeHtml(String(tier))}" data-text="${escapeHtml((story.headline || '') + ' ' + (story.dek || '') + ' ' + sourceName).toLowerCase()}">
+      const storyHour = new Date(story.updatedAt || story.publishedAt || 0).getHours();
+      const storyRun = storyHour < 11 ? 'morning' : storyHour < 15 ? 'midday' : 'evening';
+      const hiddenClass = idx >= 3 ? ' archive-card--overflow' : '';
+      return `<article class="archive-grid-card${hiddenClass}" data-topic="${escapeHtml(topicRaw)}" data-tier="${escapeHtml(String(tier))}" data-run="${storyRun}" data-text="${escapeHtml((story.headline || '') + ' ' + (story.dek || '') + ' ' + sourceName).toLowerCase()}">
         ${thumb}
         <div class="archive-grid-body">
           <div class="archive-grid-tags">
@@ -1058,16 +1094,20 @@ export function renderArchiveDays(days = []) {
           <div class="archive-card-actions">${open}${external}</div>
         </div>
       </article>`;
-    }).join('');
+    });
 
-    const label = formatArchiveDate(day.date);
-    const dateStr = day.date ? new Date(day.date + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : label;
+    const hiddenCount = Math.max(0, stories.length - 3);
+    const showMoreBtn = hiddenCount > 0
+      ? `<button class="archive-show-more" data-expand-day="${escapeHtml(day.date || '')}" type="button">Show ${hiddenCount} more stor${hiddenCount === 1 ? 'y' : 'ies'}</button>`
+      : '';
+
     return `<section class="archive-day-section" id="archive-day-${escapeHtml(day.date || '')}" data-date="${escapeHtml(day.date || '')}">
       <div class="archive-day-section-header">
         <h2 class="archive-day-section-title">${escapeHtml(dateStr)}</h2>
         <span class="archive-run-badge active">${stories.length} stor${stories.length === 1 ? 'y' : 'ies'}</span>
       </div>
-      <div class="archive-grid">${cards || '<p class="archive-empty">No stories for this date.</p>'}</div>
+      <div class="archive-grid">${cardList.join('') || '<p class="archive-empty">No stories for this date.</p>'}</div>
+      ${showMoreBtn}
     </section>`;
   }).join('');
 

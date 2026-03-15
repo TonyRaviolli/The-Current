@@ -84,11 +84,6 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
       </ul>
     </div>
     <div class="nav-right">
-      <div class="run-selector">
-        <button class="run-btn active" data-run="morning" type="button">AM</button>
-        <button class="run-btn" data-run="midday" type="button">MID</button>
-        <button class="run-btn" data-run="evening" type="button">PM</button>
-      </div>
       <button class="refresh-btn" id="refreshButton" type="button" title="Refresh feed">&#8635;</button>
       <div class="nav-divider"></div>
       <span class="nav-dateline" id="navDateline"></span>
@@ -232,19 +227,6 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
     </div>
   </div>
   <div id="sinceLastVisit" class="since-last-visit" style="display:none" role="status" aria-live="polite"></div>
-  <div class="archive-controls">
-    <input type="text" class="archive-search" id="searchInput" placeholder="Search headlines, sources&hellip;">
-    <select class="form-input" id="searchTier" style="appearance:auto">
-      <option value="">All tiers</option>
-      <option value="1">Tier 1</option>
-      <option value="2">Tier 2</option>
-      <option value="3">Tier 3</option>
-    </select>
-    <input type="text" class="archive-search" id="searchSource" placeholder="Source">
-    <input type="text" class="archive-search" id="searchTopic" placeholder="Topic">
-    <input type="date" class="form-input" id="searchFrom">
-    <input type="date" class="form-input" id="searchTo">
-  </div>
   <div class="tier-tabs">
     <button class="tier-tab active" data-tier="all" type="button">All Stories</button>
     <button class="tier-tab" data-tier="1" type="button">Tier 1</button>
@@ -367,6 +349,13 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
     <button class="archive-filter" data-range="all" type="button">All</button>
   </div>
 </section>
+<div class="archive-run-selector" id="archiveRunSelector" style="display:none">
+  <span class="archive-run-label">Filter by briefing run:</span>
+  <button class="run-btn active" data-run="all" type="button" title="Show all stories">All</button>
+  <button class="run-btn" data-run="morning" type="button" title="Stories captured at 6:30 AM UTC">Morning Brief</button>
+  <button class="run-btn" data-run="midday" type="button" title="Stories captured at 11:45 AM UTC">Midday Update</button>
+  <button class="run-btn" data-run="evening" type="button" title="Stories captured at 8:15 PM UTC">Evening Summary</button>
+</div>
 <div id="archiveContent"></div>
 </div><footer class="site-footer"><div class="container"><div class="footer-inner">
   <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
@@ -525,11 +514,29 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
 
 <!-- ===== RESOURCES ===== -->
 <div class="page" id="page-resources"><div class="container">
-<section class="about-hero"><div class="about-kicker">Resources</div><h1 class="about-headline">Intelligence Tools &amp; Reference</h1><p class="about-intro">Curated tools, data sources, and analytical frameworks used in the briefing process.</p></section>
-<section class="about-section"><div id="resourcesContent"></div></section>
-<section class="about-section" id="scoringPanel" style="display:none">
-  <div class="about-section-label">Scoring</div>
-  <h2 class="about-section-title">Ranking Weights</h2>
+<section class="about-hero"><div class="about-kicker">Resources</div><h1 class="about-headline">Intelligence Tools &amp; Reference</h1><p class="about-intro">The publications, scoring methodology, and system health behind every briefing.</p></section>
+
+<section class="about-section resources-card">
+  <div class="resources-card-header">
+    <span class="resources-card-icon">&#128225;</span>
+    <div>
+      <div class="about-section-label">Intelligence Sources</div>
+      <h2 class="about-section-title">The publications and feeds that power this briefing</h2>
+      <p class="resources-card-desc">Each source is assigned a tier based on editorial standards and verification practices. Tier 1 = major wire services (Reuters, AP). Tier 2 = quality regional/specialist outlets. Tier 3 = additional context sources.</p>
+    </div>
+  </div>
+  <div id="resourcesContent"></div>
+</section>
+
+<section class="about-section resources-card" id="scoringPanel" style="display:none">
+  <div class="resources-card-header">
+    <span class="resources-card-icon">&#9878;&#65039;</span>
+    <div>
+      <div class="about-section-label">Scoring Methodology</div>
+      <h2 class="about-section-title">How stories are ranked</h2>
+      <p class="resources-card-desc">Tier weight, recency, topic relevance, and source diversity all factor into each composite score. Adjust weights below to calibrate the ranking for your priorities.</p>
+    </div>
+  </div>
   <div id="scBoostGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:var(--sp-2);margin-bottom:var(--sp-4)"></div>
   <div id="sc-imp-triggers"></div>
   <div style="display:flex;gap:var(--sp-2);margin-top:var(--sp-4)">
@@ -538,28 +545,65 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
     <span id="scStatus" style="align-self:center;font-family:var(--font-mono);font-size:var(--text-xs);color:var(--text-muted)"></span>
   </div>
 </section>
-<section class="about-section">
-  <div class="about-section-label">Source Manager</div>
-  <h2 class="about-section-title">Manage Sources</h2>
+
+<section class="about-section resources-card" id="sourceManagerSection" style="display:none">
+  <div class="resources-card-header">
+    <span class="resources-card-icon">&#128295;</span>
+    <div>
+      <div class="about-section-label">Source Manager &mdash; Admin only</div>
+      <h2 class="about-section-title">Add, remove, or disable RSS feeds</h2>
+      <p class="resources-card-desc">Only visible when the admin token is active. Changes take effect on the next scheduled refresh.</p>
+    </div>
+  </div>
   <div id="sourceManagerStats" style="margin-bottom:var(--sp-4)"></div>
   <div id="sourceManagerList"></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-2);margin-top:var(--sp-5);max-width:500px">
-    <input class="form-input" id="smName" placeholder="Source name">
-    <input class="form-input" id="smUrl" placeholder="RSS URL">
-    <input class="form-input" id="smOrientation" placeholder="Orientation (C/CL/CR/L/R)">
-    <select class="form-input" id="smTier" style="appearance:auto"><option value="1">Tier 1</option><option value="2">Tier 2</option><option value="3">Tier 3</option></select>
-    <input class="form-input" id="smTopics" placeholder="Topics (comma-separated)" style="grid-column:1/-1">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-2);margin-top:var(--sp-5);max-width:560px">
+    <div class="sm-field sm-field--wide">
+      <label class="sm-label" for="smName">Display Name</label>
+      <input class="form-input" id="smName" placeholder="Reuters Top News">
+      <span class="sm-field-hint">Short display name shown on story cards</span>
+    </div>
+    <div class="sm-field sm-field--wide">
+      <label class="sm-label" for="smUrl">RSS Feed URL</label>
+      <input class="form-input" id="smUrl" placeholder="https://feeds.reuters.com/reuters/topNews">
+      <span class="sm-field-hint">Must start with http:// or https://</span>
+    </div>
+    <div class="sm-field">
+      <label class="sm-label" for="smOrientation">Editorial Orientation</label>
+      <input class="form-input" id="smOrientation" placeholder="C / CL / CR / L / R">
+      <span class="sm-field-hint">Used for source spectrum visualization only</span>
+    </div>
+    <div class="sm-field">
+      <label class="sm-label" for="smTier">Source Tier</label>
+      <select class="form-input" id="smTier" style="appearance:auto" title="Tier 1 = major wire services (Reuters, AP). Tier 2 = quality regional/specialist outlets. Tier 3 = additional context sources.">
+        <option value="1">Tier 1 — Major wire services</option>
+        <option value="2">Tier 2 — Quality regional/specialist</option>
+        <option value="3">Tier 3 — Context sources</option>
+      </select>
+    </div>
+    <div class="sm-field" style="grid-column:1/-1">
+      <label class="sm-label" for="smTopics">Topics (comma-separated)</label>
+      <input class="form-input" id="smTopics" placeholder="economy, finance, markets">
+    </div>
     <div style="display:flex;gap:var(--sp-2);grid-column:1/-1">
       <button class="cta-btn" id="smAddBtn" type="button">Add Source</button>
       <span id="smAddStatus" style="align-self:center;font-family:var(--font-mono);font-size:var(--text-xs);color:var(--text-muted)"></span>
     </div>
   </div>
 </section>
-<section class="about-section">
-  <div class="about-section-label">Operations</div>
-  <h2 class="about-section-title">Quality Metrics</h2>
+
+<section class="about-section resources-card">
+  <div class="resources-card-header">
+    <span class="resources-card-icon">&#128202;</span>
+    <div>
+      <div class="about-section-label">System Health</div>
+      <h2 class="about-section-title">Live feed status and quality metrics</h2>
+      <p class="resources-card-desc">Source availability, last refresh time, and pipeline performance from the most recent ingest run.</p>
+    </div>
+  </div>
   <div id="opsMetrics"></div>
 </section>
+
 </div><footer class="site-footer"><div class="container"><div class="footer-inner">
   <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
   <div class="footer-right"><a href="#" onclick="window.navigateTo('home');return false">Briefings</a></div>

@@ -126,15 +126,18 @@ export function initTierTabs() {
     if (tab.dataset.bound === '1') return;
     tab.dataset.bound = '1';
     tab.addEventListener('click', () => {
-      document.querySelectorAll('.tier-tab').forEach((t) => t.classList.remove('active'));
+      // Only affect tier-tabs and story-cards within the same container
+      const container = tab.closest('.tier-section') || document;
+      container.querySelectorAll('.tier-tab').forEach((t) => t.classList.remove('active'));
       tab.classList.add('active');
       const tier = tab.dataset.tier;
-      document.querySelectorAll('.story-card').forEach((card) => {
-        if (tier === 'all' || card.dataset.tier === tier) {
-          card.style.display = '';
-        } else {
-          card.style.display = 'none';
-        }
+      // Also respect active topic pills when re-filtering
+      const activePills = [...document.querySelectorAll('#trending-bar .topic-pill.active')].map((p) => p.dataset.topic);
+      const storyList = container.querySelector('#storyList') || container;
+      storyList.querySelectorAll('.story-card').forEach((card) => {
+        const tierMatch = tier === 'all' || card.dataset.tier === tier;
+        const topicMatch = !activePills.length || activePills.some((t) => (card.dataset.topics || '').split(',').includes(t));
+        card.style.display = tierMatch && topicMatch ? '' : 'none';
       });
     });
   });
@@ -737,8 +740,8 @@ export function renderTrendingBar(stories) {
   if (!top5.length) { bar.style.display = 'none'; return; }
   bar.style.display = 'flex';
   bar.innerHTML = `<span class="trending-label">Trending:</span>` +
-    top5.map(([id, count]) =>
-      `<button class="topic-pill" data-topic="${escapeHtmlUi(id)}">${escapeHtmlUi(labelMap[id] || id)} <span>${count}</span></button>`
+    top5.map(([id]) =>
+      `<button class="topic-pill" data-topic="${escapeHtmlUi(id)}">${escapeHtmlUi(labelMap[id] || id)}</button>`
     ).join('');
   bar.querySelectorAll('.topic-pill').forEach((pill) => {
     pill.addEventListener('click', () => {
