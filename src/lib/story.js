@@ -278,24 +278,35 @@ function classifyTopicsKeyword(items, aiTopicsHint = []) {
 }
 
 function buildBriefSync(stories) {
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const todayStories = stories.filter((story) => String(story.updatedAt || '').startsWith(todayIso));
-  const pool = todayStories.length ? todayStories : stories;
-  const lead = pool[0];
+  const today = new Date().toISOString().slice(0, 10);
+  const todayStories = stories.filter((s) => String(s.publishedAt || '').slice(0, 10) === today);
+  const pool = todayStories.length >= 3 ? todayStories : stories;
+  const sorted = [...pool].sort((a, b) => (b.score || 0) - (a.score || 0));
+  const top = sorted[0];
+  if (!top) return { lead: 'No stories available at this time.', bullets: [] };
 
-  const market = pool.find((story) => story.topics.includes('economy') || story.topics.includes('finance') || story.topics.includes('macroeconomics'));
-  const policy = pool.find((story) => story.topics.includes('uspolitics') || story.topics.includes('law') || story.topics.includes('elections'));
-  const geo = pool.find((story) => story.topics.includes('geopolitics') || story.topics.includes('defense') || story.topics.includes('global_trade'));
+  const topHeadline = top.headline || top.dek || 'Breaking developments';
+  const topWhy = top.whyItMatters
+    ? top.whyItMatters.split(' ').slice(0, 25).join(' ') + (top.whyItMatters.split(' ').length > 25 ? '\u2026' : '')
+    : 'Multiple sources are tracking this as today\'s highest-priority development.';
+  const topNext = top.whatsNext || 'Confirmation across Tier 1 sources expected in the next 12\u201324 hours.';
 
-  const leadLine = `${lead.headline} is currently the highest-impact development, supported by ${lead.sources?.length || 1} corroborating source${lead.sources?.length === 1 ? '' : 's'}.`;
+  const lead = `${topHeadline}. ${topWhy}`;
+
   const bullets = [];
+  bullets.push(`What's new: ${topHeadline}`);
+  bullets.push(`Why it matters: ${topWhy}`);
+  bullets.push(`Watch for: ${topNext}`);
 
-  if (market) bullets.push(`Market lens: ${market.headline}`);
-  if (policy) bullets.push(`Policy lens: ${policy.headline}`);
-  if (geo) bullets.push(`Geopolitical lens: ${geo.headline}`);
-  bullets.push(`24h watch: Monitor confirmation risk as narratives converge across ${Math.min(lead.sources?.length || 1, 4)}+ key sources.`);
+  const marketStory = sorted.find((s) => s.topics?.some((t) => ['economy', 'finance', 'macroeconomics', 'markets', 'global_trade'].includes(t)));
+  const policyStory = sorted.find((s) => s.topics?.some((t) => ['uspolitics', 'law', 'elections', 'labor'].includes(t)));
+  const geoStory    = sorted.find((s) => s.topics?.some((t) => ['geopolitics', 'defense', 'international'].includes(t)));
 
-  return { lead: leadLine, bullets: bullets.slice(0, 5) };
+  if (marketStory && marketStory.id !== top.id) bullets.push(`Market angle: ${marketStory.headline || marketStory.dek}`);
+  else if (policyStory && policyStory.id !== top.id) bullets.push(`Policy angle: ${policyStory.headline || policyStory.dek}`);
+  else if (geoStory && geoStory.id !== top.id) bullets.push(`Geopolitical angle: ${geoStory.headline || geoStory.dek}`);
+
+  return { lead, bullets };
 }
 
 function buildWhyItMattersSync(lead, topics) {
