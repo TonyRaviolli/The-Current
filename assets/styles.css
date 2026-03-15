@@ -1475,3 +1475,9 @@ body.dark-mode .site-header {
 .search-input::placeholder{color:var(--text-muted)}
 .search-clear{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.75rem;padding:4px;border-radius:50%;flex-shrink:0;line-height:1}
 .search-clear:hover{color:var(--text-primary);background:rgba(0,0,0,0.08)}
+
+/* ── Archive date grouping visual hierarchy ──────────────────────────────── */
+.archive-day-label{font-size:1rem;font-weight:600;color:var(--text-primary);margin:0 0 4px}
+.archive-day-count{font-size:0.75rem;color:var(--text-muted);margin-left:8px;font-family:var(--font-mono)}
+.archive-day-section+.archive-day-section{border-top:1px solid rgba(0,0,0,0.08);padding-top:24px;margin-top:8px}
+.archive-day-section-header{display:flex;align-items:baseline;gap:var(--sp-3);margin-bottom:var(--sp-4);padding-bottom:var(--sp-3);border-bottom:1px solid var(--border-rule)}

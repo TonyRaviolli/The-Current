@@ -1206,8 +1206,8 @@ export function renderArchiveDays(days = []) {
 
     return `<section class="archive-day-section" id="archive-day-${escapeHtml(day.date || '')}" data-date="${escapeHtml(day.date || '')}">
       <div class="archive-day-section-header">
-        <h2 class="archive-day-section-title">${escapeHtml(dateStr)}</h2>
-        <span class="archive-run-badge active">${stories.length} stor${stories.length === 1 ? 'y' : 'ies'}</span>
+        <h2 class="archive-day-label">${escapeHtml(dateStr)}</h2>
+        <span class="archive-day-count">${stories.length} stor${stories.length === 1 ? 'y' : 'ies'}</span>
       </div>
       <div class="archive-grid">${cardList.join('') || '<p class="archive-empty">No stories for this date.</p>'}</div>
       ${showMoreBtn}
