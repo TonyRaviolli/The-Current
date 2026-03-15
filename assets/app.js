@@ -81,6 +81,7 @@ async function loadAll() {
     renderHighImportance(store);
     await loadAndRenderArchive();
     renderTopics(store);
+    initTopicDateNav();
     renderWeeklyDigest(store);
     renderOps(store);
     if (refreshStatus && store.lastUpdated) refreshStatus.textContent = `Updated ${new Date(store.lastUpdated).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
@@ -204,6 +205,9 @@ async function loadSources() {
   try {
     const data = await fetchSources();
     renderSourceManager(data);
+    // Show source manager section only for admins
+    const smSection = document.getElementById('sourceManagerSection');
+    if (smSection) smSection.style.display = data.isAdmin ? '' : 'none';
   } catch (err) {
     console.error('[uc] sources load failed:', err);
   }
@@ -282,6 +286,35 @@ async function loadAndRenderArchive(range = 'week') {
     const data = await res.json();
     renderArchiveDays(data.days || []);
     initArchiveWeekToggles();
+    // Show run selector and update counts
+    const runSel = document.getElementById('archiveRunSelector');
+    if (runSel) {
+      const days = data.days || [];
+      if (days.length) {
+        const runCounts = { morning: 0, midday: 0, evening: 0 };
+        days.forEach((day) => (day.stories || []).forEach((s) => {
+          const h = new Date(s.updatedAt || s.publishedAt || 0).getHours();
+          if (h < 11) runCounts.morning++;
+          else if (h < 15) runCounts.midday++;
+          else runCounts.evening++;
+        }));
+        runSel.querySelectorAll('.run-btn[data-run]').forEach((btn) => {
+          const run = btn.dataset.run;
+          if (run === 'all') { btn.style.display = ''; return; }
+          const count = runCounts[run] || 0;
+          if (count === 0) {
+            btn.style.display = 'none';
+          } else {
+            btn.style.display = '';
+            btn.textContent = `${btn.textContent.replace(/ \(\d+\)$/, '')} (${count})`;
+          }
+        });
+        runSel.style.display = 'flex';
+      }
+    }
+    // Reset run filter and re-apply filters
+    _archiveRunFilter = 'all';
+    applyArchiveFilters();
   } catch (err) {
     console.error('[uc] archive load failed:', err);
   }
@@ -630,6 +663,44 @@ function initReveal() {
   document.querySelectorAll('.reveal').forEach((el) => _revealObserver.observe(el));
 }
 
+function initTopicDateNav() {
+  // Wire date pill click → scroll + expand target group
+  document.querySelectorAll('.topic-date-nav').forEach((nav) => {
+    nav.querySelectorAll('.topic-date-pill').forEach((pill) => {
+      if (pill.dataset.bound === '1') return;
+      pill.dataset.bound = '1';
+      pill.addEventListener('click', () => {
+        const dateKey = pill.dataset.targetDate;
+        const section = nav.closest('.topic-section');
+        if (!section) return;
+        const group = section.querySelector(`.topic-date-group[data-topic-date="${dateKey}"]`);
+        if (!group) return;
+        // Expand if collapsed
+        if (group.classList.contains('collapsed')) group.classList.remove('collapsed');
+        group.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        nav.querySelectorAll('.topic-date-pill').forEach((p) => p.classList.remove('active'));
+        pill.classList.add('active');
+      });
+    });
+
+    // IntersectionObserver to update active pill as user scrolls
+    const section = nav.closest('.topic-section');
+    if (!section) return;
+    const groups = section.querySelectorAll('.topic-date-group[data-topic-date]');
+    if (!groups.length) return;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const dateKey = entry.target.dataset.topicDate;
+        nav.querySelectorAll('.topic-date-pill').forEach((p) => {
+          p.classList.toggle('active', p.dataset.targetDate === dateKey);
+        });
+      });
+    }, { threshold: 0.3, rootMargin: '-64px 0px -40% 0px' });
+    groups.forEach((g) => observer.observe(g));
+  });
+}
+
 function initMarketTiles() {
   document.querySelectorAll('.market-tile').forEach((tile) => {
     if (tile.dataset.wired === '1') return;
@@ -722,30 +793,48 @@ function initSearch() {
   });
 }
 
+let _archiveRunFilter = 'all';
+
+function applyArchiveFilters() {
+  const input = document.getElementById('archiveSearch');
+  const topicSel = document.getElementById('archiveTopic');
+  const tierSel = document.getElementById('archiveTier');
+  const q = input ? input.value.toLowerCase().trim() : '';
+  const topic = topicSel ? topicSel.value.toLowerCase() : '';
+  const tier = tierSel ? tierSel.value : '';
+  const run = _archiveRunFilter;
+
+  document.querySelectorAll('.archive-grid-card').forEach((card) => {
+    // Never show overflow cards unless explicitly expanded
+    if (card.classList.contains('archive-card--overflow') && !card.classList.contains('archive-card--expanded')) {
+      card.style.display = 'none';
+      return;
+    }
+    const textMatch = !q || (card.dataset.text || '').includes(q);
+    const topicMatch = !topic || (card.dataset.topic || '').toLowerCase().includes(topic);
+    const tierMatch = !tier || card.dataset.tier === tier;
+    const runMatch = run === 'all' || card.dataset.run === run;
+    card.style.display = textMatch && topicMatch && tierMatch && runMatch ? '' : 'none';
+  });
+  // Hide day sections where all cards are filtered out
+  document.querySelectorAll('.archive-day-section').forEach((section) => {
+    const visible = section.querySelectorAll('.archive-grid-card:not([style*="display: none"]):not([style*="display:none"])');
+    section.style.display = visible.length ? '' : 'none';
+  });
+}
+
 function initArchiveSearch() {
   const input = document.getElementById('archiveSearch');
   const topicSel = document.getElementById('archiveTopic');
   const tierSel = document.getElementById('archiveTier');
-  if (!input) return;
 
-  function applyArchiveFilters() {
-    const q = input.value.toLowerCase().trim();
-    const topic = topicSel ? topicSel.value.toLowerCase() : '';
-    const tier = tierSel ? tierSel.value : '';
-    document.querySelectorAll('.archive-grid-card').forEach((card) => {
-      const textMatch = !q || (card.dataset.text || '').includes(q);
-      const topicMatch = !topic || (card.dataset.topic || '').toLowerCase().includes(topic);
-      const tierMatch = !tier || card.dataset.tier === tier;
-      card.style.display = textMatch && topicMatch && tierMatch ? '' : 'none';
-    });
-    // Hide day sections where all cards are filtered out
-    document.querySelectorAll('.archive-day-section').forEach((section) => {
-      const visible = section.querySelectorAll('.archive-grid-card:not([style*="display: none"]):not([style*="display:none"])');
-      section.style.display = visible.length ? '' : 'none';
-    });
-  }
+  let _debounce = null;
+  const debouncedFilter = () => {
+    clearTimeout(_debounce);
+    _debounce = setTimeout(applyArchiveFilters, 120);
+  };
 
-  input.addEventListener('input', applyArchiveFilters);
+  if (input) input.addEventListener('input', debouncedFilter);
   if (topicSel) topicSel.addEventListener('change', applyArchiveFilters);
   if (tierSel) tierSel.addEventListener('change', applyArchiveFilters);
 
@@ -755,6 +844,31 @@ function initArchiveSearch() {
       btn.classList.add('active');
       loadAndRenderArchive(btn.dataset.range || 'week');
     });
+  });
+
+  // Run selector buttons (moved into archive tab)
+  document.getElementById('archiveRunSelector')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.run-btn');
+    if (!btn) return;
+    document.querySelectorAll('#archiveRunSelector .run-btn').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    _archiveRunFilter = btn.dataset.run || 'all';
+    applyArchiveFilters();
+  });
+
+  // "Show N more" expand button
+  document.getElementById('archiveContent')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.archive-show-more');
+    if (!btn) return;
+    const dayDate = btn.dataset.expandDay;
+    const section = document.querySelector(`.archive-day-section[data-date="${dayDate}"]`);
+    if (section) {
+      section.querySelectorAll('.archive-card--overflow').forEach((card) => {
+        card.classList.add('archive-card--expanded');
+      });
+      applyArchiveFilters(); // re-run to show newly expanded cards
+    }
+    btn.remove();
   });
 }
 
