@@ -311,15 +311,31 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
   <div class="about-kicker">Briefing Archive</div>
   <h1 class="about-headline">Past Intelligence Runs</h1>
   <p style="font-size:var(--text-base);color:var(--text-secondary);max-width:560px;line-height:1.7;margin-bottom:var(--sp-6)">Navigate previous daily briefings. Each run preserved with full ranking, scores, and source attribution.</p>
-  <div class="archive-controls">
-    <input type="text" class="archive-search" id="archiveSearch" placeholder="Search by headline, category, or keyword&hellip;">
-    <div class="month-selector">
-      <button class="month-btn active" type="button">Mar 2026</button>
-      <button class="month-btn" type="button">Feb 2026</button>
-      <button class="month-btn" type="button">Jan 2026</button>
-    </div>
+  <div class="archive-filter-bar">
+    <input type="text" class="archive-search" id="archiveSearch" placeholder="Search headlines, keywords&hellip;" autocomplete="off">
+    <select class="archive-select" id="archiveTopic" aria-label="Filter by topic">
+      <option value="">All Topics</option>
+      <option value="finance">Finance</option>
+      <option value="economy">Economy</option>
+      <option value="geopolitics">Geopolitics</option>
+      <option value="uspolitics">US Politics</option>
+      <option value="law">Law</option>
+      <option value="tech">Technology</option>
+      <option value="health">Health</option>
+      <option value="energy">Energy</option>
+      <option value="climate">Climate</option>
+      <option value="defense">Defense</option>
+      <option value="labor">Labor</option>
+      <option value="education">Education</option>
+    </select>
+    <select class="archive-select" id="archiveTier" aria-label="Filter by tier">
+      <option value="">All Tiers</option>
+      <option value="1">Tier 1</option>
+      <option value="2">Tier 2</option>
+      <option value="3">Tier 3</option>
+    </select>
   </div>
-  <div class="archive-filters">
+  <div class="archive-range-filters">
     <button class="archive-filter active" data-range="week" type="button">This Week</button>
     <button class="archive-filter" data-range="month" type="button">This Month</button>
     <button class="archive-filter" data-range="quarter" type="button">This Quarter</button>

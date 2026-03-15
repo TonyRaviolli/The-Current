@@ -833,6 +833,63 @@ body{background:linear-gradient(180deg,#fbf7ef 0%,#f4ede1 100%);color:var(--text
   }
 }
 
+/* ── Task 5: Archive tab — date chip nav + card grid ────────────────────── */
+
+/* Filter bar: search + selects in one row */
+.archive-filter-bar{display:flex;gap:var(--sp-3);flex-wrap:wrap;align-items:center;margin-bottom:var(--sp-3)}
+.archive-filter-bar .archive-search{flex:1;min-width:200px}
+.archive-select{min-height:46px;padding:0 var(--sp-3);border:1px solid rgba(73,56,27,0.16);border-radius:var(--radius-sm);background:rgba(255,253,248,0.92);font-family:var(--font-sans);font-size:clamp(0.88rem,1.1vw,0.95rem);color:var(--text-primary);cursor:pointer}
+.archive-select:focus{outline:none;border-color:rgba(180,138,58,0.44);box-shadow:0 0 0 3px rgba(180,138,58,0.12)}
+.archive-range-filters{display:flex;gap:var(--sp-2);flex-wrap:wrap;margin-bottom:var(--sp-5)}
+
+/* Date chip navigation strip */
+.archive-date-nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 var(--sp-7);padding-bottom:var(--sp-4);border-bottom:1px solid var(--border-subtle)}
+.archive-date-chip{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:6px 14px;border-radius:999px;border:1px solid rgba(73,56,27,0.14);background:rgba(255,252,247,0.85);font-family:var(--font-mono);font-size:0.72rem;font-weight:600;letter-spacing:0.04em;color:var(--text-secondary);cursor:pointer;transition:all var(--dur-fast)}
+.archive-date-chip:hover{border-color:rgba(180,138,58,0.3);background:#fbf4e7;color:var(--accent-gold-dim)}
+.archive-date-chip.active{border-color:var(--accent-gold);background:rgba(180,138,58,0.10);color:var(--accent-gold-dim)}
+
+/* Day section wrapper */
+.archive-day-section{margin-bottom:var(--sp-10)}
+.archive-day-section-header{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);margin-bottom:var(--sp-5);padding-bottom:var(--sp-3);border-bottom:2px solid var(--border-subtle)}
+.archive-day-section-title{font-family:var(--font-serif);font-size:clamp(1.1rem,2vw,1.4rem);font-weight:600;color:var(--text-primary);margin:0}
+
+/* Card grid — 3 cols desktop, 2 tablet, 1 mobile */
+.archive-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-5)}
+@media(max-width:960px){.archive-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.archive-grid{grid-template-columns:1fr;gap:var(--sp-4)}}
+
+/* Individual grid card */
+.archive-grid-card{display:flex;flex-direction:column;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden;transition:box-shadow var(--dur-fast),transform var(--dur-fast)}
+.archive-grid-card:hover{box-shadow:0 8px 24px rgba(26,66,102,0.10);transform:translateY(-2px)}
+
+/* Grid card thumbnail — 16/9 image fills full width */
+.archive-grid-thumb{margin:0;width:100%;aspect-ratio:16/9;overflow:hidden;background:rgba(73,56,27,0.06);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.archive-grid-thumb img{width:100%;height:100%;object-fit:cover;object-position:center;display:block}
+.archive-grid-thumb.story-thumb--fallback{aspect-ratio:16/9}
+.archive-grid-thumb.story-thumb--fallback svg{width:44px;height:44px;color:var(--accent-gold);opacity:0.40}
+
+/* Grid card body */
+.archive-grid-body{display:flex;flex-direction:column;gap:var(--sp-2);padding:var(--sp-4);flex:1}
+.archive-grid-tags{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2)}
+.archive-grid-topic{font-family:var(--font-mono);font-size:0.68rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent-teal-dim)}
+.archive-grid-score{font-family:var(--font-mono);font-size:0.68rem;font-weight:700;letter-spacing:0.04em;color:var(--accent-gold-dim);background:rgba(180,138,58,0.10);padding:2px 6px;border-radius:4px}
+.archive-grid-title{font-family:var(--font-serif);font-size:clamp(0.92rem,1.4vw,1.05rem);font-weight:600;line-height:1.35;color:var(--text-primary);margin:0}
+.archive-grid-title a{color:inherit;text-decoration:none}
+.archive-grid-title a:hover{text-decoration:underline}
+.archive-grid-dek{font-size:0.85rem;line-height:1.55;color:var(--text-secondary);margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.archive-grid-meta{font-family:var(--font-mono);font-size:0.70rem;color:var(--text-muted);margin-top:auto;padding-top:var(--sp-2)}
+.archive-grid-card .archive-card-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:var(--sp-2)}
+.archive-empty{color:var(--text-muted);font-style:italic;font-size:var(--text-sm);padding:var(--sp-4) 0}
+
+/* Mobile overrides */
+@media(max-width:560px){
+  .archive-filter-bar{flex-direction:column}
+  .archive-filter-bar .archive-search,.archive-select{width:100%}
+  .archive-date-nav{gap:6px}
+  .archive-date-chip{min-height:36px;padding:5px 11px;font-size:0.68rem}
+  .archive-grid-body{padding:var(--sp-3)}
+}
+
 /* ── Dark mode (opt-in only via [data-theme="dark"] — not auto-triggered) ── */
 [data-theme="dark"]{
   :root{

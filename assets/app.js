@@ -590,14 +590,31 @@ function initSearch() {
 
 function initArchiveSearch() {
   const input = document.getElementById('archiveSearch');
+  const topicSel = document.getElementById('archiveTopic');
+  const tierSel = document.getElementById('archiveTier');
   if (!input) return;
-  input.addEventListener('input', () => {
-    const q = input.value.toLowerCase();
-    document.querySelectorAll('.archive-week').forEach((week) => {
-      const text = week.textContent.toLowerCase();
-      week.style.display = text.includes(q) ? '' : 'none';
+
+  function applyArchiveFilters() {
+    const q = input.value.toLowerCase().trim();
+    const topic = topicSel ? topicSel.value.toLowerCase() : '';
+    const tier = tierSel ? tierSel.value : '';
+    document.querySelectorAll('.archive-grid-card').forEach((card) => {
+      const textMatch = !q || (card.dataset.text || '').includes(q);
+      const topicMatch = !topic || (card.dataset.topic || '').toLowerCase().includes(topic);
+      const tierMatch = !tier || card.dataset.tier === tier;
+      card.style.display = textMatch && topicMatch && tierMatch ? '' : 'none';
     });
-  });
+    // Hide day sections where all cards are filtered out
+    document.querySelectorAll('.archive-day-section').forEach((section) => {
+      const visible = section.querySelectorAll('.archive-grid-card:not([style*="display: none"]):not([style*="display:none"])');
+      section.style.display = visible.length ? '' : 'none';
+    });
+  }
+
+  input.addEventListener('input', applyArchiveFilters);
+  if (topicSel) topicSel.addEventListener('change', applyArchiveFilters);
+  if (tierSel) tierSel.addEventListener('change', applyArchiveFilters);
+
   document.querySelectorAll('.archive-filter').forEach((btn) => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.archive-filter').forEach((b) => b.classList.remove('active'));

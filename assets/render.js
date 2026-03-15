@@ -797,6 +797,7 @@ export function renderStoryPage(story) {
 /**
  * Render the historical archive from the /api/archive response format.
  * Each entry is { date, count, stories[] }.
+ * Renders a date-chip nav strip + a per-day section with a card grid.
  */
 export function renderArchiveDays(days = []) {
   const container = document.getElementById('archiveContent');
@@ -805,57 +806,67 @@ export function renderArchiveDays(days = []) {
     container.innerHTML = '<div class="story-card"><h3 class="story-card-title">No archive data yet</h3><p class="story-card-excerpt">Run a refresh to start building the archive. Historical data accumulates after each successful run.</p></div>';
     return;
   }
-  const nav = `<div class="archive-day-nav">${days.slice(0, 12).map((day) => {
-    const id = `archive-day-${escapeHtml(day.date || '')}`;
-    return `<a class="archive-day-jump" href="#${id}">${escapeHtml(formatArchiveDate(day.date))}</a>`;
-  }).join('')}</div>`;
-  container.innerHTML = nav + days.map((day) => {
-    const groups = buildArchiveTimeGroups(day.stories || []);
-    const sections = groups.map((group) => {
-      const items = group.items.slice(0, 8).map((story) => {
-      const score = story.score != null ? Math.round(story.score * 100) : '--';
-      const sourceName = story.sources?.[0]?.name || '';
-      const topic = (story.topics?.[0] || '').replace(/_/g, ' ');
-      const slug = story.slug ? escapeHtml(story.slug) : '';
-      const { open, external } = renderStoryActions(story);
-      const thumb = renderStoryThumb(story.imageUrl, 'archive-story-thumb', story.headline || '', story.topics);
-      return `<div class="archive-briefing-card archive-briefing-card--has-thumb">
-        ${thumb}
-        <div>
-          <div class="archive-lead">${slug ? `<a href="/story/${slug}" onclick="window.openStory('${slug}');return false;">${escapeHtml(story.headline)}</a>` : escapeHtml(story.headline)}</div>
-          <div class="archive-meta">${escapeHtml(sourceName)}${sourceName ? ' &middot; ' : ''}${escapeHtml(formatTime(story.updatedAt || story.publishedAt))} &middot; Score ${score}</div>
-        </div>
-        <div class="archive-card-side"><div class="archive-dominant">${escapeHtml(topic || 'Intelligence')}</div><div class="archive-card-actions">${open}${external && !slug ? '' : external}</div></div>
-      </div>`;
-      }).join('');
-      if (!items) return '';
-      return `<div class="archive-time-group">
-        <div class="archive-time-label-row">
-          <span class="archive-time-label">${escapeHtml(group.label)}</span>
-          <span class="archive-time-count">${group.items.length} item${group.items.length === 1 ? '' : 's'}</span>
-        </div>
-        ${items}
-      </div>`;
-    }).join('');
+
+  // Date chip strip — clicking scrolls to the section for that date
+  const chipNav = `<nav class="archive-date-nav" aria-label="Jump to date">${days.slice(0, 14).map((day, i) => {
     const label = formatArchiveDate(day.date);
-    const isoLabel = day.date ? formatDate(day.date) : '';
-    return `<div class="archive-week">
-      <div class="archive-day-anchor" id="archive-day-${escapeHtml(day.date || '')}"></div>
-      <div class="archive-week-header" data-toggle-week>
-        <span class="archive-week-title">${escapeHtml(label)}</span>
-        <span class="archive-week-toggle">&#9662;</span>
-      </div>
-      <div class="archive-week-body">
-        <div class="archive-day">
-          <div class="archive-day-header">
-            <span class="archive-day-date">${escapeHtml(isoLabel || day.date || '')}</span>
-            <div class="archive-day-runs"><span class="archive-run-badge active">${day.count} stories</span></div>
+    const short = day.date ? new Date(day.date + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : label;
+    return `<button class="archive-date-chip${i === 0 ? ' active' : ''}" data-date-target="${escapeHtml(day.date || '')}" type="button" title="${escapeHtml(label)}">${escapeHtml(short)}</button>`;
+  }).join('')}</nav>`;
+
+  // Per-day sections with card grid
+  const sections = days.map((day) => {
+    const stories = (day.stories || []).slice().sort((a, b) => (b.score || 0) - (a.score || 0));
+    const cards = stories.map((story) => {
+      const score = story.score != null ? Math.round(story.score * 100) : '--';
+      const sourceName = story.sources?.[0]?.name || story.source || '';
+      const topic = (story.topics?.[0] || '').replace(/_/g, ' ');
+      const topicRaw = story.topics?.[0] || '';
+      const tier = story.tier || 3;
+      const slug = story.slug ? escapeHtml(story.slug) : '';
+      const time = formatTime(story.updatedAt || story.publishedAt);
+      const { open, external } = renderStoryActions(story);
+      const thumb = renderStoryThumb(story.imageUrl, 'archive-grid-thumb', story.headline || '', story.topics);
+      const titleHtml = slug
+        ? `<a href="/story/${slug}" onclick="window.openStory('${slug}');return false;">${escapeHtml(story.headline)}</a>`
+        : escapeHtml(story.headline);
+      return `<article class="archive-grid-card" data-topic="${escapeHtml(topicRaw)}" data-tier="${escapeHtml(String(tier))}" data-text="${escapeHtml((story.headline || '') + ' ' + (story.dek || '') + ' ' + sourceName).toLowerCase()}">
+        ${thumb}
+        <div class="archive-grid-body">
+          <div class="archive-grid-tags">
+            <span class="archive-grid-topic">${escapeHtml(topic || 'Intelligence')}</span>
+            <span class="archive-grid-score">${score}</span>
           </div>
-          ${sections || '<div class="archive-meta">No stories</div>'}
+          <h3 class="archive-grid-title">${titleHtml}</h3>
+          ${story.dek ? `<p class="archive-grid-dek">${escapeHtml(story.dek)}</p>` : ''}
+          <div class="archive-grid-meta">${escapeHtml(sourceName)}${sourceName && time ? ' &middot; ' : ''}${escapeHtml(time)}</div>
+          <div class="archive-card-actions">${open}${external}</div>
         </div>
+      </article>`;
+    }).join('');
+
+    const label = formatArchiveDate(day.date);
+    const dateStr = day.date ? new Date(day.date + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : label;
+    return `<section class="archive-day-section" id="archive-day-${escapeHtml(day.date || '')}" data-date="${escapeHtml(day.date || '')}">
+      <div class="archive-day-section-header">
+        <h2 class="archive-day-section-title">${escapeHtml(dateStr)}</h2>
+        <span class="archive-run-badge active">${stories.length} stor${stories.length === 1 ? 'y' : 'ies'}</span>
       </div>
-    </div>`;
+      <div class="archive-grid">${cards || '<p class="archive-empty">No stories for this date.</p>'}</div>
+    </section>`;
   }).join('');
+
+  container.innerHTML = chipNav + sections;
+
+  // Chip click — smooth-scroll to the target section and mark active chip
+  container.parentElement.addEventListener('click', (e) => {
+    const chip = e.target.closest('.archive-date-chip');
+    if (!chip) return;
+    const target = document.getElementById(`archive-day-${chip.dataset.dateTarget}`);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    container.querySelectorAll('.archive-date-chip').forEach((c) => c.classList.remove('active'));
+    chip.classList.add('active');
+  }, { passive: true });
 }
 
 function buildArchiveTimeGroups(stories = []) {
