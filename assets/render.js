@@ -413,6 +413,32 @@ function formatTimeAgo(date) {
  * Render the AI-generated market intelligence card.
  * Visualises pulse, regime, summary, and signals as a styled panel with SVG accent.
  */
+function signalSparkline(signals, regime) {
+  if (!signals || !signals.length) return '';
+  const regimeStrokeColors = {
+    'risk-on':  '#27ae60', 'risk-off': '#c0392b',
+    'volatile': '#f39c12', 'stable':   '#2980b9',
+  };
+  const color = regimeStrokeColors[(regime || 'stable').toLowerCase()] || '#2980b9';
+  const pts = signals.slice(0, 6).map((s, i) => {
+    const v = s.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+    const y = 28 - ((v % 40) - 20) * 0.6;
+    return { x: i * 16, y: Math.max(4, Math.min(36, y)) };
+  });
+  if (pts.length < 2) return '';
+  const lineD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+  const areaD = `${lineD} L${pts[pts.length-1].x},40 L0,40 Z`;
+  const gradId = `sg-${Math.random().toString(36).slice(2,7)}`;
+  return `<svg viewBox="0 0 ${pts[pts.length-1].x + 4} 40" class="market-sparkline" style="color:${color}" aria-hidden="true">
+    <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${color}" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${areaD}" fill="url(#${gradId})"/>
+    <path d="${lineD}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
 export function renderMarketIntel(store) {
   const container = document.getElementById('marketIntelCard');
   if (!container) return;
@@ -422,34 +448,68 @@ export function renderMarketIntel(store) {
 
   const pulseColors = { Volatile: '#d96060', Active: '#c9a24a', Stable: '#3dab78', Subdued: '#7a96a8' };
   const regimeColors = { 'risk-on': '#3dab78', 'risk-off': '#d96060', volatile: '#c9a24a', stable: '#7a96a8' };
+  const regimeBgColors = {
+    'risk-on':  'rgba(39,174,96,0.08)',
+    'risk-off': 'rgba(192,57,43,0.08)',
+    'volatile': 'rgba(243,156,18,0.08)',
+    'stable':   'rgba(41,128,185,0.06)',
+  };
   const pColor = pulseColors[intel.pulse] || '#7a96a8';
   const rColor = regimeColors[intel.regime] || '#7a96a8';
+  const regime = (intel.regime || 'stable').toLowerCase();
+  const tileBackground = regimeBgColors[regime] || regimeBgColors['stable'];
 
-  // Simple SVG bar chart for the 3 signals
-  const signals = (intel.signals || []).slice(0, 3);
-  const barSvg = signals.length ? `<svg class="market-signal-bars" viewBox="0 0 180 36" aria-hidden="true">
-    ${signals.map((_, i) => {
-      const h = 8 + (i % 2 === 0 ? 12 : 6);
-      const y = 36 - h;
-      const x = 10 + i * 58;
-      return `<rect x="${x}" y="${y}" width="44" height="${h}" rx="3" fill="${pColor}" opacity="${0.5 + i * 0.15}"/>`;
-    }).join('')}
-  </svg>` : '';
+  const signals = (intel.signals || []).slice(0, 6);
+  const sparkline = signalSparkline(signals, intel.regime);
+  const signalLabel = signals[0] ? escapeHtml(signals[0].split(' ').slice(0, 3).join(' ')) : '';
 
-  const signalItems = signals.map((s) =>
+  const signalItems = signals.slice(0, 3).map((s) =>
     `<li class="market-signal-item"><span class="market-signal-dot" style="background:${pColor}"></span>${escapeHtml(s)}</li>`
   ).join('');
 
   container.innerHTML = `
-    <div class="market-intel-card">
+    <div class="market-intel-card" style="background:${tileBackground}">
       <div class="market-intel-header">
         <span class="market-intel-pulse" style="background:${pColor}20;color:${pColor};border-color:${pColor}40">${escapeHtml(intel.pulse)}</span>
-        <span class="market-intel-regime" style="color:${rColor}">${escapeHtml(intel.regime)}</span>
+        <span class="market-intel-regime" style="color:${rColor};font-family:var(--font-mono);font-size:var(--text-xl);font-weight:700">${escapeHtml(intel.regime)}</span>
         <span class="market-intel-label">AI Market Read</span>
-        ${barSvg}
       </div>
+      ${signalLabel ? `<div style="font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--text-muted);letter-spacing:0.08em;margin-bottom:4px">${signalLabel}</div>` : ''}
+      ${sparkline}
       <p class="market-intel-summary">${escapeHtml(intel.summary || '')}</p>
       ${signalItems ? `<ul class="market-signal-list">${signalItems}</ul>` : ''}
+    </div>`;
+
+  // Also apply regime color to static market tiles
+  document.querySelectorAll('.market-tile').forEach((tile) => {
+    tile.style.background = tileBackground;
+  });
+}
+
+export function renderMarketHeatmap(stories, container) {
+  if (!container) return;
+  const sectors = [
+    { id: 'economy',     label: 'Economy',    color: 'rgba(41,128,185,' },
+    { id: 'finance',     label: 'Finance',    color: 'rgba(39,174,96,' },
+    { id: 'tech',        label: 'Tech',       color: 'rgba(155,89,182,' },
+    { id: 'defense',     label: 'Defense',    color: 'rgba(192,57,43,' },
+    { id: 'global_trade',label: 'Trade',      color: 'rgba(243,156,18,' },
+    { id: 'uspolitics',  label: 'Policy',     color: 'rgba(180,138,58,' },
+  ];
+  const degrees = {};
+  (stories || []).forEach((s) => (s.topics || []).forEach((t) => { degrees[t] = (degrees[t] || 0) + 1; }));
+  const maxDeg = Math.max(1, ...Object.values(degrees));
+  container.innerHTML = `
+    <div class="market-heatmap">
+      ${sectors.map((sec) => {
+        const count = degrees[sec.id] || 0;
+        const opacity = Math.min(0.75, 0.05 + (count / maxDeg) * 0.70);
+        return `<div class="heatmap-tile" style="background:${sec.color}${opacity})">
+          <div class="heatmap-tile-label">${escapeHtml(sec.label)}</div>
+          <div class="heatmap-tile-count">${count}</div>
+          <div class="heatmap-tile-sub">stor${count !== 1 ? 'ies' : 'y'}</div>
+        </div>`;
+      }).join('')}
     </div>`;
 }
 

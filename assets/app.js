@@ -1,5 +1,5 @@
 import { fetchFeed, runRefresh, fetchResources, fetchSearch, fetchStory, fetchDigest, trackEvent, fetchSources, toggleSource, addSource, deleteSource, fetchScoring, saveScoring, invalidateFeedCache, adminQuerySuffix, setAdminToken } from './api.js';
-import { renderHero, renderTopStories, renderDailyFeed, renderHighImportance, renderArchive, renderTopics, renderDailyInsight, renderResources, renderWeeklyDigest, renderMetaRibbon, renderTodayBrief, renderDeveloping, renderTopicBlocks, renderGlobalSearchResults, renderStoryPage, renderDigestPage, renderOps, renderSinceLastVisit, renderArchiveDays, renderSourceManager, renderScoringPanel, renderMarketIntel, renderCartoons } from './render.js';
+import { renderHero, renderTopStories, renderDailyFeed, renderHighImportance, renderArchive, renderTopics, renderDailyInsight, renderResources, renderWeeklyDigest, renderMetaRibbon, renderTodayBrief, renderDeveloping, renderTopicBlocks, renderGlobalSearchResults, renderStoryPage, renderDigestPage, renderOps, renderSinceLastVisit, renderArchiveDays, renderSourceManager, renderScoringPanel, renderMarketIntel, renderCartoons, renderDevelopingStrip, renderMarketHeatmap } from './render.js';
 import { initNavigation, initRunSelector, initTierTabs, initTopicFilters, initSearchFilter, initForms, initCtas, initSaveFollow, getSavedStories, getFollowedTopics, initReaderMode, initShortcuts, initGlobalSearch, applySaveFollowState, initArchiveWeekToggles, recordVisitAndGetLastTime, exportBriefing, exportBriefingText, copyStoryLink, initMyTopicsFilter, getWatches, initKeywordWatches, markAsRead, applyReadState, initUnreadFilter } from './ui.js';
 
 const refreshButton = document.getElementById('refreshButton');
@@ -57,6 +57,8 @@ async function loadAll() {
     renderTopicBlocks(store);
     renderDailyInsight(store);
     renderMarketIntel(store);
+    renderMarketHeatmap(store.stories, document.getElementById('market-heatmap-container'));
+    renderDevelopingStrip(store.stories);
     renderCartoons(store);
     const feedResult = renderDailyFeed(store, saved, followed, lastVisitAt);
     renderSinceLastVisit(feedResult?.newCount || 0, lastVisitAt);
