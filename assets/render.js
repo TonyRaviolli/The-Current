@@ -1,3 +1,7 @@
+// ── Feed size caps (adjust here to change across all tier sections) ───────────
+const FEED_MAX_STORIES = 15; // total articles shown across Tier 1/2/3
+const FEED_MAX_PER_TIER = 5; // target per tier before overflow fills remaining slots
+
 function escapeHtml(text) {
   return String(text)
     .replace(/&/g, '&amp;')
@@ -261,11 +265,34 @@ export function renderDailyFeed(store, saved = new Set(), followed = new Set(), 
   const list = document.getElementById('storyList');
   if (!list) return;
   const debug = new URLSearchParams(window.location.search).get('debug') === '1';
-  const items = store.stories || [];
-  if (!items.length) {
+  const rawItems = store.stories || [];
+  if (!rawItems.length) {
     list.innerHTML = '<article class=\"story-card\"><h3 class=\"story-card-title\">No stories ingested in this run</h3><p class=\"story-card-excerpt\">No new items from sources in this run. Try refresh again or review Archive for prior coverage.</p></article>';
     return { newCount: 0 };
   }
+
+  // Cap feed: take up to FEED_MAX_PER_TIER from each tier, then fill remaining
+  // slots from whichever tiers have surplus (highest-score first).
+  const byTier = { 1: [], 2: [], 3: [] };
+  for (const s of rawItems) {
+    const t = s.tier in byTier ? s.tier : 3;
+    byTier[t].push(s);
+  }
+  const selected = [
+    ...byTier[1].slice(0, FEED_MAX_PER_TIER),
+    ...byTier[2].slice(0, FEED_MAX_PER_TIER),
+    ...byTier[3].slice(0, FEED_MAX_PER_TIER),
+  ];
+  if (selected.length < FEED_MAX_STORIES) {
+    const surplus = [
+      ...byTier[1].slice(FEED_MAX_PER_TIER),
+      ...byTier[2].slice(FEED_MAX_PER_TIER),
+      ...byTier[3].slice(FEED_MAX_PER_TIER),
+    ].sort((a, b) => (b.score || 0) - (a.score || 0));
+    selected.push(...surplus.slice(0, FEED_MAX_STORIES - selected.length));
+  }
+  // Re-sort final selection by score descending so highest-impact leads
+  const items = selected.sort((a, b) => (b.score || 0) - (a.score || 0));
 
   const lastVisit = lastVisitAt ? new Date(lastVisitAt) : null;
   let newCount = 0;
