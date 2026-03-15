@@ -1367,3 +1367,52 @@ body.dark-mode .site-header {
   width: 6px; height: 6px; border-radius: 50%; background: var(--confidence-high); flex-shrink: 0;
 }
 .refresh-status.stale .refresh-status-dot { background: var(--accent-urgent); animation: pulse-border 2s infinite; }
+
+/* ── Issue 1: Topic pill filter — no count badges needed since removed ─────── */
+.trending-label{font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted);letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap}
+.topic-pill{padding:6px 14px;border-radius:999px;border:1px solid rgba(73,56,27,0.14);background:rgba(255,252,247,0.80);font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);cursor:pointer;transition:all var(--dur-fast);white-space:nowrap}
+.topic-pill:hover{border-color:rgba(180,138,58,0.30);background:#fbf4e7;color:var(--accent-gold-dim)}
+.topic-pill.active{border-color:var(--accent-gold);background:rgba(180,138,58,0.14);color:var(--accent-gold-dim);font-weight:600}
+
+/* ── Issue 4: Archive card images — prevent blur/stretch ───────────────────── */
+.archive-grid-thumb{margin:0;aspect-ratio:16/9;overflow:hidden;background:var(--bg-overlay);border-radius:10px 10px 0 0}
+.archive-grid-thumb img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
+.archive-grid-thumb.story-thumb--fallback{display:flex;align-items:center;justify-content:center;color:var(--text-muted);aspect-ratio:16/9;border-radius:10px 10px 0 0}
+
+/* ── Issue 4b: Archive show-more button ────────────────────────────────────── */
+.archive-card--overflow{display:none!important}
+.archive-card--overflow.archive-card--expanded{display:block!important}
+.archive-show-more{display:block;width:100%;margin-top:var(--sp-3);padding:10px var(--sp-4);background:rgba(255,252,247,0.80);border:1px solid rgba(73,56,27,0.12);border-radius:var(--radius-md);font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);cursor:pointer;text-align:center;transition:all var(--dur-fast)}
+.archive-show-more:hover{border-color:rgba(180,138,58,0.30);background:#fbf4e7;color:var(--accent-gold-dim)}
+
+/* ── Issue 5: Topic date navigation strip ──────────────────────────────────── */
+.topic-date-nav{display:flex;gap:var(--sp-2);overflow-x:auto;scrollbar-width:none;padding:var(--sp-2) 0 var(--sp-4);margin-bottom:var(--sp-2)}
+.topic-date-nav::-webkit-scrollbar{display:none}
+.topic-date-pill{flex-shrink:0;padding:5px 12px;border-radius:999px;border:1px solid rgba(73,56,27,0.12);background:rgba(255,252,247,0.80);font-family:var(--font-mono);font-size:0.70rem;color:var(--text-secondary);cursor:pointer;transition:all var(--dur-fast);white-space:nowrap}
+.topic-date-pill:hover{border-color:rgba(180,138,58,0.30);background:#fbf4e7;color:var(--accent-gold-dim)}
+.topic-date-pill.active{border-color:var(--accent-gold);background:rgba(180,138,58,0.12);color:var(--accent-gold-dim);font-weight:600}
+
+/* ── Issue 6: Archive run selector ─────────────────────────────────────────── */
+.archive-run-selector{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-2);padding:var(--sp-3) 0 var(--sp-4);margin-bottom:var(--sp-2);border-bottom:1px solid rgba(73,56,27,0.08)}
+.archive-run-label{font-family:var(--font-mono);font-size:0.70rem;color:var(--text-muted);letter-spacing:0.06em;text-transform:uppercase;margin-right:var(--sp-2)}
+
+/* ── Issue 3: Resources tab card layout ─────────────────────────────────────── */
+.resources-card{padding:clamp(20px,3vw,32px)!important}
+.resources-card-header{display:flex;gap:var(--sp-4);align-items:flex-start;margin-bottom:var(--sp-5)}
+.resources-card-icon{font-size:1.5rem;line-height:1;flex-shrink:0;margin-top:2px}
+.resources-card-desc{font-size:var(--text-sm);color:var(--text-secondary);line-height:1.65;margin-top:var(--sp-2);max-width:640px}
+.sm-field-hint{font-family:var(--font-mono);font-size:0.68rem;color:var(--text-muted);margin-top:3px;line-height:1.4}
+
+/* ── Issue 7d: Mobile overflow fixes ───────────────────────────────────────── */
+@media(max-width:375px){
+  .trending-bar{overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap}
+  .trending-bar::-webkit-scrollbar{display:none}
+  .alert-strip-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:calc(100vw - 120px)}
+  .market-strip{grid-template-columns:1fr 1fr!important}
+  .digest-editorial-grid{grid-template-columns:1fr}
+  .topic-date-nav{padding-bottom:var(--sp-3)}
+}
+@media(max-width:560px){
+  .archive-run-selector{gap:var(--sp-1)}
+  .resources-card-header{flex-direction:column;gap:var(--sp-2)}
+}
