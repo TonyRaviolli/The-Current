@@ -148,13 +148,15 @@ export function initTopicFilters() {
       const topicMatches = activeTopic === 'all' || activeTopic === 'today' || section.dataset.topicSection === activeTopic;
       let visible = 0;
       section.querySelectorAll('.topic-date-group').forEach((group) => {
+        const isCollapsed = group.classList.contains('collapsed');
         let groupVisible = 0;
         group.querySelectorAll('.topic-story').forEach((story) => {
           const dateMatches = activeTopic !== 'today' || story.dataset.storyDate === today;
           const queryMatches = !query || story.textContent.toLowerCase().includes(query);
-          const show = topicMatches && dateMatches && queryMatches;
+          // Respect collapsed state: hide stories in collapsed groups
+          const show = topicMatches && dateMatches && queryMatches && !isCollapsed;
           story.style.display = show ? '' : 'none';
-          if (show) {
+          if (topicMatches && dateMatches && queryMatches) {
             groupVisible++;
             visible++;
           }
@@ -182,6 +184,20 @@ export function initTopicFilters() {
       applyTopicView();
     });
   }
+
+  // Collapse/expand date-group headers via event delegation (bound once globally)
+  if (document.body.dataset.topicGroupToggleBound !== '1') {
+    document.body.dataset.topicGroupToggleBound = '1';
+    document.body.addEventListener('click', (e) => {
+      const header = e.target.closest('[data-toggle-topic-group]');
+      if (!header) return;
+      const group = header.closest('.topic-date-group');
+      if (!group) return;
+      group.classList.toggle('collapsed');
+      applyTopicView();
+    });
+  }
+
   applyTopicView();
 }
 

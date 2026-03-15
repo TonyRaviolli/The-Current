@@ -587,7 +587,7 @@ export function renderTopics(store) {
     const range = topic.range?.start && topic.range?.end
       ? ` · ${escapeHtml(formatDate(topic.range.end))} to ${escapeHtml(formatDate(topic.range.start))}`
       : '';
-    const groups = groupStoriesByDate(topic.items).map((group) => {
+    const groups = groupStoriesByDate(topic.items).map((group, gi) => {
       const items = group.items.map((story) => {
         const storyDate = String(story.updatedAt || story.publishedAt || '').slice(0, 10);
         const storyTime = formatTime(story.updatedAt || story.publishedAt);
@@ -609,7 +609,7 @@ export function renderTopics(store) {
           </div>
         </article>`;
       }).join('');
-      return `<section class="topic-date-group" data-topic-date="${escapeHtml(group.date)}"><div class="topic-date-group-header"><span class="topic-date-group-title">${escapeHtml(group.label)}</span><span class="topic-date-group-meta">${group.items.length} stories</span></div>${items}</section>`;
+      return `<section class="topic-date-group${gi > 0 ? ' collapsed' : ''}" data-topic-date="${escapeHtml(group.date)}"><div class="topic-date-group-header" data-toggle-topic-group><span class="topic-date-group-title">${escapeHtml(group.label)}</span><span class="topic-date-group-meta">${group.items.length} stor${group.items.length === 1 ? 'y' : 'ies'}</span><span class="topic-date-group-toggle" aria-hidden="true">&#9662;</span></div>${items}</section>`;
     }).join('');
     return `<div class="topic-section" data-topic-section="${escapeHtml(topic.topic)}"><div class="topic-section-header"><h2 class="topic-section-title">${escapeHtml(topic.label || topic.topic)}</h2><span class="topic-section-meta">${topic.count} stories${todayCount ? ` · ${todayCount} today` : ''}${range}</span></div>${groups}</div>`;
   }).join('');
