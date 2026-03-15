@@ -50,7 +50,7 @@
     }
   },
   "importance": {
-    "scoreThreshold": 0.72,
+    "scoreThreshold": 0.70,
     "topicTriggers": [
       "geopolitics",
       "economy",

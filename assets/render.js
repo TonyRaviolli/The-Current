@@ -120,8 +120,19 @@ function renderStoryActions(story, baseClass = 'topic-story-link') {
 }
 
 function scoreLabel(score) {
-  if (typeof score !== 'number') return '--';
-  return Math.round(score * 100);
+  if (typeof score !== 'number') return { value: '--', tier: 'Low', color: '#374151' };
+  const value = (score * 10).toFixed(1);
+  if (score >= 0.90) return { value, tier: 'Critical', color: '#ef4444' };
+  if (score >= 0.78) return { value, tier: 'High',     color: '#f97316' };
+  if (score >= 0.65) return { value, tier: 'Notable',  color: '#eab308' };
+  if (score >= 0.50) return { value, tier: 'Standard', color: '#6b7280' };
+  return { value, tier: 'Low', color: '#374151' };
+}
+
+function scoreBadgeHtml(score) {
+  const s = scoreLabel(score);
+  const tierClass = s.tier.toLowerCase();
+  return `<span class="score-badge score-badge--${tierClass}" style="border-left-color:${s.color};color:${s.color}">${s.value} \u00B7 ${s.tier}</span>`;
 }
 
 function isLegislativeStory(story) {
@@ -207,10 +218,28 @@ export function renderHero(store) {
     return;
   }
 
+  // Priority bar for high-importance lead story
+  const heroInner = headline.closest('.hero-inner');
+  const existingBar = heroInner?.querySelector('.lead-priority-bar');
+  if (existingBar) existingBar.remove();
+  const existingChip = heroInner?.querySelector('.lead-score-chip');
+  if (existingChip) existingChip.remove();
+  const sl0 = scoreLabel(lead.score);
+  if (lead.score >= 0.78 && heroInner) {
+    const bar = document.createElement('div');
+    bar.className = 'lead-priority-bar';
+    bar.style.cssText = `background:linear-gradient(90deg,${sl0.color},transparent);`;
+    heroInner.insertBefore(bar, heroInner.firstChild);
+    const chip = document.createElement('div');
+    chip.className = 'lead-score-chip';
+    chip.innerHTML = `&#11014; ${escapeHtml(sl0.value)} \u00B7 ${escapeHtml(sl0.tier)}`;
+    chip.style.cssText = `background:${sl0.color}22;color:${sl0.color};border-color:${sl0.color}44;`;
+    heroInner.appendChild(chip);
+  }
   headline.innerHTML = escapeHtml(lead.headline || lead.title);
   subhead.textContent = lead.dek || lead.summary || 'Briefing update ready.';
   const refreshed = store.lastUpdated ? formatTime(store.lastUpdated) : '';
-  meta.innerHTML = `<span style="display:inline-block;width:5px;height:5px;background:var(--accent-gold);border-radius:50%"></span><span>${formatDate(lead.updatedAt || lead.publishedAt)}</span><span style="color:var(--border-strong)">&middot;</span><span>Score ${scoreLabel(lead.score)}/100</span>${refreshed ? `<span style="color:var(--border-strong)">&middot;</span><span>Refreshed ${escapeHtml(refreshed)}</span>` : ''}`;
+  meta.innerHTML = `<span style="display:inline-block;width:5px;height:5px;background:var(--accent-gold);border-radius:50%"></span><span>${formatDate(lead.updatedAt || lead.publishedAt)}</span><span style="color:var(--border-strong)">&middot;</span><span>Score ${scoreLabel(lead.score).value}/10</span>${refreshed ? `<span style="color:var(--border-strong)">&middot;</span><span>Refreshed ${escapeHtml(refreshed)}</span>` : ''}`;
   citation.innerHTML = lead.url ? `<div class="citation-link"><a href="${escapeHtml(lead.url)}" target="_blank" rel="noopener">${escapeHtml(lead.url)}</a> <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1h7v7M11 1L5 7"/></svg></div>` : '';
   if (lead.source) {
     citation.innerHTML += `<div class="citation-author">${escapeHtml(lead.source)}</div><div class="citation-date">${formatDate(lead.updatedAt || lead.publishedAt)}</div>`;
@@ -227,7 +256,7 @@ export function renderTopStories(store) {
     return;
   }
   container.innerHTML = top.map((story, index) => {
-    const score = scoreLabel(story.score);
+    const sl = scoreLabel(story.score);
     const thumb = renderStoryThumb(story.imageUrl, 'top3-thumb', '', story.topics);
     return `<div class="top3-card depth-tilt reveal ${index ? 'stagger-' + index : ''}">
       ${thumb}
@@ -236,7 +265,7 @@ export function renderTopStories(store) {
       <div class="top3-category">${escapeHtml(story.topics?.[0] || 'Priority')}</div>
       <h3 class="top3-title"><a href="/story/${escapeHtml(story.slug)}">${escapeHtml(story.headline)}</a></h3>
       <p class="top3-excerpt">${escapeHtml(story.dek || '')}</p>
-      <div class="top3-score"><div class="top3-score-bar"><div class="top3-score-fill" style="width:${score}%"></div></div><span class="top3-score-val">${score}</span></div>
+      <div class="top3-score"><div class="top3-score-bar"><div class="top3-score-fill" style="width:${Math.round((story.score || 0) * 100)}%"></div></div>${scoreBadgeHtml(story.score)}</div>
       ${story.url ? `<a class="story-external-link" href="${escapeHtml(story.url)}" target="_blank" rel="noopener">Source Link</a>` : ''}
       <div class="citation"><div class="citation-author">${escapeHtml(story.sources?.[0]?.name || '')}</div><div class="citation-date">${formatDate(story.updatedAt)}</div></div>
     </div>`;
@@ -341,8 +370,8 @@ export function renderDailyFeed(store, saved = new Set(), followed = new Set(), 
 
   // Build the HTML string for a single story card (extracted for reconciliation)
   function buildCardHtml(story) {
-    const score = scoreLabel(story.score);
-    const breakdown = debug && story.scoreBreakdown ? `Score: ${score} | tier ${story.scoreBreakdown.tierWeight.toFixed(2)} recency ${story.scoreBreakdown.recency.toFixed(2)}` : '';
+    const sl = scoreLabel(story.score);
+    const breakdown = debug && story.scoreBreakdown ? `Score: ${sl.value} | tier ${story.scoreBreakdown.tierWeight.toFixed(2)} recency ${story.scoreBreakdown.recency.toFixed(2)}` : '';
     const topicsStr = (story.topics || []).join(',');
     const isNew = lastVisit && new Date(story.publishedAt) > lastVisit;
     const newBadge = isNew ? `<span class="story-new-badge" title="New since your last visit">NEW</span>` : '';
@@ -362,7 +391,7 @@ export function renderDailyFeed(store, saved = new Set(), followed = new Set(), 
       <div class="story-card-header">
         ${newBadge}
         <span class="story-card-tier tier-${story.tier}">Tier ${story.tier}</span>
-        <span class="story-card-score">${score}</span>
+        ${scoreBadgeHtml(story.score)}
       </div>
       <h3 class="story-card-title"><a href="/story/${escapeHtml(story.slug)}" onclick="window.openStory('${escapeHtml(story.slug)}');return false;">${escapeHtml(story.headline)}</a></h3>
       <p class="story-card-excerpt">${escapeHtml(story.dek || '')}</p>
@@ -638,11 +667,11 @@ export function renderHighImportance(store) {
     const sourceName = primary?.label || story.sources?.[0]?.name || story.source || '';
     const updated = formatDate(story.updatedAt || story.publishedAt);
     const topic = (story.topics?.[0] || 'legislation').replace(/_/g, ' ');
-    const score = scoreLabel(story.score);
+    const sl = scoreLabel(story.score);
     return `<div class="legis-card">
       <div class="legis-card-top">
         <span class="legis-card-bill-num">${escapeHtml(String(bill).replace(/_/g, ' '))}</span>
-        <span class="legis-card-score-badge">${score}</span>
+        <span class="legis-card-score-badge">${sl.value}</span>
       </div>
       <h3 class="legis-card-title">${escapeHtml(story.headline || story.title)}</h3>
       ${story.dek ? `<p class="legis-card-dek">${escapeHtml(story.dek)}</p>` : ''}
@@ -667,7 +696,7 @@ export function renderArchive(store) {
   }
   container.innerHTML = weeks.map((week) => {
     const items = week.top.map((story) => {
-      return `<div class="archive-day"><div class="archive-day-header"><span class="archive-day-date">${escapeHtml(week.label)}</span><div class="archive-day-runs"><span class="archive-run-badge active">AM</span></div></div><div class="archive-briefing-card"><div><div class="archive-lead">${escapeHtml(story.headline || story.title)}</div><div class="archive-meta">${week.count} stories &middot; Score ${scoreLabel(story.score)}</div></div><div class="archive-dominant">${escapeHtml(story.topics?.[0] || 'Priority')}</div></div></div>`;
+      return `<div class="archive-day"><div class="archive-day-header"><span class="archive-day-date">${escapeHtml(week.label)}</span><div class="archive-day-runs"><span class="archive-run-badge active">AM</span></div></div><div class="archive-briefing-card"><div><div class="archive-lead">${escapeHtml(story.headline || story.title)}</div><div class="archive-meta">${week.count} stories &middot; Score ${scoreLabel(story.score).value}</div></div><div class="archive-dominant">${escapeHtml(story.topics?.[0] || 'Priority')}</div></div></div>`;
     }).join('');
     return `<div class="archive-week" data-week="${escapeHtml(week.key)}" data-start="${escapeHtml(week.range?.start || '')}" data-end="${escapeHtml(week.range?.end || '')}"><div class="archive-week-header" data-toggle-week><span class="archive-week-title">${escapeHtml(week.key)}</span><span class="archive-week-toggle">&#9662;</span></div><div class="archive-week-body">${items}</div></div>`;
   }).join('');
@@ -703,7 +732,7 @@ export function renderTopics(store) {
         const { open, external } = renderStoryActions(story);
         const thumb = renderStoryThumb(story.imageUrl, 'topic-story-thumb', story.headline || story.title || '', story.topics);
         return `<article class="topic-story topic-story--has-thumb" data-story-date="${escapeHtml(storyDate)}">
-          <span class="topic-story-score">${scoreLabel(story.score)}</span>
+          <span class="topic-story-score">${scoreLabel(story.score).value}</span>
           ${thumb}
           <div class="topic-story-main">
             <div class="topic-story-title">${hasSlug ? `<a href="/story/${slug}" onclick="window.openStory('${slug}');return false;">${escapeHtml(story.headline || story.title)}</a>` : escapeHtml(story.headline || story.title)}</div>
@@ -750,7 +779,7 @@ export function renderWeeklyDigest(store) {
     <div class="archive-week-body">
       <div class="archive-briefing-card"><div><div class="archive-lead">Executive Summary</div><div class="archive-meta">${escapeHtml(digest.summary)}</div></div><div class="archive-dominant">Digest</div></div>
       <div class="archive-briefing-card"><div><div class="archive-lead">Top 10</div><div class="archive-meta">${digest.top10.length} stories</div></div><div class="archive-dominant">Highlights</div></div>
-      ${digest.top10.map((story) => `<div class="archive-briefing-card"><div><div class="archive-lead">${escapeHtml(story.headline)}</div><div class="archive-meta">${escapeHtml(story.sources?.[0]?.name || '')} &middot; Score ${scoreLabel(story.score)}</div></div><div class="archive-dominant">${escapeHtml(story.topics?.[0] || 'Priority')}</div></div>`).join('')}
+      ${digest.top10.map((story) => `<div class="archive-briefing-card"><div><div class="archive-lead">${escapeHtml(story.headline)}</div><div class="archive-meta">${escapeHtml(story.sources?.[0]?.name || '')} &middot; Score ${scoreLabel(story.score).value}</div></div><div class="archive-dominant">${escapeHtml(story.topics?.[0] || 'Priority')}</div></div>`).join('')}
       <div class="archive-briefing-card"><div><div class="archive-lead">Market Recap</div><div class="archive-meta">${digest.marketRecap.length} stories</div></div><div class="archive-dominant">Markets</div></div>
       ${digest.marketRecap.map((story) => `<div class="archive-briefing-card"><div><div class="archive-lead">${escapeHtml(story.headline)}</div><div class="archive-meta">${escapeHtml(story.sources?.[0]?.name || '')}</div></div><div class="archive-dominant">Markets</div></div>`).join('')}
       <div class="archive-briefing-card"><div><div class="archive-lead">Policy Recap</div><div class="archive-meta">${digest.policyRecap.length} stories</div></div><div class="archive-dominant">Policy</div></div>
@@ -779,7 +808,7 @@ export function renderDigestPage(digest) {
     <div class="digest-lead-story">
       <div class="digest-lead-headline">${escapeHtml(leadStory.headline || '')}</div>
       <div class="digest-lead-why">${escapeHtml(leadStory.whyItMatters || leadStory.dek || leadStory.summary || '')}</div>
-      <div class="story-card-meta">${escapeHtml(leadStory.sources?.[0]?.name || '')} &middot; Score ${scoreLabel(leadStory.score)}</div>
+      <div class="story-card-meta">${escapeHtml(leadStory.sources?.[0]?.name || '')} &middot; Score ${scoreLabel(leadStory.score).value}</div>
     </div>
     <div class="digest-support-stories">
       ${supportStories.map((s) => `<div class="digest-support-item">
@@ -800,7 +829,7 @@ export function renderDigestPage(digest) {
     </tbody></table>
   </div>` : '';
 
-  const remainingHtml = remainingStories.length ? `<div class="archive-week"><div class="archive-week-header"><span class="archive-week-title">More Highlights</span></div><div class="archive-week-body">${remainingStories.map((story) => `<div class="archive-briefing-card"><div><div class="archive-lead">${escapeHtml(story.headline)}</div><div class="archive-meta">${escapeHtml(story.sources?.[0]?.name || '')} &middot; Score ${scoreLabel(story.score)}</div></div><div class="archive-dominant">${escapeHtml(story.topics?.[0] || '')}</div></div>`).join('')}</div></div>` : '';
+  const remainingHtml = remainingStories.length ? `<div class="archive-week"><div class="archive-week-header"><span class="archive-week-title">More Highlights</span></div><div class="archive-week-body">${remainingStories.map((story) => `<div class="archive-briefing-card"><div><div class="archive-lead">${escapeHtml(story.headline)}</div><div class="archive-meta">${escapeHtml(story.sources?.[0]?.name || '')} &middot; Score ${scoreLabel(story.score).value}</div></div><div class="archive-dominant">${escapeHtml(story.topics?.[0] || '')}</div></div>`).join('')}</div></div>` : '';
 
   container.innerHTML = editorialGrid + recapSection + remainingHtml;
 }
@@ -1093,7 +1122,7 @@ export function renderArchiveDays(days = []) {
     const dateStr = day.date ? new Date(day.date + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : label;
 
     const cardList = stories.map((story, idx) => {
-      const score = story.score != null ? Math.round(story.score * 100) : '--';
+      const score = story.score != null ? scoreLabel(story.score).value : '--';
       const sourceName = story.sources?.[0]?.name || story.source || '';
       const topic = (story.topics?.[0] || '').replace(/_/g, ' ');
       const topicRaw = story.topics?.[0] || '';
