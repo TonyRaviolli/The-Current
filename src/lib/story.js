@@ -129,7 +129,10 @@ export async function enrichStories(stories, prevById = new Map()) {
   const toEnrich = [];
   for (const story of stories.slice(0, ENRICH_LIMIT)) {
     const prev = prevById.get(story.id);
-    if (prev?._enrichedAt && now - new Date(prev._enrichedAt).getTime() < CACHE_MS) {
+    // Issue 9: skip re-enrichment if previously enriched AND updatedAt hasn't changed
+    const freshEnrich = prev?._enrichedAt && now - new Date(prev._enrichedAt).getTime() < CACHE_MS;
+    const storyUpdated = story.updatedAt && prev?.updatedAt && story.updatedAt !== prev.updatedAt;
+    if (freshEnrich && !storyUpdated) {
       // Reuse cached AI fields
       story.whyItMatters = prev.whyItMatters ?? story.whyItMatters;
       story.whatsNext = prev.whatsNext ?? story.whatsNext;

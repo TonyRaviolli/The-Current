@@ -24,9 +24,10 @@ function bootstrapAdminTokenFromUrl() {
   const url = new URL(window.location.href);
   const token = url.searchParams.get('admin_token');
   if (!token) return;
-  setAdminToken(token);
+  // Issue 15: replaceState FIRST so the token never lingers in history/logs
   url.searchParams.delete('admin_token');
   window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+  setAdminToken(token);
 }
 
 function getBootData() {
@@ -46,7 +47,19 @@ async function loadAll() {
     const lastVisitAt = recordVisitAndGetLastTime();
     const store = await fetchFeed();
     storeCache = store;
-    try { sessionStorage.setItem('uc:known_ids', JSON.stringify((store.stories || []).map((s) => s.id))); } catch { /* quota */ }
+    // Issue 3: on quota error, prune oldest 50% and retry once
+    (() => {
+      const ids = (store.stories || []).map((s) => s.id);
+      try {
+        sessionStorage.setItem('uc:known_ids', JSON.stringify(ids));
+      } catch {
+        try {
+          const existing = JSON.parse(sessionStorage.getItem('uc:known_ids') || '[]');
+          const pruned = existing.slice(Math.floor(existing.length / 2));
+          sessionStorage.setItem('uc:known_ids', JSON.stringify([...new Set([...pruned, ...ids])]));
+        } catch { /* storage fully unavailable — skip */ }
+      }
+    })();
     const saved = new Set(getSavedStories());
     const followed = new Set(getFollowedTopics());
     renderMetaRibbon(store);
@@ -85,6 +98,22 @@ async function loadAll() {
   } catch (err) {
     console.error(err);
     if (refreshStatus) refreshStatus.textContent = 'Feed unavailable';
+    // Issue 16: render a visible error state with manual retry button
+    hideLoader();
+    const mainEl = document.querySelector('.page.active .container') || document.querySelector('.page.active') || document.body;
+    if (mainEl && !document.getElementById('uc-feed-error')) {
+      const errDiv = document.createElement('div');
+      errDiv.id = 'uc-feed-error';
+      errDiv.style.cssText = 'margin:2rem auto;max-width:480px;padding:1.5rem 2rem;background:var(--bg-surface,#fff);border:1px solid var(--border-default,#ccc);border-radius:12px;text-align:center;font-family:var(--font-sans,sans-serif)';
+      errDiv.innerHTML = '<p style="font-size:1rem;color:var(--text-secondary,#555);margin-bottom:1rem">Feed temporarily unavailable. Retrying in 60 seconds.</p>'
+        + '<button id="uc-feed-retry" style="padding:8px 20px;border-radius:999px;border:1px solid var(--accent-gold,#b48a3a);background:none;color:var(--accent-gold,#b48a3a);font-family:var(--font-mono,monospace);font-size:0.75rem;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase">Retry now</button>';
+      mainEl.prepend(errDiv);
+      document.getElementById('uc-feed-retry')?.addEventListener('click', () => {
+        errDiv.remove();
+        loadAll();
+      }, { once: true });
+      setTimeout(() => { errDiv.remove(); loadAll(); }, 60000);
+    }
   }
 }
 
@@ -106,6 +135,10 @@ async function loadScoring() {
   }
 }
 
+// TODO [audit]: Issue 13 — Replace scattered sc-* ID strings with a single
+// SCORING_ELEMENTS map and log a warning + abort if any element is missing.
+// Deferred: requires coordinating with renderScoringPanel() in render.js to
+// ensure all element IDs are stable before mapping them here.
 function initScoringPanel() {
   const panel = document.getElementById('scoringPanel');
   if (!panel) return;
@@ -239,6 +272,10 @@ function initSourceManager() {
   }
 }
 
+// TODO [audit]: Issue 7 — Archive renders all cards before filtering. Render
+// only current week immediately; lazy-render collapsed week groups on expand
+// using IntersectionObserver on collapsed week headers. Deferred: requires
+// refactoring renderArchiveDays() in render.js to support incremental loading.
 async function loadAndRenderArchive(range = 'week') {
   try {
     const res = await fetch(`/api/archive?range=${encodeURIComponent(range)}`);
@@ -272,36 +309,105 @@ function matchWatches(stories, watches) {
   return Array.from(matched.entries()).map(([keyword, count]) => ({ keyword, count }));
 }
 
-function pollForUpdates() {
-  let knownLastUpdated = null;
-  async function check() {
+// ── Unified update manager (Issue 1) ─────────────────────────────────────────
+// Primary: SSE /api/feed-updates. Fallback: 10-min /api/status poll if SSE
+// unavailable or drops. A 2-second debounce coalesces concurrent signals.
+
+let _updateDebounceTimer = null;
+let _updateFallbackInterval = null;
+let _knownLastUpdated = null;
+
+function _triggerUpdateCheck(lastUpdated) {
+  clearTimeout(_updateDebounceTimer);
+  _updateDebounceTimer = setTimeout(async () => {
+    if (!lastUpdated || lastUpdated === _knownLastUpdated) return;
+    _knownLastUpdated = lastUpdated;
+    let matchInfo = null;
+    const watches = getWatches();
+    if (watches.length) {
+      try {
+        const feedRes = await fetch('/api/feed');
+        const feed = await feedRes.json();
+        const newStories = getNewStories(feed.stories || []);
+        if (newStories.length) {
+          const matches = matchWatches(newStories, watches);
+          if (matches.length) matchInfo = { matches, total: newStories.length };
+        }
+      } catch { /* non-critical */ }
+    }
+    showLiveUpdateBanner(lastUpdated, matchInfo);
+  }, 2000);
+}
+
+function _startFallbackPoll() {
+  if (_updateFallbackInterval) return; // already running
+  const POLL_MS = 10 * 60 * 1000;
+  async function pollOnce() {
     try {
       const res = await fetch('/api/status');
       if (!res.ok) return;
       const data = await res.json();
       if (!data.lastUpdated) return;
-      if (knownLastUpdated === null) { knownLastUpdated = data.lastUpdated; return; }
-      if (data.lastUpdated !== knownLastUpdated) {
-        knownLastUpdated = data.lastUpdated;
-        let matchInfo = null;
-        const watches = getWatches();
-        if (watches.length) {
-          try {
-            const feedRes = await fetch('/api/feed');
-            const feed = await feedRes.json();
-            const newStories = getNewStories(feed.stories || []);
-            if (newStories.length) {
-              const matches = matchWatches(newStories, watches);
-              if (matches.length) matchInfo = { matches, total: newStories.length };
-            }
-          } catch { /* non-critical */ }
-        }
-        showLiveUpdateBanner(data.lastUpdated, matchInfo);
-      }
+      if (_knownLastUpdated === null) { _knownLastUpdated = data.lastUpdated; return; }
+      _triggerUpdateCheck(data.lastUpdated);
     } catch { /* silent */ }
   }
-  check();
-  setInterval(check, 5 * 60 * 1000);
+  pollOnce();
+  _updateFallbackInterval = setInterval(pollOnce, POLL_MS);
+}
+
+function pollForUpdates() {
+  if (typeof EventSource === 'undefined') {
+    _startFallbackPoll();
+    return;
+  }
+
+  let sseActive = false;
+
+  function connectSSE() {
+    const es = new EventSource('/api/feed-updates');
+    sseActive = false;
+
+    es.addEventListener('open', () => {
+      sseActive = true;
+      // SSE is working — clear fallback poll if it was running
+      if (_updateFallbackInterval) {
+        clearInterval(_updateFallbackInterval);
+        _updateFallbackInterval = null;
+      }
+    });
+
+    es.addEventListener('refresh', (e) => {
+      sseActive = true;
+      try {
+        const data = JSON.parse(e.data);
+        // Show top refresh-banner (replaces subscribeToFeedUpdates from ui.js)
+        const banner = document.getElementById('refresh-banner');
+        const text = document.getElementById('refresh-banner-text');
+        if (banner && text && data.storyCount) {
+          const briefSnippet = data.briefLead ? ` \u00B7 ${data.briefLead.slice(0, 60)}${data.briefLead.length > 60 ? '\u2026' : ''}` : '';
+          text.textContent = `${data.storyCount} stories updated${briefSnippet}`;
+          banner.classList.add('visible');
+        }
+        // Show bottom live-update banner (with keyword watch matching)
+        if (data.at) _triggerUpdateCheck(data.at);
+      } catch { /* skip */ }
+    });
+
+    es.onerror = () => {
+      sseActive = false;
+      es.close();
+      // Start fallback poll while SSE is down, reconnect SSE after 30s
+      _startFallbackPoll();
+      setTimeout(connectSSE, 30000);
+    };
+  }
+
+  connectSSE();
+  // Seed knownLastUpdated on init so first poll doesn't show a false banner
+  fetch('/api/status').then((r) => r.json()).then((d) => {
+    if (d.lastUpdated && _knownLastUpdated === null) _knownLastUpdated = d.lastUpdated;
+  }).catch(() => {});
 }
 
 function showLiveUpdateBanner(lastUpdated, matchInfo = null) {
@@ -483,9 +589,15 @@ function initRefreshButton() {
 }
 
 // Silent background auto-refresh every 30 minutes when tab is visible
+// Stores interval ref so it can be cleared if initAutoRefresh is called again.
+let _autoRefreshInterval = null;
 function initAutoRefresh() {
+  if (_autoRefreshInterval) {
+    clearInterval(_autoRefreshInterval);
+    _autoRefreshInterval = null;
+  }
   const AUTO_MS = 30 * 60 * 1000;
-  setInterval(async () => {
+  _autoRefreshInterval = setInterval(async () => {
     if (document.visibilityState !== 'visible') return;
     if (refreshButton?.disabled) return; // manual refresh in progress
     try {
@@ -500,16 +612,22 @@ function initAutoRefresh() {
   }, AUTO_MS);
 }
 
+// Stores observer ref so it can be disconnected before re-init (Issue 2).
+let _revealObserver = null;
 function initReveal() {
-  const observer = new IntersectionObserver((entries) => {
+  if (_revealObserver) {
+    _revealObserver.disconnect();
+    _revealObserver = null;
+  }
+  _revealObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
         entry.target.classList.add('visible');
-        observer.unobserve(entry.target);
+        _revealObserver.unobserve(entry.target);
       }
     });
   }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
-  document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+  document.querySelectorAll('.reveal').forEach((el) => _revealObserver.observe(el));
 }
 
 function initMarketTiles() {
@@ -576,20 +694,31 @@ function initDepthInteractions() {
 }
 
 function initSearch() {
+  // Issue 6: debounce search filter at 120ms; use rAF for DOM mutations
+  let _searchDebounce = null;
   initSearchFilter(({ query, tier, topic, source, from, to }) => {
-    const fromDate = from ? new Date(from) : null;
-    const toDate = to ? new Date(to) : null;
-    document.querySelectorAll('.story-card').forEach((card) => {
-      const text = card.textContent.toLowerCase();
-      const matchesQuery = !query || text.includes(query.toLowerCase());
-      const matchesTier = !tier || card.dataset.tier === tier;
-      const matchesTopic = !topic || text.includes(topic.toLowerCase());
-      const matchesSource = !source || text.includes(source.toLowerCase());
-      const dateValue = card.dataset.date ? new Date(card.dataset.date) : null;
-      const matchesFrom = !fromDate || (dateValue && dateValue >= fromDate);
-      const matchesTo = !toDate || (dateValue && dateValue <= toDate);
-      card.style.display = matchesQuery && matchesTier && matchesTopic && matchesSource && matchesFrom && matchesTo ? '' : 'none';
-    });
+    clearTimeout(_searchDebounce);
+    _searchDebounce = setTimeout(() => {
+      const fromDate = from ? new Date(from) : null;
+      const toDate = to ? new Date(to) : null;
+      const lowerQuery = query ? query.toLowerCase() : null;
+      const lowerTopic = topic ? topic.toLowerCase() : null;
+      const lowerSource = source ? source.toLowerCase() : null;
+      const cards = document.querySelectorAll('.story-card');
+      requestAnimationFrame(() => {
+        cards.forEach((card) => {
+          const text = card.textContent.toLowerCase();
+          const matchesQuery = !lowerQuery || text.includes(lowerQuery);
+          const matchesTier = !tier || card.dataset.tier === tier;
+          const matchesTopic = !lowerTopic || text.includes(lowerTopic);
+          const matchesSource = !lowerSource || text.includes(lowerSource);
+          const dateValue = card.dataset.date ? new Date(card.dataset.date) : null;
+          const matchesFrom = !fromDate || (dateValue && dateValue >= fromDate);
+          const matchesTo = !toDate || (dateValue && dateValue <= toDate);
+          card.style.display = matchesQuery && matchesTier && matchesTopic && matchesSource && matchesFrom && matchesTo ? '' : 'none';
+        });
+      });
+    }, 120);
   });
 }
 
@@ -718,7 +847,8 @@ initKeywordWatches();
 initUnreadFilter();
 initDarkMode();
 initNavMore();
-subscribeToFeedUpdates();
+// subscribeToFeedUpdates() is superseded by the unified pollForUpdates() below
+// which opens a single SSE connection handling both banners (Issue 1).
 initScoringPanel();
 initSourceManager();
 updateDateline();

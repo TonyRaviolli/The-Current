@@ -84,7 +84,9 @@ export function buildHealthSummary(healthStore, sources) {
 }
 
 function deriveState(h) {
-  const outcomes = h.outcomes || [];
+  // Issue 5: guard against missing/non-array outcomes
+  if (!Array.isArray(h?.outcomes)) return STATE.HEALTHY;
+  const outcomes = h.outcomes;
   if (!outcomes.length) return STATE.HEALTHY;
 
   if (h.consecutiveFailures >= 5) return STATE.PAUSED;

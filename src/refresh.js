@@ -144,9 +144,16 @@ export async function refreshOnce(options = {}) {
 
   const collectedCount = collected.length;
   metrics.articlesIngested = collectedCount;
+
+  // Issue 17: per-phase timing instrumentation
+  console.time('[refresh] fetch');
+  console.timeEnd('[refresh] fetch');
+  console.time('[refresh] dedup');
   info('pipeline_checkpoint', { phase: 'dedup', collected: collectedCount, memMB: Math.round(process.memoryUsage().rss / 1e6) });
   const { unique } = dedupeArticles(collected);
+  console.timeEnd('[refresh] dedup');
 
+  console.time('[refresh] score');
   const scored = unique.map((article) => {
     const { score, breakdown } = scoreArticle(article, refreshConfig.scoring, sourcesConfig.localRegion);
     return {
@@ -155,13 +162,19 @@ export async function refreshOnce(options = {}) {
       scoreBreakdown: breakdown
     };
   });
+  console.timeEnd('[refresh] score');
 
   const sorted = scored.sort((a, b) => b.score - a.score || b.publishedAt.localeCompare(a.publishedAt));
   const recent = sorted.filter((item) => withinHours(item.publishedAt, 72)).slice(0, 500);
+
+  console.time('[refresh] cluster');
   info('pipeline_checkpoint', { phase: 'cluster', unique: unique.length, recent: recent.length, memMB: Math.round(process.memoryUsage().rss / 1e6) });
   const clusters = clusterArticles(recent, refreshConfig.clustering || {});
   const rawStories = buildStories(clusters, { baseUrl: process.env.BASE_URL || 'http://localhost:5173' });
   metrics.clustersCreated = clusters.length;
+  console.timeEnd('[refresh] cluster');
+
+  console.time('[refresh] enrich');
   info('pipeline_checkpoint', { phase: 'enrich', clusters: clusters.length, memMB: Math.round(process.memoryUsage().rss / 1e6) });
 
   // Build a cache map from the previous store so enrichStories can skip re-generation
@@ -169,6 +182,7 @@ export async function refreshOnce(options = {}) {
 
   // AI enrichment: classify topics, generate whyItMatters, whatsNext
   const stories = await enrichStories(rawStories, prevById);
+  console.timeEnd('[refresh] enrich');
   info('pipeline_checkpoint', { phase: 'select', stories: stories.length, memMB: Math.round(process.memoryUsage().rss / 1e6) });
 
   linkRelatedStories(stories);
@@ -177,8 +191,10 @@ export async function refreshOnce(options = {}) {
   const topicPool = buildTopicPool(stories, archiveStore);
   const topics = buildTopics(topicPool);
   const weeklyDigests = buildWeeklyDigests(stories);
+  console.time('[refresh] brief');
   info('pipeline_checkpoint', { phase: 'brief', daily: daily.length, memMB: Math.round(process.memoryUsage().rss / 1e6) });
   const brief = await buildBrief(daily);
+  console.timeEnd('[refresh] brief');
   const topicBlocks = buildTopicBlocks(stories);
   const digest = buildWeeklyDigest(stories);
 
@@ -228,12 +244,14 @@ export async function refreshOnce(options = {}) {
     return nextStore;
   }
 
+  console.time('[refresh] store-write');
   if (!requestedIds.size && requestedTier == null) {
     cache.meta = { ...(cache.meta || {}), sourceCursor: (cursor + maxSources) % Math.max(1, sources.length) };
   }
   await saveJson(STORE_PATH, nextStore);
   await saveJson(CACHE_PATH, cache);
   await saveJson(HEALTH_PATH, healthStore);
+  console.timeEnd('[refresh] store-write');
   await writeQualityReport(qualityMetrics, {
     runId: nextStore.runId,
     refreshOutcome: nextStore.refreshOutcome,

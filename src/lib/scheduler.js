@@ -2,6 +2,20 @@ import { readFile } from 'node:fs/promises';
 import { refreshOnce } from '../refresh.js';
 import { info, error } from './logger.js';
 
+// Issue 12: cancellation flag — set to true by cancelScheduler()
+let _cancelled = false;
+let _pendingTimer = null;
+
+/** Cancel the scheduler loop. Call from SIGTERM handler. */
+export function cancelScheduler() {
+  _cancelled = true;
+  if (_pendingTimer) {
+    clearTimeout(_pendingTimer);
+    _pendingTimer = null;
+  }
+  info('schedule_cancelled', {});
+}
+
 function parseTimes(times = []) {
   return times
     .map((time) => {
@@ -40,9 +54,12 @@ export async function scheduleRefreshLoop({ once = false, logPrefix = 'refresh' 
   }
 
   const loop = async () => {
+    if (_cancelled) return;
     const waitMs = msUntilNext(config.schedule);
     info('schedule_wait', { logPrefix, waitMs });
-    setTimeout(async () => {
+    _pendingTimer = setTimeout(async () => {
+      _pendingTimer = null;
+      if (_cancelled) return;
       try {
         await refreshOnce();
       } catch (err) {

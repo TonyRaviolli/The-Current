@@ -8,6 +8,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { warn } from './logger.js';
+import { ALLOWED_TOPICS } from '../../config/topics.js';
 
 const MODEL = 'claude-opus-4-6';
 const MAX_TOKENS_DEFAULT = 256;
@@ -50,7 +51,16 @@ export async function aiComplete(prompt, { maxTokens = MAX_TOKENS_DEFAULT, syste
     const textBlock = final.content.find((b) => b.type === 'text');
     return textBlock?.text?.trim() || null;
   } catch (err) {
-    warn('ai_error', { message: err.message });
+    // Issue 14: structured error type logging so failures are diagnosable
+    const status = err.status || err.statusCode || null;
+    let errorType = 'UNKNOWN';
+    if (status === 429 || /rate.?limit/i.test(err.message)) errorType = 'RATE_LIMIT';
+    else if (status === 401 || /auth|key/i.test(err.message)) errorType = 'AUTH';
+    else if (status === 529 || /overload/i.test(err.message)) errorType = 'OVERLOAD';
+    else if (status >= 500) errorType = 'SERVER_ERROR';
+    else if (/timeout|ETIMEDOUT/i.test(err.message)) errorType = 'TIMEOUT';
+    process.stderr.write(`[ai:complete] ${errorType} status=${status} ${err.message}\n`);
+    warn('ai_error', { type: errorType, status, message: err.message });
     return null;
   }
 }
@@ -183,20 +193,13 @@ Return ONLY valid JSON, no commentary.`;
 export async function classifyTopicsBatch(items) {
   if (!items.length) return [];
 
-  const ALLOWED_TOPICS_INNER = [
-    'finance', 'macroeconomics', 'energy', 'defense', 'law', 'ai', 'biotech',
-    'cyber', 'infrastructure', 'climate', 'global_trade', 'elections', 'labor',
-    'housing', 'education', 'geopolitics', 'uspolitics', 'economy', 'health',
-    'tech', 'science', 'engineering', 'local', 'banking', 'international'
-  ];
-
   const lines = items.map((s, i) => {
     const text = [s.headline, ...s.summaries.slice(0, 2)].join(' ').slice(0, 300);
     const hint = s.existingTopics.length ? ` [hints: ${s.existingTopics.slice(0, 2).join(',')}]` : '';
     return `${i + 1}. "${text}"${hint}`;
   }).join('\n');
 
-  const prompt = `Classify each numbered news item into 1–4 topics from: ${ALLOWED_TOPICS_INNER.join(', ')}
+  const prompt = `Classify each numbered news item into 1–4 topics from: ${ALLOWED_TOPICS.join(', ')}
 
 ${lines}
 
@@ -212,7 +215,7 @@ No commentary.`;
     if (!Array.isArray(arr)) return items.map(() => null);
     return arr.map((topics) => {
       if (!Array.isArray(topics)) return null;
-      const valid = topics.filter((t) => ALLOWED_TOPICS_INNER.includes(t));
+      const valid = topics.filter((t) => ALLOWED_TOPICS.includes(t));
       return valid.length ? valid.slice(0, 4) : null;
     });
   } catch {
@@ -223,14 +226,8 @@ No commentary.`;
 /**
  * Classify topics for a cluster of articles using semantic understanding.
  * Returns an array of topic strings (from the allowed topic list).
+ * Note: ALLOWED_TOPICS is imported from config/topics.js (Issue 10).
  */
-const ALLOWED_TOPICS = [
-  'finance', 'macroeconomics', 'energy', 'defense', 'law', 'ai', 'biotech',
-  'cyber', 'infrastructure', 'climate', 'global_trade', 'elections', 'labor',
-  'housing', 'education', 'geopolitics', 'uspolitics', 'economy', 'health',
-  'tech', 'science', 'engineering', 'local', 'banking', 'international'
-];
-
 export async function classifyTopicsAI(headline, summaries, existingTopics) {
   const textSample = [headline, ...summaries.slice(0, 3)].join(' ').slice(0, 600);
   const hint = existingTopics.length ? `Source hints: ${existingTopics.join(', ')}.` : '';

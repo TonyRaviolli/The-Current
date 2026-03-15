@@ -10,7 +10,7 @@ import { loadJson } from './lib/store.js';
 import { buildSearchIndex, searchIndex } from './lib/search.js';
 import { validateContact, validateSource, validateTopic } from './lib/forms.js';
 import { info, error } from './lib/logger.js';
-import { scheduleRefreshLoop } from './lib/scheduler.js';
+import { scheduleRefreshLoop, cancelScheduler } from './lib/scheduler.js';
 import { buildHealthSummary } from './lib/health.js';
 import { loadLatestQualityReport } from './lib/metrics.js';
 import { loadArchive, summarizeArchive } from './lib/archive.js';
@@ -876,6 +876,7 @@ scheduleRefreshLoop({ once: false, logPrefix: 'server' });
 
 function shutdown(signal) {
   info('server_shutdown', { signal });
+  cancelScheduler(); // Issue 12: cancel pending scheduler timers
   server.close((err) => {
     if (err) {
       error('server_close_error', { message: err.message });

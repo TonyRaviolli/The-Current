@@ -1,23 +1,42 @@
+/**
+ * SCORE_DEFAULTS — fallback constants used when config/refresh.json values
+ * are absent. Mirrors the defaults in config/refresh.json so behaviour is
+ * consistent whether the server config file is read or not. (Issue 11)
+ */
+const SCORE_DEFAULTS = {
+  recencyHalfLifeHours: 10,      // hours at which recency decays to 0.5
+  tierWeights: { '1': 1, '2': 0.78, '3': 0.58 },
+  maxTopicBoost: 0.18,           // cap on cumulative topic boosts
+  localRegionBoost: 0.08,        // boost for matching local region
+  duplicatePenalty: 0.15,        // penalty for duplicate articles
+  usPriorityBoost: 0.12,         // boost for US-priority stories
+  strategicIntlBoost: 0.04,      // boost for strategic international stories
+  foreignLocalPenalty: 0.12,     // penalty for foreign local stories
+  baselinePenalty: 0.18,         // flat penalty applied to all articles
+  scoreExponent: 1.18            // power to raise the bounded raw score
+};
+
 export function scoreArticle(article, config, localRegion) {
   const now = Date.now();
   const published = article.publishedAt ? new Date(article.publishedAt).getTime() : now;
   const ageHours = Math.max(0, (now - published) / 3600000);
-  const halfLife = config.recencyHalfLifeHours || 10;
+  const halfLife = config.recencyHalfLifeHours ?? SCORE_DEFAULTS.recencyHalfLifeHours;
   const recency = Math.pow(0.5, ageHours / halfLife);
 
-  const tierWeight = config.tierWeights[String(article.tier)] || 0.6;
-  const topicBoosts = (article.topics || []).reduce((sum, topic) => sum + (config.topicBoosts[topic] || 0), 0);
-  const cappedTopicBoosts = Math.min(topicBoosts, config.maxTopicBoost || 0.18);
-  const localBoost = article.region && article.region === localRegion ? config.localRegionBoost : 0;
-  const duplicatePenalty = article.duplicate ? config.duplicatePenalty : 0;
-  const usPriorityBoost = isUsPriority(article, localRegion) ? (config.usPriorityBoost || 0.12) : 0;
-  const strategicIntlBoost = isStrategicInternational(article) ? (config.strategicIntlBoost || 0.04) : 0;
-  const foreignLocalPenalty = isForeignLocal(article, localRegion) ? (config.foreignLocalPenalty || 0.12) : 0;
-  const baselinePenalty = config.baselinePenalty || 0.18;
+  const tw = config.tierWeights || SCORE_DEFAULTS.tierWeights;
+  const tierWeight = tw[String(article.tier)] ?? 0.6;
+  const topicBoosts = (article.topics || []).reduce((sum, topic) => sum + (config.topicBoosts?.[topic] || 0), 0);
+  const cappedTopicBoosts = Math.min(topicBoosts, config.maxTopicBoost ?? SCORE_DEFAULTS.maxTopicBoost);
+  const localBoost = article.region && article.region === localRegion ? (config.localRegionBoost ?? SCORE_DEFAULTS.localRegionBoost) : 0;
+  const duplicatePenalty = article.duplicate ? (config.duplicatePenalty ?? SCORE_DEFAULTS.duplicatePenalty) : 0;
+  const usPriorityBoost = isUsPriority(article, localRegion) ? (config.usPriorityBoost ?? SCORE_DEFAULTS.usPriorityBoost) : 0;
+  const strategicIntlBoost = isStrategicInternational(article) ? (config.strategicIntlBoost ?? SCORE_DEFAULTS.strategicIntlBoost) : 0;
+  const foreignLocalPenalty = isForeignLocal(article, localRegion) ? (config.foreignLocalPenalty ?? SCORE_DEFAULTS.foreignLocalPenalty) : 0;
+  const baselinePenalty = config.baselinePenalty ?? SCORE_DEFAULTS.baselinePenalty;
 
   const raw = tierWeight * 0.42 + recency * 0.24 + cappedTopicBoosts + localBoost + usPriorityBoost + strategicIntlBoost - duplicatePenalty - foreignLocalPenalty - baselinePenalty;
   const bounded = Math.max(0, Math.min(1, raw));
-  const score = Math.pow(bounded, config.scoreExponent || 1.18);
+  const score = Math.pow(bounded, config.scoreExponent ?? SCORE_DEFAULTS.scoreExponent);
 
   return {
     score,
