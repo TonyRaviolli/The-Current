@@ -1,5 +1,5 @@
 import { fetchFeed, runRefresh, fetchResources, fetchSearch, fetchStory, fetchDigest, trackEvent, fetchSources, toggleSource, addSource, deleteSource, fetchScoring, saveScoring, invalidateFeedCache, adminQuerySuffix, setAdminToken } from './api.js';
-import { renderHero, renderTopStories, renderDailyFeed, renderHighImportance, renderArchive, renderTopics, renderDailyInsight, renderResources, renderWeeklyDigest, renderMetaRibbon, renderTodayBrief, renderDeveloping, renderTopicBlocks, renderGlobalSearchResults, renderStoryPage, renderDigestPage, renderOps, renderSinceLastVisit, renderArchiveDays, renderSourceManager, renderScoringPanel, renderMarketIntel, renderCartoons, renderDevelopingStrip, renderMarketHeatmap, renderTopicBreakdownStrip } from './render.js';
+import { renderHero, renderTopStories, renderDailyFeed, renderHighImportance, renderArchive, renderTopics, renderDailyInsight, renderResources, renderWeeklyDigest, renderMetaRibbon, renderTodayBrief, renderDeveloping, renderTopicBlocks, renderGlobalSearchResults, renderStoryPage, renderDigestPage, renderOps, renderSinceLastVisit, renderArchiveDays, renderSourceManager, renderScoringPanel, renderMarketIntel, renderCartoons, renderDevelopingStrip, renderMarketHeatmap, renderTopicBreakdownStrip, renderSourceSpectrum } from './render.js';
 import { initNavigation, initRunSelector, initTierTabs, initTopicFilters, initSearchFilter, initForms, initCtas, initSaveFollow, getSavedStories, getFollowedTopics, initReaderMode, initShortcuts, initGlobalSearch, applySaveFollowState, initArchiveWeekToggles, recordVisitAndGetLastTime, exportBriefing, exportBriefingText, copyStoryLink, initMyTopicsFilter, getWatches, initKeywordWatches, markAsRead, applyReadState, initUnreadFilter, initDarkMode, initNavMore, initAlertStrip, renderTrendingBar, renderEditorsPicks, subscribeToFeedUpdates, initTopicBreakdownStrip } from './ui.js';
 
 const refreshButton = document.getElementById('refreshButton');
@@ -80,6 +80,7 @@ async function loadAll() {
     const feedResult = renderDailyFeed(store, saved, followed, lastVisitAt);
     renderSinceLastVisit(feedResult?.newCount || 0, lastVisitAt);
     renderHighImportance(store);
+    renderSourceSpectrum(store);
     await loadAndRenderArchive();
     renderTopics(store);
     initTopicDateNav();
@@ -583,10 +584,31 @@ function highlightNewCards(newIds) {
 function initRefreshButton() {
   if (!refreshButton) return;
 
+  const setButtonState = (state) => {
+    refreshButton.classList.remove('loading', 'success', 'error', 'refreshing');
+    if (state === 'idle') {
+      refreshButton.textContent = '\u21BB Refresh';
+      refreshButton.disabled = false;
+    } else if (state === 'loading') {
+      refreshButton.innerHTML = 'Refreshing\u2026';
+      refreshButton.classList.add('loading', 'refreshing');
+      refreshButton.disabled = true;
+    } else if (state === 'success') {
+      refreshButton.textContent = '\u2713 Updated';
+      refreshButton.classList.add('success');
+      refreshButton.disabled = false;
+      setTimeout(() => setButtonState('idle'), 2000);
+    } else if (state === 'error') {
+      refreshButton.textContent = '\u2717 Failed';
+      refreshButton.classList.add('error');
+      refreshButton.disabled = false;
+      setTimeout(() => setButtonState('idle'), 3000);
+    }
+  };
+
   refreshButton.addEventListener('click', async () => {
     if (refreshButton.disabled) return;
-    refreshButton.disabled = true;
-    refreshButton.classList.add('refreshing');
+    setButtonState('loading');
 
     const prevIds = new Set((storeCache?.stories || []).map((s) => s.id));
 
@@ -595,11 +617,11 @@ function initRefreshButton() {
         if (refreshStatus) refreshStatus.textContent = message;
       },
       onDone: async (result) => {
-        invalidateFeedCache(); // ensure loadAll fetches fresh data, not stale cache
+        invalidateFeedCache();
         await loadAll();
         const newIds = (storeCache?.stories || []).map((s) => s.id).filter((id) => !prevIds.has(id));
         if (result.outcome === 'no_new_items' || newIds.length === 0) {
-          showToast('No new stories — all caught up.');
+          showToast('No new stories \u2014 all caught up.');
           if (refreshStatus) refreshStatus.textContent = 'All caught up';
         } else {
           const n = newIds.length;
@@ -607,15 +629,13 @@ function initRefreshButton() {
           showToast(`${n} new ${n === 1 ? 'story' : 'stories'} added`);
           highlightNewCards(newIds);
         }
-        refreshButton.disabled = false;
-        refreshButton.classList.remove('refreshing');
+        setButtonState('success');
         trackEvent('refresh_complete', { stories: result.stories || 0, runId: result.runId || null });
       },
       onError: async (msg) => {
         if (refreshStatus) refreshStatus.textContent = 'Refresh failed. Check connectivity.';
-        showToast('Refresh failed — check source connectivity.');
-        refreshButton.disabled = false;
-        refreshButton.classList.remove('refreshing');
+        showToast('Refresh failed \u2014 check source connectivity.');
+        setButtonState('error');
         trackEvent('refresh_failed');
       }
     });

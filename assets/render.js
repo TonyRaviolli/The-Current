@@ -850,6 +850,37 @@ export function renderDigestPage(digest) {
   container.innerHTML = editorialGrid + recapSection + remainingHtml;
 }
 
+export function renderSourceSpectrum(store) {
+  const container = document.querySelector('.sidebar .source-spectrum');
+  if (!container) return;
+  container.dataset.renderedAt = new Date().toISOString();
+  const stories = store.stories || [];
+  if (!stories.length) {
+    container.innerHTML = '<p class="spectrum-empty">Source data unavailable for this refresh cycle.</p>';
+    return;
+  }
+  const orientCounts = {};
+  stories.forEach((s) => {
+    (s.sources || []).forEach((src) => {
+      const o = src.orientation || 'center';
+      orientCounts[o] = (orientCounts[o] || 0) + 1;
+    });
+  });
+  const total = Object.values(orientCounts).reduce((a, b) => a + b, 0) || 1;
+  const rows = [
+    { key: 'left',         label: 'Left',   color: '#4a90d9' },
+    { key: 'center-left',  label: 'Ctr-L',  color: '#6eb5ff' },
+    { key: 'center',       label: 'Center', color: '#a0a0a0' },
+    { key: 'center-right', label: 'Ctr-R',  color: '#e8923a' },
+    { key: 'right',        label: 'Right',  color: '#d45454' },
+  ];
+  container.innerHTML = rows.map((row) => {
+    const count = orientCounts[row.key] || 0;
+    const pct = Math.round((count / total) * 100);
+    return `<div class="spectrum-row"><span class="spectrum-label">${escapeHtml(row.label)}</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:${pct}%;background:${row.color}"></div></div><span class="spectrum-count">${count}</span></div>`;
+  }).join('');
+}
+
 export function renderOps(store) {
   const container = document.getElementById('opsMetrics');
   if (!container) return;

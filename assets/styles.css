@@ -1450,3 +1450,11 @@ body.dark-mode .site-header {
 .topic-breakdown-chip:hover{background:rgba(0,0,0,0.09)}
 .topic-breakdown-chip.active{background:rgba(0,0,0,0.12)}
 .topic-breakdown-count{color:var(--text-muted);font-size:var(--text-2xs)}
+
+/* ── Refresh button states ───────────────────────────────────────────────── */
+#refreshButton.loading{opacity:0.7;pointer-events:none}
+#refreshButton.loading::after{content:'';display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite;margin-left:6px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+#refreshButton.success{color:var(--accent-green,#22c55e)}
+#refreshButton.error{color:var(--accent-red,#ef4444)}
+.spectrum-empty{font-size:var(--text-xs);color:var(--text-muted);font-style:italic;padding:var(--sp-2) 0}
