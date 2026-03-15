@@ -219,7 +219,8 @@ export async function refreshOnce(options = {}) {
     qualityMetrics,
     refreshOutcome: 'updated',
     refreshAttemptAt: new Date().toISOString(),
-    forcedRefresh: force
+    forcedRefresh: force,
+    meta: { ...(store.meta || {}), lastRefresh: new Date().toISOString() }
   };
 
   if (process.env.REFRESH_DRY_RUN === 'true') {

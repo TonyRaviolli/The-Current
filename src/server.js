@@ -70,6 +70,7 @@ async function loadIndexTemplate() {
 
 let refreshInFlight = false;
 const rateLimits = new Map();
+const feedUpdateClients = new Set();
 
 function sendJson(res, status, data) {
   res.writeHead(status, { 'Content-Type': 'application/json' });
@@ -194,10 +195,50 @@ function rateLimit(key, limit = 5, windowMs = 3600000) {
   return entry.count <= limit;
 }
 
+function computeNextRefresh(schedule) {
+  if (!Array.isArray(schedule) || !schedule.length) return null;
+  const now = new Date();
+  const todayUTC = now.toISOString().slice(0, 10);
+  const times = schedule.map((t) => new Date(`${todayUTC}T${t}:00Z`));
+  const future = times.find((t) => t > now);
+  if (future) return future.toISOString();
+  // All today's runs passed — return first slot tomorrow
+  const tomorrow = new Date(now);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  const tomorrowUTC = tomorrow.toISOString().slice(0, 10);
+  return new Date(`${tomorrowUTC}T${schedule[0]}:00Z`).toISOString();
+}
+
+function broadcastFeedUpdate(store) {
+  if (!feedUpdateClients.size) return;
+  const payload = JSON.stringify({
+    at: new Date().toISOString(),
+    storyCount: (store.stories || []).length,
+    briefLead: store.brief?.lead || '',
+  });
+  const msg = `event: refresh\ndata: ${payload}\n\n`;
+  for (const client of feedUpdateClients) {
+    try { client.write(msg); } catch { feedUpdateClients.delete(client); }
+  }
+}
+
 async function handleApi(req, res) {
   if (req.url === '/api/status') {
     const store = await loadJson(STORE_PATH, {});
-    return sendJson(res, 200, { lastUpdated: store.lastUpdated, runId: store.runId });
+    let refreshConfig = {};
+    try { refreshConfig = JSON.parse(await readFile(REFRESH_CONFIG_PATH, 'utf8')); } catch { /* ignore */ }
+    const lastRefresh = store.meta?.lastRefresh || store.lastUpdated || null;
+    const refreshAge = lastRefresh ? Math.round((Date.now() - new Date(lastRefresh).getTime()) / 60000) : null;
+    return sendJson(res, 200, {
+      lastUpdated: store.lastUpdated,
+      runId: store.runId,
+      lastRefresh,
+      nextRefresh: computeNextRefresh(refreshConfig.schedule),
+      refreshAge,
+      storyCount: (store.stories || []).length,
+      briefAvailable: Boolean(store.brief?.lead),
+      sourceHealth: store.sourceHealth?.summary || null,
+    });
   }
 
   if (req.url === '/api/health') {
@@ -304,6 +345,19 @@ async function handleApi(req, res) {
     return sendJson(res, 200, { digest });
   }
 
+  if (req.url === '/api/feed-updates') {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+    });
+    res.write(':\n\n'); // keep-alive comment
+    feedUpdateClients.add(res);
+    req.on('close', () => feedUpdateClients.delete(res));
+    return true;
+  }
+
   // SSE streaming refresh — emits phase events then a final done/error event
   if (req.url === '/api/refresh-stream' || req.url.startsWith('/api/refresh-stream?')) {
     if (!ensureAdmin(req, res)) return true;
@@ -345,6 +399,7 @@ async function handleApi(req, res) {
       refreshInFlight = false;
       invalidateFeedCache();
       updateFeedCache(store);
+      broadcastFeedUpdate(store);
       emit('done', {
         ok: true,
         outcome: store.refreshOutcome || 'updated',
@@ -377,6 +432,7 @@ async function handleApi(req, res) {
       refreshInFlight = false;
       invalidateFeedCache();
       updateFeedCache(store);
+      broadcastFeedUpdate(store);
       return sendJson(res, 200, {
         ok: true,
         outcome: store.refreshOutcome || 'updated',
