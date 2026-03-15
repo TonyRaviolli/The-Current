@@ -2,6 +2,21 @@
 const FEED_MAX_STORIES = 6; // total articles shown across Tier 1/2/3 on briefing tab
 const FEED_MAX_PER_TIER = 2; // target per tier before overflow fills remaining slots
 
+// ── Topic-keyed visual palette for SVG placeholder images ────────────────────
+const TOPIC_VISUAL = {
+  economy:      { bg: '#1a3a2a', accent: '#22c55e', icon: '$', label: 'Economy' },
+  uspolitics:   { bg: '#1a1a3a', accent: '#6366f1', icon: '\u2696', label: 'U.S. Politics' },
+  geopolitics:  { bg: '#1a2a3a', accent: '#38bdf8', icon: '\u2316', label: 'Geopolitics' },
+  tech:         { bg: '#0f1a2a', accent: '#a78bfa', icon: '\u2B21', label: 'Technology' },
+  defense:      { bg: '#1a1a1a', accent: '#f59e0b', icon: '\u25C8', label: 'Defense' },
+  health:       { bg: '#1a2a1a', accent: '#34d399', icon: '+', label: 'Health' },
+  law:          { bg: '#2a1a0a', accent: '#f97316', icon: '\u2696', label: 'Law' },
+  finance:      { bg: '#0a1a2a', accent: '#0ea5e9', icon: '\u25C6', label: 'Finance' },
+  global_trade: { bg: '#1a0a2a', accent: '#e879f9', icon: '\u2295', label: 'Trade' },
+  elections:    { bg: '#2a1a1a', accent: '#ef4444', icon: '\u2B21', label: 'Elections' },
+  default:      { bg: '#1a1a2a', accent: '#94a3b8', icon: '\u25C9', label: 'Intelligence' },
+};
+
 function escapeHtml(text) {
   return String(text)
     .replace(/&/g, '&amp;')
@@ -66,14 +81,30 @@ function getTopicSvgIcon(topics) {
   return `<path d="M14 52 Q26 38 38 52 Q50 66 62 52 Q74 38 86 52" fill="none" stroke-width="2.5" stroke-linecap="round"/><path d="M14 64 Q26 50 38 64 Q50 78 62 64 Q74 50 86 64" fill="none" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>`;
 }
 
+function renderStoryThumbFallbackDataUri(topics) {
+  const t = (topics || []).map((x) => String(x).toLowerCase());
+  let visual = TOPIC_VISUAL.default;
+  for (const key of Object.keys(TOPIC_VISUAL)) {
+    if (key !== 'default' && t.includes(key)) { visual = TOPIC_VISUAL[key]; break; }
+  }
+  const { bg, accent, icon, label } = visual;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 225" preserveAspectRatio="xMidYMid slice"><defs><radialGradient id="rg" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="${accent}" stop-opacity="0.15"/><stop offset="100%" stop-color="${accent}" stop-opacity="0"/></radialGradient></defs><rect width="400" height="225" fill="${bg}"/><rect width="400" height="225" fill="url(#rg)"/><line x1="-20" y1="60" x2="300" y2="320" stroke="${accent}" stroke-width="1" opacity="0.08"/><line x1="100" y1="-20" x2="500" y2="280" stroke="${accent}" stroke-width="1" opacity="0.08"/><line x1="200" y1="-40" x2="600" y2="230" stroke="${accent}" stroke-width="1" opacity="0.08"/><line x1="320" y1="-30" x2="620" y2="210" stroke="${accent}" stroke-width="1" opacity="0.08"/><text x="200" y="100" text-anchor="middle" dominant-baseline="middle" font-family="system-ui,sans-serif" font-size="72" fill="${accent}" opacity="0.35">${icon}</text><text x="200" y="185" text-anchor="middle" dominant-baseline="middle" font-family="system-ui,sans-serif" font-size="16" fill="${accent}" opacity="0.9" letter-spacing="2">${label}</text></svg>`;
+  try {
+    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+  } catch {
+    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  }
+}
+
 function renderStoryThumbFallback(className, topics) {
-  const icon = getTopicSvgIcon(topics);
-  return `<figure class="${className} story-thumb--fallback" aria-hidden="true"><svg viewBox="0 0 96 96" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">${icon}</svg></figure>`;
+  const src = renderStoryThumbFallbackDataUri(topics);
+  return `<figure class="${escapeHtml(className)} story-thumb--fallback" aria-hidden="true"><img src="${src}" alt="" loading="lazy" decoding="async"></figure>`;
 }
 
 function renderStoryThumb(imageUrl, className, altText = '', topics = []) {
+  const fallbackSrc = renderStoryThumbFallbackDataUri(topics);
   if (imageUrl) {
-    return `<figure class="${className}"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(altText)}" loading="lazy" decoding="async" onerror="this.parentElement.remove()"></figure>`;
+    return `<figure class="${escapeHtml(className)}"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(altText)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${fallbackSrc}'"></figure>`;
   }
   return renderStoryThumbFallback(className, topics);
 }
@@ -197,9 +228,7 @@ export function renderTopStories(store) {
   }
   container.innerHTML = top.map((story, index) => {
     const score = scoreLabel(story.score);
-    const thumb = story.imageUrl
-      ? `<figure class="top3-thumb"><img src="${escapeHtml(story.imageUrl)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.remove()"></figure>`
-      : renderStoryThumbFallback('top3-thumb', story.topics);
+    const thumb = renderStoryThumb(story.imageUrl, 'top3-thumb', '', story.topics);
     return `<div class="top3-card depth-tilt reveal ${index ? 'stagger-' + index : ''}">
       ${thumb}
       <span class="top3-rank">${String(index + 1).padStart(2, '0')}</span>
@@ -321,9 +350,7 @@ export function renderDailyFeed(store, saved = new Set(), followed = new Set(), 
     const wordCount = ((story.headline || '') + ' ' + (story.dek || '') + ' ' + (story.summary || '')).split(/\s+/).filter(Boolean).length;
     const readTime = `${Math.max(1, Math.round(wordCount / 200))} min read`;
 
-    const thumbHtml = story.imageUrl
-      ? `<figure class="story-card-thumb"><img src="${escapeHtml(story.imageUrl)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.remove()"></figure>`
-      : renderStoryThumbFallback('story-card-thumb', story.topics);
+    const thumbHtml = renderStoryThumb(story.imageUrl, 'story-card-thumb', '', story.topics);
 
     const entityTags = [
       ...(story.entities?.tickers || []).map((t) => `<span class="entity-tag entity-ticker">${escapeHtml(t)}</span>`),
