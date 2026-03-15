@@ -26,6 +26,11 @@ function escapeHtml(text) {
     .replace(/'/g, '&#039;');
 }
 
+function safeUrl(url) {
+  if (!url || !/^https?:\/\//i.test(url)) return '#';
+  return escapeHtml(url);
+}
+
 function formatDate(iso) {
   if (!iso) return '';
   const date = new Date(iso);
@@ -112,10 +117,10 @@ function renderStoryThumb(imageUrl, className, altText = '', topics = []) {
 function renderStoryActions(story, baseClass = 'topic-story-link') {
   const slug = escapeHtml(story.slug || '');
   const hasSlug = Boolean(story.slug);
-  const external = story.url ? `<a class="${baseClass} secondary" href="${escapeHtml(story.url)}" target="_blank" rel="noopener">Source</a>` : '';
+  const external = story.url ? `<a class="${baseClass} secondary" href="${safeUrl(story.url)}" target="_blank" rel="noopener">Source</a>` : '';
   const open = hasSlug
     ? `<a class="${baseClass}" href="/story/${slug}" onclick="window.openStory('${slug}');return false;">Open</a>`
-    : (story.url ? `<a class="${baseClass}" href="${escapeHtml(story.url)}" target="_blank" rel="noopener">Open</a>` : '');
+    : (story.url ? `<a class="${baseClass}" href="${safeUrl(story.url)}" target="_blank" rel="noopener">Open</a>` : '');
   return { open, external };
 }
 
@@ -240,7 +245,7 @@ export function renderHero(store) {
   subhead.textContent = lead.dek || lead.summary || 'Briefing update ready.';
   const refreshed = store.lastUpdated ? formatTime(store.lastUpdated) : '';
   meta.innerHTML = `<span style="display:inline-block;width:5px;height:5px;background:var(--accent-gold);border-radius:50%"></span><span>${formatDate(lead.updatedAt || lead.publishedAt)}</span><span style="color:var(--border-strong)">&middot;</span><span>Score ${scoreLabel(lead.score).value}/10</span>${refreshed ? `<span style="color:var(--border-strong)">&middot;</span><span>Refreshed ${escapeHtml(refreshed)}</span>` : ''}`;
-  citation.innerHTML = lead.url ? `<div class="citation-link"><a href="${escapeHtml(lead.url)}" target="_blank" rel="noopener">${escapeHtml(lead.url)}</a> <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1h7v7M11 1L5 7"/></svg></div>` : '';
+  citation.innerHTML = lead.url ? `<div class="citation-link"><a href="${safeUrl(lead.url)}" target="_blank" rel="noopener">${escapeHtml(lead.url)}</a> <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1h7v7M11 1L5 7"/></svg></div>` : '';
   if (lead.source) {
     citation.innerHTML += `<div class="citation-author">${escapeHtml(lead.source)}</div><div class="citation-date">${formatDate(lead.updatedAt || lead.publishedAt)}</div>`;
   }
@@ -266,7 +271,7 @@ export function renderTopStories(store) {
       <h3 class="top3-title"><a href="/story/${escapeHtml(story.slug)}">${escapeHtml(story.headline)}</a></h3>
       <p class="top3-excerpt">${escapeHtml(story.dek || '')}</p>
       <div class="top3-score"><div class="top3-score-bar"><div class="top3-score-fill" style="width:${Math.round((story.score || 0) * 100)}%"></div></div>${scoreBadgeHtml(story.score)}</div>
-      ${story.url ? `<a class="story-external-link" href="${escapeHtml(story.url)}" target="_blank" rel="noopener">Source Link</a>` : ''}
+      ${story.url ? `<a class="story-external-link" href="${safeUrl(story.url)}" target="_blank" rel="noopener">Source Link</a>` : ''}
       <div class="citation"><div class="citation-author">${escapeHtml(story.sources?.[0]?.name || '')}</div><div class="citation-date">${formatDate(story.updatedAt)}</div></div>
     </div>`;
   }).join('');
@@ -287,7 +292,7 @@ export function renderDeveloping(store) {
       <div class="story-card-excerpt">${escapeHtml(story.dek || '')}</div>
       <div class="developing-actions">
         ${(story.topics || []).slice(0, 3).map((topic) => `<span class="developing-chip">${escapeHtml(topic)}</span>`).join('')}
-        ${story.url ? `<a class="story-external-link" href="${escapeHtml(story.url)}" target="_blank" rel="noopener">External</a>` : ''}
+        ${story.url ? `<a class="story-external-link" href="${safeUrl(story.url)}" target="_blank" rel="noopener">External</a>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -402,7 +407,7 @@ export function renderDailyFeed(store, saved = new Set(), followed = new Set(), 
         <span>&middot;</span>
         <span class="story-card-source">${formatDate(story.updatedAt)}</span>
         <span>&middot;</span><span class="story-read-time">${readTime}</span>
-        ${story.url ? `<span>&middot;</span><a class="story-external-link" href="${escapeHtml(story.url)}" target="_blank" rel="noopener">Original</a>` : ''}
+        ${story.url ? `<span>&middot;</span><a class="story-external-link" href="${safeUrl(story.url)}" target="_blank" rel="noopener">Original</a>` : ''}
       </div>
       <div class="story-actions">
         <button class="story-btn ${saved.has(story.id) ? 'active' : ''}" data-save="${escapeHtml(story.id)}">${saved.has(story.id) ? 'Saved' : 'Save'}</button>
@@ -626,7 +631,7 @@ export function renderCartoons(store) {
       ${thumb}
       <div class="cartoon-meta">
         <div class="cartoon-source">${escapeHtml(story.sources?.[0]?.name || '')}</div>
-        <a class="cartoon-title" href="${escapeHtml(story.url || '#')}" target="_blank" rel="noopener">${escapeHtml(story.headline)}</a>
+        <a class="cartoon-title" href="${safeUrl(story.url)}" target="_blank" rel="noopener">${escapeHtml(story.headline)}</a>
       </div>
     </div>`;
   }).join('');
@@ -640,7 +645,7 @@ export function renderCartoons(store) {
       ${thumb}
       <div class="cartoon-meta">
         <div class="cartoon-source">${escapeHtml(story.sources?.[0]?.name || '')}</div>
-        <a class="cartoon-title" href="${escapeHtml(story.url || '#')}" target="_blank" rel="noopener">${escapeHtml(story.headline)}</a>
+        <a class="cartoon-title" href="${safeUrl(story.url)}" target="_blank" rel="noopener">${escapeHtml(story.headline)}</a>
       </div>
     </div>`;
   }).join('');
@@ -678,7 +683,7 @@ export function renderHighImportance(store) {
         : `<a class="legis-card-action legis-card-action--secondary" href="${storyUrl}" target="_blank" rel="noopener">Coverage</a>`)
       : '';
     const docAction = primary?.url
-      ? `<a class="legis-card-action" href="${escapeHtml(primary.url)}" target="_blank" rel="noopener">${escapeHtml(governmentDocLabel(primary))}</a>`
+      ? `<a class="legis-card-action" href="${safeUrl(primary.url)}" target="_blank" rel="noopener">${escapeHtml(governmentDocLabel(primary))}</a>`
       : '';
     const sourceName = primary?.label || story.sources?.[0]?.name || story.source || '';
     const updated = formatDate(story.updatedAt || story.publishedAt);
@@ -957,7 +962,7 @@ export function renderGlobalSearchResults(results = [], meta = {}) {
     const meta = [item.source, dateStr].filter(Boolean).join(' &middot; ');
     return `<div class="global-search-card">
       <div class="meta">${meta}</div>
-      <h4><a href="${item.slug ? `/story/${escapeHtml(item.slug)}` : escapeHtml(item.url || '#')}"${item.slug ? '' : ' target="_blank" rel="noopener"'}>${escapeHtml(item.title)}</a></h4>
+      <h4><a href="${item.slug ? `/story/${escapeHtml(item.slug)}` : safeUrl(item.url)}"${item.slug ? '' : ' target="_blank" rel="noopener"'}>${escapeHtml(item.title)}</a></h4>
       ${item.summary ? `<p class="story-card-excerpt">${escapeHtml(item.summary)}</p>` : ''}
     </div>`;
   }).join('');
@@ -995,7 +1000,7 @@ function buildTimelineHtml(timeline) {
         <time class="timeline-time">${escapeHtml(formatDate(item.publishedAt) + ' ' + formatTime(item.publishedAt))}</time>
         <div class="timeline-content">
           <span class="timeline-source">${escapeHtml(item.source || '')}</span>
-          <a href="${escapeHtml(item.url || '#')}" class="timeline-title" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title || '')}</a>
+          <a href="${safeUrl(item.url)}" class="timeline-title" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title || '')}</a>
         </div>
       </li>`
     ).join('')}
@@ -1093,7 +1098,7 @@ export function renderStoryPage(story) {
     sources.innerHTML = (story.sources || []).map((item) => `<div class="story-source-item"><div class="story-card-title">${escapeHtml(item.name)}</div><div class="story-card-footer">${escapeHtml(item.tierLabel || '')}</div></div>`).join('');
   }
   if (docs) {
-    docs.innerHTML = (story.primaryDocs || []).map((doc) => `<div class="story-doc-item"><a href="${escapeHtml(doc.url)}" target="_blank" rel="noopener">${escapeHtml(doc.title)}</a>${doc.label ? `<div class="story-card-footer">${escapeHtml(doc.label)}</div>` : ''}</div>`).join('') || '<div class="story-doc-item">Primary filings listed when available.</div>';
+    docs.innerHTML = (story.primaryDocs || []).map((doc) => `<div class="story-doc-item"><a href="${safeUrl(doc.url)}" target="_blank" rel="noopener">${escapeHtml(doc.title)}</a>${doc.label ? `<div class="story-card-footer">${escapeHtml(doc.label)}</div>` : ''}</div>`).join('') || '<div class="story-doc-item">Primary filings listed when available.</div>';
   }
   if (related) {
     related.innerHTML = (story.related || []).map((item) => `<div class="story-related-item"><a href="/story/${escapeHtml(item.slug)}">${escapeHtml(item.headline)}</a></div>`).join('') || '<div class="story-related-item">No related clusters yet.</div>';

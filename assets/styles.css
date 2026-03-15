@@ -1506,3 +1506,23 @@ body.dark-mode .site-header {
 
 /* ── Mobile score badge ──────────────────────────────────────────────────── */
 .score-badge{white-space:nowrap}
+
+/* ── Mobile fixes ────────────────────────────────────────────────────────── */
+@media(max-width:375px){
+  .search-input{min-width:0}
+  .score-badge{font-size:0.6rem}
+  .archive-topic-row{gap:4px}
+}
+@media(max-width:560px){
+  .stories-grid{grid-template-columns:1fr}
+  .story-card--has-thumb{grid-template-columns:1fr}
+  .story-card-thumb{max-width:none;aspect-ratio:16/9;width:100%;grid-column:1;grid-row:auto}
+  .story-card--has-thumb .story-card-header,
+  .story-card--has-thumb .story-card-title,
+  .story-card--has-thumb .story-card-excerpt,
+  .story-card--has-thumb .entity-tags,
+  .story-card--has-thumb .spectrum-mini,
+  .story-card--has-thumb .story-card-footer,
+  .story-card--has-thumb .story-actions,
+  .story-card--has-thumb .citation{grid-column:1}
+}
