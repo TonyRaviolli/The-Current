@@ -632,6 +632,43 @@ body{background:linear-gradient(180deg,#fbf7ef 0%,#f4ede1 100%);color:var(--text
   .topic-story-thumb,.archive-story-thumb{display:none}
 }
 
+/* ── Task 1A: Lead intelligence card layout fixes ───────────────────────── */
+/* Increase line-height so multi-line headlines breathe (was 1.02 — too tight) */
+.hero-headline{line-height:1.12}
+/* Add bottom margin to hero-meta so citation has clear separation */
+.hero-meta{margin-bottom:var(--sp-4)}
+/* More top breathing room for the hero citation source block */
+.hero-inner .citation{margin-top:var(--sp-5)}
+
+/* ── Task 1B & 2: Story thumb fallback (SVG) & image fit ────────────────── */
+.story-thumb--fallback{
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(73,56,27,0.05);
+}
+.story-thumb--fallback svg{
+  width:40px;height:40px;
+  color:var(--accent-gold);opacity:0.45;
+  overflow:visible;
+}
+/* Ensure all story card images fill their containers without distortion */
+.story-card-thumb img,
+.top3-thumb img,
+.topic-story-thumb img,
+.archive-story-thumb img,
+.cartoon-thumb img{
+  width:100%;height:100%;
+  object-fit:cover;object-position:center;
+  display:block;
+}
+/* Lock main feed thumb to consistent 16/9 aspect ratio */
+.story-card-thumb{aspect-ratio:16/9}
+.top3-thumb{aspect-ratio:16/9}
+/* Prevent any thumb from overflowing its container */
+.story-card-thumb,
+.top3-thumb,
+.topic-story-thumb,
+.archive-story-thumb{overflow:hidden}
+
 /* ── Dark mode (opt-in only via [data-theme="dark"] — not auto-triggered) ── */
 [data-theme="dark"]{
   :root{

@@ -37,9 +37,41 @@ function groupStoriesByDate(stories = []) {
     }));
 }
 
-function renderStoryThumb(imageUrl, className, altText = '') {
-  if (!imageUrl) return '';
-  return `<figure class="${className}"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(altText)}" loading="lazy" decoding="async" onerror="this.parentElement.remove()"></figure>`;
+// ── Topic-keyed SVG fallback icons ───────────────────────────────────────────
+function getTopicSvgIcon(topics) {
+  const t = (topics || []).map((x) => String(x).toLowerCase());
+  if (t.some((x) => ['finance', 'economy', 'macroeconomics', 'banking', 'markets'].includes(x)))
+    return `<polyline points="8,56 24,40 40,48 56,24 72,32 88,12" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="88" cy="12" r="4" fill="currentColor"/>`;
+  if (t.some((x) => ['ai', 'tech', 'technology', 'cyber', 'engineering'].includes(x)))
+    return `<rect x="26" y="26" width="44" height="44" rx="6" fill="none" stroke-width="2"/><circle cx="48" cy="48" r="10" fill="none" stroke-width="2"/><line x1="48" y1="26" x2="48" y2="36" stroke-width="2.5" stroke-linecap="round"/><line x1="48" y1="60" x2="48" y2="70" stroke-width="2.5" stroke-linecap="round"/><line x1="26" y1="48" x2="36" y2="48" stroke-width="2.5" stroke-linecap="round"/><line x1="60" y1="48" x2="70" y2="48" stroke-width="2.5" stroke-linecap="round"/>`;
+  if (t.some((x) => ['health', 'biotech'].includes(x)))
+    return `<line x1="48" y1="18" x2="48" y2="78" stroke-width="3" stroke-linecap="round"/><line x1="18" y1="48" x2="78" y2="48" stroke-width="3" stroke-linecap="round"/><circle cx="48" cy="48" r="22" fill="none" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.5"/>`;
+  if (t.some((x) => ['geopolitics', 'international', 'global_trade', 'defense'].includes(x)))
+    return `<circle cx="48" cy="48" r="26" fill="none" stroke-width="2"/><ellipse cx="48" cy="48" rx="13" ry="26" fill="none" stroke-width="1.5"/><line x1="22" y1="48" x2="74" y2="48" stroke-width="1.5"/><line x1="24" y1="36" x2="72" y2="36" stroke-width="1" opacity="0.6"/><line x1="24" y1="60" x2="72" y2="60" stroke-width="1" opacity="0.6"/>`;
+  if (t.some((x) => ['law', 'elections', 'uspolitics'].includes(x)))
+    return `<line x1="48" y1="22" x2="48" y2="74" stroke-width="2" stroke-linecap="round"/><line x1="28" y1="42" x2="68" y2="42" stroke-width="1.5"/><circle cx="28" cy="42" r="9" fill="none" stroke-width="1.5"/><circle cx="68" cy="42" r="9" fill="none" stroke-width="1.5"/>`;
+  if (t.some((x) => ['energy', 'climate', 'infrastructure'].includes(x)))
+    return `<path d="M48 18 L34 52 L45 52 L33 78 L64 44 L52 44 L66 18 Z" fill="none" stroke-width="2" stroke-linejoin="round"/>`;
+  if (t.some((x) => ['labor', 'housing'].includes(x)))
+    return `<path d="M22 60 L48 26 L74 60" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><rect x="34" y="60" width="28" height="18" fill="none" stroke-width="2"/><rect x="44" y="66" width="8" height="12" fill="none" stroke-width="1.5"/>`;
+  if (t.some((x) => ['science'].includes(x)))
+    return `<circle cx="48" cy="48" r="10" fill="none" stroke-width="2"/><ellipse cx="48" cy="48" rx="26" ry="10" fill="none" stroke-width="1.5"/><ellipse cx="48" cy="48" rx="26" ry="10" fill="none" stroke-width="1.5" transform="rotate(60 48 48)"/><ellipse cx="48" cy="48" rx="26" ry="10" fill="none" stroke-width="1.5" transform="rotate(120 48 48)"/>`;
+  if (t.some((x) => ['education'].includes(x)))
+    return `<path d="M22 46 L48 30 L74 46 L48 62 Z" fill="none" stroke-width="2" stroke-linejoin="round"/><line x1="66" y1="50" x2="66" y2="68" stroke-width="2" stroke-linecap="round"/><path d="M55 68 a12 6 0 0 1 22 0" fill="none" stroke-width="2"/>`;
+  // Default: ocean wave (site brand motif)
+  return `<path d="M14 52 Q26 38 38 52 Q50 66 62 52 Q74 38 86 52" fill="none" stroke-width="2.5" stroke-linecap="round"/><path d="M14 64 Q26 50 38 64 Q50 78 62 64 Q74 50 86 64" fill="none" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>`;
+}
+
+function renderStoryThumbFallback(className, topics) {
+  const icon = getTopicSvgIcon(topics);
+  return `<figure class="${className} story-thumb--fallback" aria-hidden="true"><svg viewBox="0 0 96 96" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">${icon}</svg></figure>`;
+}
+
+function renderStoryThumb(imageUrl, className, altText = '', topics = []) {
+  if (imageUrl) {
+    return `<figure class="${className}"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(altText)}" loading="lazy" decoding="async" onerror="this.parentElement.remove()"></figure>`;
+  }
+  return renderStoryThumbFallback(className, topics);
 }
 
 function renderStoryActions(story, baseClass = 'topic-story-link') {
@@ -163,7 +195,7 @@ export function renderTopStories(store) {
     const score = scoreLabel(story.score);
     const thumb = story.imageUrl
       ? `<figure class="top3-thumb"><img src="${escapeHtml(story.imageUrl)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.remove()"></figure>`
-      : '';
+      : renderStoryThumbFallback('top3-thumb', story.topics);
     return `<div class="top3-card depth-tilt reveal ${index ? 'stagger-' + index : ''}">
       ${thumb}
       <span class="top3-rank">${String(index + 1).padStart(2, '0')}</span>
@@ -251,14 +283,14 @@ export function renderDailyFeed(store, saved = new Set(), followed = new Set(), 
 
     const thumbHtml = story.imageUrl
       ? `<figure class="story-card-thumb"><img src="${escapeHtml(story.imageUrl)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.remove()"></figure>`
-      : '';
+      : renderStoryThumbFallback('story-card-thumb', story.topics);
 
     const entityTags = [
       ...(story.entities?.tickers || []).map((t) => `<span class="entity-tag entity-ticker">${escapeHtml(t)}</span>`),
       ...(story.entities?.countries || []).slice(0, 2).map((c) => `<span class="entity-tag entity-country">${escapeHtml(c)}</span>`)
     ].join('');
 
-    return `<article class="story-card depth-tilt reveal${isNew ? ' story-card--new' : ''}${story.imageUrl ? ' story-card--has-thumb' : ''}" data-tier="${story.tier}" data-date="${story.updatedAt}" data-story-id="${escapeHtml(story.id)}" data-topic="${escapeHtml(story.topics?.[0] || '')}" data-topics="${escapeHtml(topicsStr)}">
+    return `<article class="story-card depth-tilt reveal${isNew ? ' story-card--new' : ''} story-card--has-thumb" data-tier="${story.tier}" data-date="${story.updatedAt}" data-story-id="${escapeHtml(story.id)}" data-topic="${escapeHtml(story.topics?.[0] || '')}" data-topics="${escapeHtml(topicsStr)}">
       ${thumbHtml}
       <div class="story-card-header">
         ${newBadge}
@@ -520,8 +552,8 @@ export function renderTopics(store) {
         const slug = escapeHtml(story.slug || '');
         const hasSlug = Boolean(story.slug);
         const { open, external } = renderStoryActions(story);
-        const thumb = renderStoryThumb(story.imageUrl, 'topic-story-thumb', story.headline || story.title || '');
-        return `<article class="topic-story${story.imageUrl ? ' topic-story--has-thumb' : ''}" data-story-date="${escapeHtml(storyDate)}">
+        const thumb = renderStoryThumb(story.imageUrl, 'topic-story-thumb', story.headline || story.title || '', story.topics);
+        return `<article class="topic-story topic-story--has-thumb" data-story-date="${escapeHtml(storyDate)}">
           <span class="topic-story-score">${scoreLabel(story.score)}</span>
           ${thumb}
           <div class="topic-story-main">
@@ -744,8 +776,8 @@ export function renderArchiveDays(days = []) {
       const topic = (story.topics?.[0] || '').replace(/_/g, ' ');
       const slug = story.slug ? escapeHtml(story.slug) : '';
       const { open, external } = renderStoryActions(story);
-      const thumb = renderStoryThumb(story.imageUrl, 'archive-story-thumb', story.headline || '');
-      return `<div class="archive-briefing-card${story.imageUrl ? ' archive-briefing-card--has-thumb' : ''}">
+      const thumb = renderStoryThumb(story.imageUrl, 'archive-story-thumb', story.headline || '', story.topics);
+      return `<div class="archive-briefing-card archive-briefing-card--has-thumb">
         ${thumb}
         <div>
           <div class="archive-lead">${slug ? `<a href="/story/${slug}" onclick="window.openStory('${slug}');return false;">${escapeHtml(story.headline)}</a>` : escapeHtml(story.headline)}</div>
