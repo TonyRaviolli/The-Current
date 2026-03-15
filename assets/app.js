@@ -810,7 +810,7 @@ function initSearch() {
           card.style.display = matchesQuery && matchesTier && matchesTopic && matchesSource && matchesFrom && matchesTo ? '' : 'none';
         });
       });
-    }, 120);
+    }, 150);
   });
 }
 
@@ -824,6 +824,8 @@ function applyArchiveFilters() {
   const topic = topicSel ? topicSel.value.toLowerCase() : '';
   const tier = tierSel ? tierSel.value : '';
   const run = _archiveRunFilter;
+  const activeTopicBtn = document.querySelector('.archive-topic-btn.active');
+  const btnTopic = activeTopicBtn?.dataset.topic || 'all';
 
   document.querySelectorAll('.archive-grid-card').forEach((card) => {
     // Never show overflow cards unless explicitly expanded
@@ -835,7 +837,8 @@ function applyArchiveFilters() {
     const topicMatch = !topic || (card.dataset.topic || '').toLowerCase().includes(topic);
     const tierMatch = !tier || card.dataset.tier === tier;
     const runMatch = run === 'all' || card.dataset.run === run;
-    card.style.display = textMatch && topicMatch && tierMatch && runMatch ? '' : 'none';
+    const btnTopicMatch = btnTopic === 'all' || (card.dataset.topic || '').split(',').some((t) => t === btnTopic);
+    card.style.display = textMatch && topicMatch && tierMatch && runMatch && btnTopicMatch ? '' : 'none';
   });
   // Hide day sections where all cards are filtered out
   document.querySelectorAll('.archive-day-section').forEach((section) => {
@@ -852,12 +855,22 @@ function initArchiveSearch() {
   let _debounce = null;
   const debouncedFilter = () => {
     clearTimeout(_debounce);
-    _debounce = setTimeout(applyArchiveFilters, 120);
+    _debounce = setTimeout(applyArchiveFilters, 150);
   };
 
   if (input) input.addEventListener('input', debouncedFilter);
   if (topicSel) topicSel.addEventListener('change', applyArchiveFilters);
   if (tierSel) tierSel.addEventListener('change', applyArchiveFilters);
+
+  document.querySelectorAll('.archive-topic-btn').forEach((btn) => {
+    if (btn.dataset.bound === '1') return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.archive-topic-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyArchiveFilters();
+    });
+  });
 
   document.querySelectorAll('.archive-filter').forEach((btn) => {
     btn.addEventListener('click', () => {
