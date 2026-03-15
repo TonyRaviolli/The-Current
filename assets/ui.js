@@ -72,6 +72,7 @@ export function initNavigation() {
   });
 
   window.navigateTo = navigateTo;
+  window.navigateSearch = navigateSearch;
   const mobile = document.getElementById('mobileNav');
   const mobileOpen = document.getElementById('mobileNavOpen');
   const mobileClose = document.getElementById('mobileNavClose');

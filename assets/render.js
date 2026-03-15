@@ -831,6 +831,99 @@ export function renderGlobalSearchResults(results = [], meta = {}) {
   }).join('');
 }
 
+function buildSpectrumHtml(spectrum) {
+  if (!spectrum || !spectrum.length) return '';
+  const hasData = spectrum.some((r) => r.count > 0);
+  if (!hasData) return '';
+  return `
+    <div class="spectrum-full">
+      <div class="spectrum-bar-full">
+        ${spectrum.filter((r) => r.percent > 0).map((row) =>
+          `<div class="spectrum-segment"
+                style="width:${Number(row.percent)||0}%;background:${escapeHtml(row.color||'')}"
+                title="${escapeHtml(row.label)}: ${row.count} source${row.count !== 1 ? 's' : ''}">
+            <span class="spectrum-segment-label">${Number(row.percent) > 12 ? escapeHtml(row.label) : ''}</span>
+          </div>`
+        ).join('')}
+      </div>
+      <div class="spectrum-legend">
+        ${spectrum.filter((r) => r.count > 0).map((row) =>
+          `<span><i style="background:${escapeHtml(row.color||'')}"></i>${escapeHtml(row.label)} (${row.count})</span>`
+        ).join('')}
+      </div>
+    </div>`;
+}
+
+function buildTimelineHtml(timeline) {
+  if (!timeline || !timeline.length) return '';
+  return `<ol class="story-timeline">
+    ${timeline.map((item, i) => `
+      <li class="timeline-item${i === 0 ? ' timeline-item--first' : ''}">
+        <div class="timeline-dot"></div>
+        <time class="timeline-time">${escapeHtml(formatDate(item.publishedAt) + ' ' + formatTime(item.publishedAt))}</time>
+        <div class="timeline-content">
+          <span class="timeline-source">${escapeHtml(item.source || '')}</span>
+          <a href="${escapeHtml(item.url || '#')}" class="timeline-title" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title || '')}</a>
+        </div>
+      </li>`
+    ).join('')}
+  </ol>`;
+}
+
+function buildEntitiesHtml(entities) {
+  if (!entities) return '';
+  const groups = [
+    { key: 'people',    label: 'People',       type: 'person',  items: (entities.people || []).slice(0, 4).map((e) => e.name || e) },
+    { key: 'orgs',      label: 'Organizations', type: 'org',    items: (entities.orgs || []).slice(0, 4).map((e) => e.name || e) },
+    { key: 'tickers',   label: 'Tickers',       type: 'ticker', items: (entities.tickers || []).slice(0, 4).map((e) => e.symbol || e.name || e) },
+    { key: 'countries', label: 'Countries',     type: 'country',items: (entities.countries || []).slice(0, 3).map((e) => e.name || e) },
+  ].filter((g) => g.items.length);
+  if (!groups.length) return '';
+  return groups.map((g) => `
+    <div class="entity-group">
+      <span class="entity-group-label">${escapeHtml(g.label)}</span>
+      ${g.items.map((name) =>
+        `<a href="#" class="entity-chip entity-chip--${g.type}" onclick="event.preventDefault();if(window.navigateSearch)window.navigateSearch('${escapeHtml(String(name).replace(/'/g, "\\'"))}')">${escapeHtml(name)}</a>`
+      ).join('')}
+    </div>`
+  ).join('');
+}
+
+function buildConfidenceBreakdownHtml(scoreBreakdown) {
+  if (!scoreBreakdown) return '';
+  const rows = [
+    { label: 'Tier weight',         value: scoreBreakdown.tierWeight || 0,         max: 1,    positive: true },
+    { label: 'Recency',             value: scoreBreakdown.recency || 0,             max: 1,    positive: true },
+    { label: 'Topic boost',         value: scoreBreakdown.cappedTopicBoosts || 0,   max: 0.18, positive: true },
+    { label: 'US priority',         value: scoreBreakdown.usPriorityBoost || 0,     max: 0.12, positive: true },
+    { label: 'Strategic intl',      value: scoreBreakdown.strategicIntlBoost || 0,  max: 0.04, positive: true },
+    { label: 'Duplicate penalty',   value: scoreBreakdown.duplicatePenalty || 0,    max: 0.15, positive: false },
+    { label: 'Foreign local pen.',  value: scoreBreakdown.foreignLocalPenalty || 0, max: 0.14, positive: false },
+    { label: 'Baseline penalty',    value: scoreBreakdown.baselinePenalty || 0,     max: 0.18, positive: false },
+  ].filter((r) => r.value > 0);
+  if (!rows.length) return '';
+  return `
+    <div class="confidence-breakdown">
+      <button class="confidence-breakdown-toggle" onclick="this.nextElementSibling.classList.toggle('open');this.setAttribute('aria-expanded',this.nextElementSibling.classList.contains('open'))" aria-expanded="false">
+        SCORE BREAKDOWN <span>&#9662;</span>
+      </button>
+      <div class="confidence-breakdown-body">
+        ${rows.map((r) => {
+          const pct = Math.min(100, Math.round((r.value / r.max) * 100));
+          return `<div class="score-bar-row">
+            <div class="score-bar-label">
+              <span>${escapeHtml(r.label)}</span>
+              <span>${r.value.toFixed(3)}</span>
+            </div>
+            <div class="score-bar-track">
+              <div class="score-bar-fill${r.positive ? '' : ' negative'}" style="width:${pct}%"></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
 export function renderStoryPage(story) {
   if (!story) return;
   const title = document.getElementById('storyTitle');
@@ -862,7 +955,7 @@ export function renderStoryPage(story) {
   if (why) why.textContent = story.whyItMatters || '';
   if (next) next.textContent = story.whatsNext || '';
   if (timeline) {
-    timeline.innerHTML = (story.timeline || []).map((item) => `<div class="story-timeline-item"><div class="story-card-title">${escapeHtml(item.title)}</div><div class="story-card-footer">${escapeHtml(item.source)} &middot; ${formatDate(item.publishedAt)}</div></div>`).join('');
+    timeline.innerHTML = buildTimelineHtml(story.timeline);
   }
   if (sources) {
     sources.innerHTML = (story.sources || []).map((item) => `<div class="story-source-item"><div class="story-card-title">${escapeHtml(item.name)}</div><div class="story-card-footer">${escapeHtml(item.tierLabel || '')}</div></div>`).join('');
@@ -882,8 +975,37 @@ export function renderStoryPage(story) {
     }
   }
   if (spectrum) {
-    spectrum.innerHTML = (story.spectrum || []).map((row) => `<div class="spectrum-row"><span class="spectrum-label">${escapeHtml(row.label)}</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:${Number(row.percent)||0}%;background:${escapeHtml(row.color||'')}"></div></div><span class="spectrum-count">${row.count}</span></div>`).join('');
+    spectrum.innerHTML = buildSpectrumHtml(story.spectrum);
   }
+
+  // Entity chips
+  const entitiesContainer = document.getElementById('storyEntities');
+  if (entitiesContainer) {
+    entitiesContainer.innerHTML = buildEntitiesHtml(story.entities);
+  } else if (story.entities) {
+    // Create entities section dynamically if container doesn't exist
+    const storyGrid = document.querySelector('.story-grid > div:first-child');
+    if (storyGrid) {
+      const entSection = document.createElement('div');
+      entSection.className = 'story-section';
+      entSection.innerHTML = `<h3 class="story-section-title">Key Entities</h3>${buildEntitiesHtml(story.entities)}`;
+      storyGrid.appendChild(entSection);
+    }
+  }
+
+  // Confidence breakdown
+  const confidenceContainer = document.getElementById('storyConfidenceBreakdown');
+  if (confidenceContainer) {
+    confidenceContainer.innerHTML = buildConfidenceBreakdownHtml(story.scoreBreakdown);
+  } else if (story.scoreBreakdown) {
+    const storySidebar = document.querySelector('.story-sidebar');
+    if (storySidebar) {
+      const breakdownDiv = document.createElement('div');
+      breakdownDiv.innerHTML = buildConfidenceBreakdownHtml(story.scoreBreakdown);
+      storySidebar.appendChild(breakdownDiv);
+    }
+  }
+
   renderArticleJsonLd(story);
 }
 
