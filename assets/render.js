@@ -327,7 +327,7 @@ export function renderDailyFeed(store, saved = new Set(), followed = new Set(), 
       <h3 class="story-card-title"><a href="/story/${escapeHtml(story.slug)}" onclick="window.openStory('${escapeHtml(story.slug)}');return false;">${escapeHtml(story.headline)}</a></h3>
       <p class="story-card-excerpt">${escapeHtml(story.dek || '')}</p>
       ${entityTags ? `<div class="entity-tags">${entityTags}</div>` : ''}
-      <div class="spectrum-mini">${(story.spectrum || []).map((row) => `<span style=\"width:${row.percent}%;background:${row.color}\"></span>`).join('')}</div>
+      <div class="spectrum-mini">${(story.spectrum || []).map((row) => `<span style=\"width:${Number(row.percent)||0}%;background:${escapeHtml(row.color||'')}\"></span>`).join('')}</div>
       <div class="story-card-footer">
         <span class="story-card-source"><span class="source-dot center"></span> ${escapeHtml(story.sources?.[0]?.name || '')}</span>
         <span>&middot;</span>
@@ -585,7 +585,7 @@ export function renderTopics(store) {
   container.innerHTML = topics.map((topic) => {
     const todayCount = topic.items.filter((story) => String(story.updatedAt || story.publishedAt || '').slice(0, 10) === today).length;
     const range = topic.range?.start && topic.range?.end
-      ? ` · ${escapeHtml(formatDate(topic.range.end))} to ${escapeHtml(formatDate(topic.range.start))}`
+      ? ` · ${escapeHtml(formatDate(topic.range.start))} to ${escapeHtml(formatDate(topic.range.end))}`
       : '';
     const groups = groupStoriesByDate(topic.items).map((group, gi) => {
       const items = group.items.map((story) => {
@@ -789,7 +789,7 @@ export function renderStoryPage(story) {
     }
   }
   if (spectrum) {
-    spectrum.innerHTML = (story.spectrum || []).map((row) => `<div class="spectrum-row"><span class="spectrum-label">${escapeHtml(row.label)}</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:${row.percent}%;background:${row.color}"></div></div><span class="spectrum-count">${row.count}</span></div>`).join('');
+    spectrum.innerHTML = (story.spectrum || []).map((row) => `<div class="spectrum-row"><span class="spectrum-label">${escapeHtml(row.label)}</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:${Number(row.percent)||0}%;background:${escapeHtml(row.color||'')}"></div></div><span class="spectrum-count">${row.count}</span></div>`).join('');
   }
   renderArticleJsonLd(story);
 }

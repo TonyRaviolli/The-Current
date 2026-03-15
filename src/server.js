@@ -88,7 +88,7 @@ function adminAuthRequired() {
 function getAdminTokenFromRequest(req) {
   const url = new URL(req.url, `http://${req.headers.host || `localhost:${PORT}`}`);
   const bearer = req.headers.authorization?.match(/^Bearer\s+(.+)$/i)?.[1] || '';
-  return req.headers['x-admin-token'] || bearer || url.searchParams.get('admin_token') || '';
+  return req.headers['x-admin-token'] || bearer || '';
 }
 
 function ensureAdmin(req, res) {
@@ -184,8 +184,10 @@ function rateLimit(key, limit = 5, windowMs = 3600000) {
   const now = Date.now();
   const entry = rateLimits.get(key) || { count: 0, reset: now + windowMs };
   if (now > entry.reset) {
-    entry.count = 0;
-    entry.reset = now + windowMs;
+    rateLimits.delete(key);
+    const fresh = { count: 1, reset: now + windowMs };
+    rateLimits.set(key, fresh);
+    return fresh.count <= limit;
   }
   entry.count += 1;
   rateLimits.set(key, entry);
@@ -433,11 +435,14 @@ async function handleApi(req, res) {
     const body = await readBody(req);
     const { name, url: sourceUrl, tier = 2, topics = [], orientation = 'center' } = body;
     if (!name || !sourceUrl) return sendJson(res, 400, { error: 'name and url required' });
-    try { new URL(sourceUrl); } catch { return sendJson(res, 400, { error: 'Invalid URL' }); }
+    const parsed = (() => { try { return new URL(sourceUrl); } catch { return null; } })();
+    if (!parsed || !['http:', 'https:'].includes(parsed.protocol))
+      return sendJson(res, 400, { error: 'URL must use http or https' });
     const tierKey = String(tier);
     const config = JSON.parse(await readFile(SOURCES_CONFIG_PATH, 'utf-8'));
     if (!config.tiers[tierKey]) return sendJson(res, 400, { error: 'Invalid tier' });
     const baseId = String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    if (!baseId) return sendJson(res, 400, { error: 'Name must contain alphanumeric characters' });
     const allIds = new Set(Object.values(config.tiers).flat().map((s) => s.id));
     let finalId = baseId;
     let i = 2;

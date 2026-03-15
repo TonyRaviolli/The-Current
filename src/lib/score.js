@@ -2,7 +2,7 @@ export function scoreArticle(article, config, localRegion) {
   const now = Date.now();
   const published = article.publishedAt ? new Date(article.publishedAt).getTime() : now;
   const ageHours = Math.max(0, (now - published) / 3600000);
-  const halfLife = config.recencyHalfLifeHours || 12;
+  const halfLife = config.recencyHalfLifeHours || 10;
   const recency = Math.pow(0.5, ageHours / halfLife);
 
   const tierWeight = config.tierWeights[String(article.tier)] || 0.6;
