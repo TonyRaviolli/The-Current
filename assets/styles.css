@@ -1526,3 +1526,38 @@ body.dark-mode .site-header {
   .story-card--has-thumb .story-actions,
   .story-card--has-thumb .citation{grid-column:1}
 }
+
+/* ── Topic count strip (Topics tab) ──────────────────────────────────────── */
+.topic-count-strip {
+  display: flex; flex-wrap: wrap; gap: var(--sp-2);
+  padding: var(--sp-3) 0 var(--sp-4);
+}
+.topic-count-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px 4px 10px;
+  border: 1px solid var(--border-subtle);
+  border-left-width: 3px;
+  border-radius: 999px;
+  font-family: var(--font-mono); font-size: var(--text-xs);
+  background: var(--bg-surface); cursor: pointer;
+  transition: background var(--dur-fast);
+}
+.topic-count-chip:hover { background: var(--bg-deep); }
+.topic-count-chip.active { background: var(--bg-elevated); }
+.topic-count-chip .topic-breakdown-count {
+  font-weight: 600; font-size: var(--text-2xs);
+  background: var(--bg-deep); padding: 1px 5px; border-radius: 999px;
+}
+
+/* ── Topic section pastel accents ────────────────────────────────────────── */
+.topic-section { border-left: 4px solid transparent; padding-left: var(--sp-4); }
+.topic-section-title { font-size: var(--text-xl); }
+
+/* ── Topic nav chip pastel ───────────────────────────────────────────────── */
+.topics-nav .topic-chip { border-left: 3px solid transparent; transition: all var(--dur-fast); }
+.topics-nav .topic-chip.active { font-weight: 600; }
+.topics-nav .topic-chip:hover { border-left-color: currentColor; }
+
+/* ── Trending bar All pill ───────────────────────────────────────────────── */
+.topic-pill--all { opacity: 0.6; }
+.topic-pill--all.active { opacity: 1; font-weight: 600; }
