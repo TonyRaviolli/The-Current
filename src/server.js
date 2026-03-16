@@ -60,10 +60,26 @@ const REFRESH_CONFIG_PATH = path.resolve(__dirname, '../config/refresh.json');
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
 
+// ── Cache-bust hash — computed once at startup from asset file contents ────────
+// Injected as ?v=<hash> on all /assets/ URLs in HTML so browsers always fetch
+// fresh JS/CSS after a deploy (even if max-age=3600 is still in effect).
+let BUILD_HASH = Date.now().toString(36); // fallback: startup timestamp
+(async () => {
+  try {
+    const assetDir = path.join(ROOT, 'assets');
+    const files = ['app.js', 'render.js', 'ui.js', 'api.js', 'styles.css'];
+    const contents = await Promise.all(files.map((f) => readFile(path.join(assetDir, f))));
+    BUILD_HASH = createHash('md5').update(Buffer.concat(contents)).digest('hex').slice(0, 8);
+  } catch { /* keep fallback */ }
+})();
+
 let indexTemplate = null;
 async function loadIndexTemplate() {
   if (!indexTemplate) {
-    indexTemplate = await readFile(path.join(ROOT, 'index.html'), 'utf8');
+    const raw = await readFile(path.join(ROOT, 'index.html'), 'utf8');
+    // Inject cache-bust hash into all /assets/ references so stale browser
+    // caches are bypassed automatically after each deploy.
+    indexTemplate = raw.replace(/(src|href)="(\/assets\/[^"]+)"/g, `$1="$2?v=${BUILD_HASH}"`);
   }
   return indexTemplate;
 }
