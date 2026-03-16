@@ -1,4 +1,5 @@
 import { submitForm, trackEvent } from './api.js';
+import { TOPIC_PASTEL, escapeHtml } from './render.js';
 
 const SAVED_KEY = 'uc_saved_stories';
 const FOLLOW_KEY = 'uc_follow_topics';
@@ -219,8 +220,10 @@ export function initTopicFilters() {
   const topicsSearch = document.getElementById('topicsSearch');
   if (topicsSearch && topicsSearch.dataset.bound !== '1') {
     topicsSearch.dataset.bound = '1';
+    let _topicSearchDebounce = null;
     topicsSearch.addEventListener('input', () => {
-      applyTopicView();
+      clearTimeout(_topicSearchDebounce);
+      _topicSearchDebounce = setTimeout(applyTopicView, 120);
     });
   }
 
@@ -602,13 +605,6 @@ export function recordVisitAndGetLastTime() {
 }
 
 /**
- * Return the ISO string of the user's previous visit, or null if first visit.
- */
-export function getLastVisitAt() {
-  return localStorage.getItem(LAST_VISIT_KEY) || null;
-}
-
-/**
  * Export the current briefing (store snapshot) as a downloadable JSON file.
  */
 export function exportBriefing(store) {
@@ -726,10 +722,6 @@ export function initMyTopicsFilter(getStore) {
   });
 }
 
-function escapeHtmlUi(text) {
-  return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-}
-
 // Dark mode toggle
 export function initDarkMode() {
   const toggle = document.getElementById('dark-mode-toggle');
@@ -798,12 +790,11 @@ export function renderTrendingBar(stories) {
   const top5 = Object.entries(degrees).sort((a, b) => b[1] - a[1]).slice(0, 5);
   if (!top5.length) { bar.style.display = 'none'; return; }
   bar.style.display = 'flex';
-  const TOPIC_PASTELS = { economy:'#7ab88a',uspolitics:'#8f8fba',geopolitics:'#7aafc0',tech:'#9d8fc0',defense:'#b8a87a',health:'#7ab8a8',law:'#c09d7a',finance:'#7a9dc0',global_trade:'#b87aaa',elections:'#c07a7a',ai:'#a07ac0',biotech:'#7ac0a0',housing:'#c0a07a',labor:'#8fb87a',climate:'#7ac0b8',energy:'#c0b07a',science:'#7a90c0',education:'#c07a90',banking:'#7ab0c0',international:'#aa7ac0',cyber:'#c08f7a',macroeconomics:'#7ab888' };
   bar.innerHTML = `<span class="trending-label">Trending:</span>` +
     `<button class="topic-pill topic-pill--all active" data-topic="__all__" type="button">All</button>` +
     top5.map(([id]) => {
-      const color = TOPIC_PASTELS[id] || '#94a3b8';
-      return `<button class="topic-pill" data-topic="${escapeHtmlUi(id)}" style="border-left:3px solid ${color}">${escapeHtmlUi(labelMap[id] || id)}</button>`;
+      const color = TOPIC_PASTEL[id] || '#94a3b8';
+      return `<button class="topic-pill" data-topic="${escapeHtml(id)}" style="border-left:3px solid ${color}">${escapeHtml(labelMap[id] || id)}</button>`;
     }).join('');
   bar.querySelectorAll('.topic-pill').forEach((pill) => {
     pill.addEventListener('click', () => {
@@ -837,31 +828,10 @@ export function renderEditorsPicks(stories) {
   card.style.display = 'block';
   list.innerHTML = picks.map((s) => `
     <div class="editors-pick-item" style="cursor:pointer">
-      <div class="editors-pick-title">${escapeHtmlUi(s.headline || s.dek || '')}</div>
-      <div class="editors-pick-meta">${escapeHtmlUi(s.sources?.[0]?.name || '')}</div>
+      <div class="editors-pick-title">${escapeHtml(s.headline || s.dek || '')}</div>
+      <div class="editors-pick-meta">${escapeHtml(s.sources?.[0]?.name || '')}</div>
     </div>
   `).join('');
-}
-
-// SSE feed updates subscriber
-export function subscribeToFeedUpdates() {
-  if (typeof EventSource === 'undefined') return;
-  const es = new EventSource('/api/feed-updates');
-  es.addEventListener('refresh', (e) => {
-    try {
-      const data = JSON.parse(e.data);
-      showRefreshBanner(data.storyCount, data.briefLead);
-    } catch { /* ignore */ }
-  });
-  es.onerror = () => { es.close(); setTimeout(subscribeToFeedUpdates, 30000); };
-}
-
-function showRefreshBanner(storyCount, briefLead) {
-  const banner = document.getElementById('refresh-banner');
-  const text = document.getElementById('refresh-banner-text');
-  if (!banner || !text) return;
-  text.textContent = `${storyCount} stories updated` + (briefLead ? ` \u00B7 ${briefLead.slice(0, 60)}${briefLead.length > 60 ? '\u2026' : ''}` : '');
-  banner.classList.add('visible');
 }
 
 // Topic-based feed filter

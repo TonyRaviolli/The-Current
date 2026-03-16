@@ -1,7 +1,7 @@
 import { fetchFeed, runRefresh, fetchResources, fetchSearch, fetchStory, fetchDigest, trackEvent, fetchSources, toggleSource, addSource, deleteSource, fetchScoring, saveScoring, invalidateFeedCache, adminQuerySuffix, setAdminToken } from './api.js';
-import { renderHero, renderTopStories, renderDailyFeed, renderHighImportance, renderArchive, renderTopics, renderDailyInsight, renderResources, renderWeeklyDigest, renderMetaRibbon, renderTodayBrief, renderDeveloping, renderTopicBlocks, renderGlobalSearchResults, renderStoryPage, renderDigestPage, renderOps, renderSinceLastVisit, renderArchiveDays, renderSourceManager, renderScoringPanel, renderMarketIntel, renderCartoons, renderDevelopingStrip, renderMarketHeatmap, renderTopicBreakdownStrip, renderSourceSpectrum } from './render.js';
+import { renderHero, renderTopStories, renderDailyFeed, renderHighImportance, renderTopics, renderDailyInsight, renderResources, renderWeeklyDigest, renderMetaRibbon, renderTodayBrief, renderDeveloping, renderTopicBlocks, renderGlobalSearchResults, renderStoryPage, renderDigestPage, renderOps, renderSinceLastVisit, renderArchiveDays, renderSourceManager, renderScoringPanel, renderMarketIntel, renderCartoons, renderDevelopingStrip, renderMarketHeatmap, renderTopicBreakdownStrip, renderSourceSpectrum } from './render.js';
 import { renderStoryGraph } from './storyGraph.js';
-import { initNavigation, initRunSelector, initTierTabs, initTopicFilters, initSearchFilter, initForms, initCtas, initSaveFollow, getSavedStories, getFollowedTopics, initReaderMode, initShortcuts, initGlobalSearch, applySaveFollowState, initArchiveWeekToggles, recordVisitAndGetLastTime, exportBriefing, exportBriefingText, copyStoryLink, initMyTopicsFilter, getWatches, initKeywordWatches, markAsRead, applyReadState, initUnreadFilter, initDarkMode, initNavMore, initAlertStrip, renderTrendingBar, renderEditorsPicks, subscribeToFeedUpdates, initTopicBreakdownStrip } from './ui.js';
+import { initNavigation, initRunSelector, initTierTabs, initTopicFilters, initSearchFilter, initForms, initCtas, initSaveFollow, getSavedStories, getFollowedTopics, initReaderMode, initShortcuts, initGlobalSearch, applySaveFollowState, initArchiveWeekToggles, recordVisitAndGetLastTime, exportBriefing, exportBriefingText, copyStoryLink, initMyTopicsFilter, getWatches, initKeywordWatches, markAsRead, applyReadState, initUnreadFilter, initDarkMode, initNavMore, initAlertStrip, renderTrendingBar, renderEditorsPicks, initTopicBreakdownStrip } from './ui.js';
 
 const refreshButton = document.getElementById('refreshButton');
 const refreshStatus = document.getElementById('refreshStatus');
@@ -1021,8 +1021,6 @@ initUnreadFilter();
 initDarkMode();
 initTextView();
 initNavMore();
-// subscribeToFeedUpdates() is superseded by the unified pollForUpdates() below
-// which opens a single SSE connection handling both banners (Issue 1).
 initScoringPanel();
 initSourceManager();
 updateDateline();

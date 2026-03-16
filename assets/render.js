@@ -18,7 +18,7 @@ const TOPIC_VISUAL = {
 };
 
 // ── Pastel/matte color palette for topic accents ─────────────────────────────
-const TOPIC_PASTEL = {
+export const TOPIC_PASTEL = {
   economy:      '#7ab88a',
   uspolitics:   '#8f8fba',
   geopolitics:  '#7aafc0',
@@ -43,7 +43,7 @@ const TOPIC_PASTEL = {
   macroeconomics:'#7ab888',
 };
 
-function escapeHtml(text) {
+export function escapeHtml(text) {
   return String(text)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -196,11 +196,16 @@ function confidenceDots(sourceCount) {
   ).join('');
 }
 
+function scoreOutOfTen(score) {
+  const { value } = scoreLabel(score);
+  return value === '--' ? value : `${value}/10`;
+}
+
 function scoreBadgeHtml(score, sourceCount) {
   const s = scoreLabel(score);
   const tierClass = s.tier.toLowerCase();
   const dots = confidenceDots(sourceCount);
-  return `<span class="score-badge score-badge--${tierClass}" style="border-left-color:${s.color};color:${s.color}">${s.value} \u00B7 ${s.tier}<span class="confidence-dots" title="${sourceCount || 1} source${(sourceCount || 1) === 1 ? '' : 's'}">${dots}</span></span>`;
+  return `<span class="score-badge score-badge--${tierClass}" style="border-left-color:${s.color};color:${s.color}">${scoreOutOfTen(score)} \u00B7 ${s.tier}<span class="confidence-dots" title="${sourceCount || 1} source${(sourceCount || 1) === 1 ? '' : 's'}">${dots}</span></span>`;
 }
 
 function isLegislativeStory(story) {
@@ -333,7 +338,6 @@ export function renderTopStories(store) {
     return;
   }
   container.innerHTML = top.map((story, index) => {
-    const sl = scoreLabel(story.score);
     const thumb = renderStoryThumb(story.imageUrl, 'top3-thumb', '', story.topics);
     return `<div class="top3-card depth-tilt reveal ${index ? 'stagger-' + index : ''}">
       ${thumb}
@@ -764,11 +768,10 @@ export function renderHighImportance(store) {
     const sourceName = primary?.label || story.sources?.[0]?.name || story.source || '';
     const updated = formatDate(story.updatedAt || story.publishedAt);
     const topic = (story.topics?.[0] || 'legislation').replace(/_/g, ' ');
-    const sl = scoreLabel(story.score);
     return `<div class="legis-card">
       <div class="legis-card-top">
         <span class="legis-card-bill-num">${escapeHtml(String(bill).replace(/_/g, ' '))}</span>
-        <span class="legis-card-score-badge">${sl.value}</span>
+        <span class="legis-card-score-badge">${scoreOutOfTen(story.score)}</span>
       </div>
       <h3 class="legis-card-title">${escapeHtml(story.headline || story.title)}</h3>
       ${story.dek ? `<p class="legis-card-dek">${escapeHtml(story.dek)}</p>` : ''}
@@ -783,22 +786,6 @@ export function renderHighImportance(store) {
   }).join('');
 }
 
-export function renderArchive(store) {
-  const container = document.getElementById('archiveContent');
-  if (!container) return;
-  const weeks = store.weeklyDigests || [];
-  if (!weeks.length) {
-    container.innerHTML = '<div class=\"story-card\">Archive will populate after at least one successful refresh.</div>';
-    return;
-  }
-  container.innerHTML = weeks.map((week) => {
-    const items = week.top.map((story) => {
-      return `<div class="archive-day"><div class="archive-day-header"><span class="archive-day-date">${escapeHtml(week.label)}</span><div class="archive-day-runs"><span class="archive-run-badge active">AM</span></div></div><div class="archive-briefing-card"><div><div class="archive-lead">${escapeHtml(story.headline || story.title)}</div><div class="archive-meta">${week.count} stories &middot; Score ${scoreLabel(story.score).value}</div></div><div class="archive-dominant">${escapeHtml(story.topics?.[0] || 'Priority')}</div></div></div>`;
-    }).join('');
-    return `<div class="archive-week" data-week="${escapeHtml(week.key)}" data-start="${escapeHtml(week.range?.start || '')}" data-end="${escapeHtml(week.range?.end || '')}"><div class="archive-week-header" data-toggle-week><span class="archive-week-title">${escapeHtml(week.key)}</span><span class="archive-week-toggle">&#9662;</span></div><div class="archive-week-body">${items}</div></div>`;
-  }).join('');
-}
-
 export function renderTopics(store) {
   const container = document.getElementById('topicsContent');
   if (!container) return;
@@ -810,6 +797,7 @@ export function renderTopics(store) {
   const today = new Date().toISOString().slice(0, 10);
   container.innerHTML = topics.map((topic) => {
     const todayCount = topic.items.filter((story) => String(story.updatedAt || story.publishedAt || '').slice(0, 10) === today).length;
+    const dateGroups = groupStoriesByDate(topic.items);
     const range = topic.range?.start && topic.range?.end
       ? ` · ${escapeHtml(formatDate(topic.range.start))} to ${escapeHtml(formatDate(topic.range.end))}`
       : '';
@@ -820,7 +808,7 @@ export function renderTopics(store) {
           <span class="topic-story-count">${topic.items.length} stor${topic.items.length !== 1 ? 'ies' : 'y'}</span>
         </div>`
       : '';
-    const groups = groupStoriesByDate(topic.items).map((group, gi) => {
+    const groups = dateGroups.map((group, gi) => {
       const items = group.items.map((story) => {
         const storyDate = String(story.updatedAt || story.publishedAt || '').slice(0, 10);
         const storyTime = formatTime(story.updatedAt || story.publishedAt);
@@ -829,23 +817,23 @@ export function renderTopics(store) {
         const { open, external } = renderStoryActions(story);
         const thumb = renderStoryThumb(story.imageUrl, 'topic-story-thumb', story.headline || story.title || '', story.topics);
         return `<article class="topic-story topic-story--has-thumb" data-story-date="${escapeHtml(storyDate)}">
-          <span class="topic-story-score">${scoreLabel(story.score).value}</span>
+          <div class="topic-story-score"><span class="topic-story-score-value">${scoreLabel(story.score).value}</span><span class="topic-story-score-scale">/10</span></div>
           ${thumb}
           <div class="topic-story-main">
-            <div class="topic-story-title">${hasSlug ? `<a href="/story/${slug}" onclick="window.openStory('${slug}');return false;">${escapeHtml(story.headline || story.title)}</a>` : escapeHtml(story.headline || story.title)}</div>
+            <div class="topic-story-head">
+              <div class="topic-story-title">${hasSlug ? `<a href="/story/${slug}" onclick="window.openStory('${slug}');return false;">${escapeHtml(story.headline || story.title)}</a>` : escapeHtml(story.headline || story.title)}</div>
+              <span class="topic-story-date">${escapeHtml(storyTime || group.label)}</span>
+            </div>
             <div class="topic-story-excerpt">${escapeHtml(story.dek || story.summary || '')}</div>
-            <div class="topic-story-info">${escapeHtml(story.sources?.[0]?.name || story.source || '')}${storyDate ? ` &middot; ${escapeHtml(formatDate(story.updatedAt || story.publishedAt))}` : ''}</div>
-          </div>
-          <div class="topic-story-side">
-            <span class="topic-story-date">${escapeHtml(storyTime || group.label)}</span>
-            <div class="topic-story-actions">${open}${external}</div>
+            <div class="topic-story-footer">
+              <div class="topic-story-info">${escapeHtml(story.sources?.[0]?.name || story.source || '')}${storyDate ? ` &middot; ${escapeHtml(formatDate(story.updatedAt || story.publishedAt))}` : ''}</div>
+              <div class="topic-story-actions">${open}${external}</div>
+            </div>
           </div>
         </article>`;
       }).join('');
       return `<section class="topic-date-group${gi > 0 ? ' collapsed' : ''}" data-topic-date="${escapeHtml(group.date)}"><div class="topic-date-group-header" data-toggle-topic-group><span class="topic-date-group-title">${escapeHtml(group.label)}</span><span class="topic-date-group-meta">${group.items.length} stor${group.items.length === 1 ? 'y' : 'ies'}</span><span class="topic-date-group-toggle" aria-hidden="true">&#9662;</span></div>${items}</section>`;
     }).join('');
-    // Date navigation pills
-    const dateGroups = groupStoriesByDate(topic.items);
     const datePills = dateGroups.map((group, gi) => {
       const short = group.date && group.date !== 'unknown'
         ? new Date(group.date + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
@@ -865,7 +853,7 @@ export function renderTopics(store) {
       ${clusterIntro}
       <div class="topic-preview">
         <ul class="topic-preview-list">
-          ${topic.items.slice(0, 3).map((s) => `<li class="topic-preview-item"><a href="/story/${escapeHtml(s.slug || '')}" onclick="window.openStory && window.openStory('${escapeHtml(s.slug || '')}');return false;">${escapeHtml(s.headline || s.title || '')}</a><span class="topic-preview-score">${scoreLabel(s.score).value}</span></li>`).join('')}
+          ${topic.items.slice(0, 3).map((s) => `<li class="topic-preview-item"><a href="/story/${escapeHtml(s.slug || '')}" onclick="window.openStory && window.openStory('${escapeHtml(s.slug || '')}');return false;">${escapeHtml(s.headline || s.title || '')}</a><span class="topic-preview-score">${scoreOutOfTen(s.score)}</span></li>`).join('')}
         </ul>
         ${topic.items.length > 3 ? `<button class="topic-expand-btn" data-expand-topic="${escapeHtml(topic.topic)}" type="button">Browse all ${topic.items.length} stories \u2192</button>` : ''}
       </div>
@@ -892,7 +880,7 @@ export function renderWeeklyDigest(store) {
     <div class="archive-week-body">
       <div class="archive-briefing-card"><div><div class="archive-lead">Executive Summary</div><div class="archive-meta">${escapeHtml(digest.summary)}</div></div><div class="archive-dominant">Digest</div></div>
       <div class="archive-briefing-card"><div><div class="archive-lead">Top 10</div><div class="archive-meta">${digest.top10.length} stories</div></div><div class="archive-dominant">Highlights</div></div>
-      ${digest.top10.map((story) => `<div class="archive-briefing-card"><div><div class="archive-lead">${escapeHtml(story.headline)}</div><div class="archive-meta">${escapeHtml(story.sources?.[0]?.name || '')} &middot; Score ${scoreLabel(story.score).value}</div></div><div class="archive-dominant">${escapeHtml(story.topics?.[0] || 'Priority')}</div></div>`).join('')}
+      ${digest.top10.map((story) => `<div class="archive-briefing-card"><div><div class="archive-lead">${escapeHtml(story.headline)}</div><div class="archive-meta">${escapeHtml(story.sources?.[0]?.name || '')} &middot; Score ${scoreOutOfTen(story.score)}</div></div><div class="archive-dominant">${escapeHtml(story.topics?.[0] || 'Priority')}</div></div>`).join('')}
       <div class="archive-briefing-card"><div><div class="archive-lead">Market Recap</div><div class="archive-meta">${digest.marketRecap.length} stories</div></div><div class="archive-dominant">Markets</div></div>
       ${digest.marketRecap.map((story) => `<div class="archive-briefing-card"><div><div class="archive-lead">${escapeHtml(story.headline)}</div><div class="archive-meta">${escapeHtml(story.sources?.[0]?.name || '')}</div></div><div class="archive-dominant">Markets</div></div>`).join('')}
       <div class="archive-briefing-card"><div><div class="archive-lead">Policy Recap</div><div class="archive-meta">${digest.policyRecap.length} stories</div></div><div class="archive-dominant">Policy</div></div>
@@ -921,7 +909,7 @@ export function renderDigestPage(digest) {
     <div class="digest-lead-story">
       <div class="digest-lead-headline">${escapeHtml(leadStory.headline || '')}</div>
       <div class="digest-lead-why">${escapeHtml(leadStory.whyItMatters || leadStory.dek || leadStory.summary || '')}</div>
-      <div class="story-card-meta">${escapeHtml(leadStory.sources?.[0]?.name || '')} &middot; Score ${scoreLabel(leadStory.score).value}</div>
+      <div class="story-card-meta">${escapeHtml(leadStory.sources?.[0]?.name || '')} &middot; Score ${scoreOutOfTen(leadStory.score)}</div>
     </div>
     <div class="digest-support-stories">
       ${supportStories.map((s) => `<div class="digest-support-item">
@@ -942,7 +930,7 @@ export function renderDigestPage(digest) {
     </tbody></table>
   </div>` : '';
 
-  const remainingHtml = remainingStories.length ? `<div class="archive-week"><div class="archive-week-header"><span class="archive-week-title">More Highlights</span></div><div class="archive-week-body">${remainingStories.map((story) => `<div class="archive-briefing-card"><div><div class="archive-lead">${escapeHtml(story.headline)}</div><div class="archive-meta">${escapeHtml(story.sources?.[0]?.name || '')} &middot; Score ${scoreLabel(story.score).value}</div></div><div class="archive-dominant">${escapeHtml(story.topics?.[0] || '')}</div></div>`).join('')}</div></div>` : '';
+  const remainingHtml = remainingStories.length ? `<div class="archive-week"><div class="archive-week-header"><span class="archive-week-title">More Highlights</span></div><div class="archive-week-body">${remainingStories.map((story) => `<div class="archive-briefing-card"><div><div class="archive-lead">${escapeHtml(story.headline)}</div><div class="archive-meta">${escapeHtml(story.sources?.[0]?.name || '')} &middot; Score ${scoreOutOfTen(story.score)}</div></div><div class="archive-dominant">${escapeHtml(story.topics?.[0] || '')}</div></div>`).join('')}</div></div>` : '';
 
   container.innerHTML = editorialGrid + recapSection + remainingHtml;
 }
@@ -1295,7 +1283,7 @@ export function renderArchiveDays(days = []) {
     const dateStr = day.date ? new Date(day.date + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : label;
 
     const cardList = stories.map((story, idx) => {
-      const score = story.score != null ? scoreLabel(story.score).value : '--';
+      const score = story.score != null ? scoreOutOfTen(story.score) : '--';
       const sourceName = story.sources?.[0]?.name || story.source || '';
       const topic = (story.topics?.[0] || '').replace(/_/g, ' ');
       const topicRaw = story.topics?.[0] || '';
@@ -1351,26 +1339,6 @@ export function renderArchiveDays(days = []) {
     container.querySelectorAll('.archive-date-chip').forEach((c) => c.classList.remove('active'));
     chip.classList.add('active');
   }, { passive: true });
-}
-
-function buildArchiveTimeGroups(stories = []) {
-  const groups = [
-    { key: 'morning', label: 'Morning', items: [] },
-    { key: 'midday', label: 'Midday', items: [] },
-    { key: 'evening', label: 'Evening', items: [] },
-    { key: 'late', label: 'Late', items: [] }
-  ];
-
-  for (const story of stories) {
-    const date = new Date(story.updatedAt || story.publishedAt || 0);
-    const hour = Number.isNaN(date.getTime()) ? 12 : date.getHours();
-    if (hour < 11) groups[0].items.push(story);
-    else if (hour < 15) groups[1].items.push(story);
-    else if (hour < 21) groups[2].items.push(story);
-    else groups[3].items.push(story);
-  }
-
-  return groups.filter((group) => group.items.length);
 }
 
 function formatArchiveDate(isoDate) {
