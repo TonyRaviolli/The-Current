@@ -737,15 +737,29 @@ export function renderTrendingBar(stories) {
   const top5 = Object.entries(degrees).sort((a, b) => b[1] - a[1]).slice(0, 5);
   if (!top5.length) { bar.style.display = 'none'; return; }
   bar.style.display = 'flex';
+  const TOPIC_PASTELS = { economy:'#7ab88a',uspolitics:'#8f8fba',geopolitics:'#7aafc0',tech:'#9d8fc0',defense:'#b8a87a',health:'#7ab8a8',law:'#c09d7a',finance:'#7a9dc0',global_trade:'#b87aaa',elections:'#c07a7a',ai:'#a07ac0',biotech:'#7ac0a0',housing:'#c0a07a',labor:'#8fb87a',climate:'#7ac0b8',energy:'#c0b07a',science:'#7a90c0',education:'#c07a90',banking:'#7ab0c0',international:'#aa7ac0',cyber:'#c08f7a',macroeconomics:'#7ab888' };
   bar.innerHTML = `<span class="trending-label">Trending:</span>` +
+    `<button class="topic-pill topic-pill--all active" data-topic="__all__" type="button">All</button>` +
     top5.map(([id]) => {
-      const TOPIC_COLORS = { economy:'#22c55e',uspolitics:'#6366f1',geopolitics:'#38bdf8',tech:'#a78bfa',defense:'#f59e0b',health:'#34d399',law:'#f97316',finance:'#0ea5e9',global_trade:'#e879f9',elections:'#ef4444' };
-      const color = TOPIC_COLORS[id] || '#94a3b8';
+      const color = TOPIC_PASTELS[id] || '#94a3b8';
       return `<button class="topic-pill" data-topic="${escapeHtmlUi(id)}" style="border-left:3px solid ${color}">${escapeHtmlUi(labelMap[id] || id)}</button>`;
     }).join('');
   bar.querySelectorAll('.topic-pill').forEach((pill) => {
     pill.addEventListener('click', () => {
-      filterFeedByTopic(pill.dataset.topic);
+      if (pill.dataset.topic === '__all__') {
+        // Clear all active pills and show all stories
+        bar.querySelectorAll('.topic-pill.active').forEach((p) => p.classList.remove('active'));
+        pill.classList.add('active');
+        filterFeedByTopic();
+      } else {
+        // Deactivate "All" pill when a topic is selected
+        const allPill = bar.querySelector('.topic-pill--all');
+        if (allPill) allPill.classList.remove('active');
+        filterFeedByTopic(pill.dataset.topic);
+        // Re-activate "All" if no pills are active
+        const anyActive = bar.querySelectorAll('.topic-pill.active:not(.topic-pill--all)').length > 0;
+        if (!anyActive && allPill) allPill.classList.add('active');
+      }
     });
   });
 }
@@ -835,12 +849,18 @@ function navigateTo(page) {
 }
 
 export function initTopicBreakdownStrip() {
-  const strip = document.getElementById('topicBreakdownStrip');
+  const strip = document.getElementById('topicCountStrip');
   if (!strip || strip.dataset.bound === '1') return;
   strip.dataset.bound = '1';
   strip.addEventListener('click', (e) => {
-    const chip = e.target.closest('.topic-breakdown-chip');
+    const chip = e.target.closest('.topic-count-chip');
     if (!chip) return;
-    filterFeedByTopic(chip.dataset.topic);
+    const topic = chip.dataset.topic;
+    // Navigate to Topics tab and activate the matching topic chip
+    const navChip = document.querySelector(`.topics-nav .topic-chip[data-topic="${CSS.escape(topic)}"]`);
+    if (navChip) {
+      navigateTo('topics');
+      navChip.click();
+    }
   });
 }
