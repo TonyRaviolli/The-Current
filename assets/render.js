@@ -275,6 +275,15 @@ export function renderHero(store) {
   if (lead.source) {
     citation.innerHTML += `<div class="citation-author">${escapeHtml(lead.source)}</div><div class="citation-date">${formatDate(lead.updatedAt || lead.publishedAt)}</div>`;
   }
+  const heroThumb = document.getElementById('heroThumb');
+  if (heroThumb) {
+    const fallbackSrc = renderStoryThumbFallbackDataUri(lead.topics || []);
+    if (lead.imageUrl) {
+      heroThumb.innerHTML = `<img src="${escapeHtml(lead.imageUrl)}" alt="${escapeHtml(lead.headline || '')}" loading="eager" decoding="async" onerror="this.onerror=null;this.src='${fallbackSrc}'">`;
+    } else {
+      heroThumb.innerHTML = `<img src="${fallbackSrc}" alt="" loading="eager" decoding="async">`;
+    }
+  }
   renderArticleJsonLd(lead);
 }
 
@@ -806,7 +815,22 @@ export function renderTopics(store) {
       : '';
 
     const sectionColor = TOPIC_PASTEL[topic.topic] || '#b0b8c4';
-    return `<div class="topic-section" data-topic-section="${escapeHtml(topic.topic)}" style="border-left: 4px solid ${sectionColor}"><div class="topic-section-header"><h2 class="topic-section-title" style="color: ${sectionColor}">${escapeHtml(topic.label || topic.topic)}</h2><span class="topic-section-meta">${topic.count} stories${todayCount ? ` · ${todayCount} today` : ''}${range}</span></div>${clusterIntro}${dateNav}${groups}</div>`;
+    return `<div class="topic-section topic-section--collapsed" data-topic-section="${escapeHtml(topic.topic)}" style="border-left: 4px solid ${sectionColor}">
+      <div class="topic-section-header">
+        <h2 class="topic-section-title" style="color: ${sectionColor}">${escapeHtml(topic.label || topic.topic)}</h2>
+        <span class="topic-section-meta">${topic.count} stories${todayCount ? ` \u00B7 ${todayCount} today` : ''}${range}</span>
+      </div>
+      ${clusterIntro}
+      <div class="topic-preview">
+        <ul class="topic-preview-list">
+          ${topic.items.slice(0, 3).map((s) => `<li class="topic-preview-item"><a href="/story/${escapeHtml(s.slug || '')}" onclick="window.openStory && window.openStory('${escapeHtml(s.slug || '')}');return false;">${escapeHtml(s.headline || s.title || '')}</a><span class="topic-preview-score">${scoreLabel(s.score).value}</span></li>`).join('')}
+        </ul>
+        ${topic.items.length > 3 ? `<button class="topic-expand-btn" data-expand-topic="${escapeHtml(topic.topic)}" type="button">Browse all ${topic.items.length} stories \u2192</button>` : ''}
+      </div>
+      <div class="topic-full">
+        ${dateNav}${groups}
+      </div>
+    </div>`;
   }).join('');
 }
 
@@ -897,6 +921,10 @@ export function renderSourceSpectrum(stories) {
       orientCounts[o] = (orientCounts[o] || 0) + 1;
     });
   });
+  // If only 'center' (the default) has counts and all others are zero,
+  // treat as "no real orientation data" — keep placeholder HTML as-is.
+  const hasOrientationData = Object.entries(orientCounts).some(([k, v]) => k !== 'center' && v > 0);
+  if (!hasOrientationData) return;
   const total = Object.values(orientCounts).reduce((a, b) => a + b, 0) || 1;
   const rows = [
     { key: 'left',         label: 'Left',   color: '#4a90d9' },

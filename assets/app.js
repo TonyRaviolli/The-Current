@@ -80,7 +80,7 @@ async function loadAll() {
     const feedResult = renderDailyFeed(store, saved, followed, lastVisitAt);
     renderSinceLastVisit(feedResult?.newCount || 0, lastVisitAt);
     renderHighImportance(store);
-    renderSourceSpectrum(feedResult?.items || []);
+    renderSourceSpectrum(store.stories || []);
     await loadAndRenderArchive();
     renderTopics(store);
     initTopicDateNav();
@@ -633,8 +633,8 @@ function initRefreshButton() {
         trackEvent('refresh_complete', { stories: result.stories || 0, runId: result.runId || null });
       },
       onError: async (msg) => {
-        if (refreshStatus) refreshStatus.textContent = 'Refresh failed. Check connectivity.';
-        showToast('Refresh failed \u2014 check source connectivity.');
+        if (refreshStatus) refreshStatus.textContent = msg || 'Refresh failed';
+        showToast(msg || 'Refresh failed \u2014 try again in a moment.');
         setButtonState('error');
         trackEvent('refresh_failed');
       }

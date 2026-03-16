@@ -375,8 +375,8 @@ async function handleApi(req, res) {
   }
 
   // SSE streaming refresh — emits phase events then a final done/error event
+  // Refresh is intentionally public — rate-limited by refreshInFlight lock.
   if (req.url === '/api/refresh-stream' || req.url.startsWith('/api/refresh-stream?')) {
-    if (!ensureAdmin(req, res)) return true;
     if (refreshInFlight) return sendJson(res, 429, { error: 'Refresh already running' });
     const url = new URL(req.url, `http://${req.headers.host || `localhost:${PORT}`}`);
     const force = url.searchParams.get('force') === '1';
@@ -436,9 +436,8 @@ async function handleApi(req, res) {
     return;
   }
 
-  // Standard (non-streaming) refresh
+  // Standard (non-streaming) refresh — public, guarded by refreshInFlight lock.
   if (req.url === '/api/refresh' || req.url.startsWith('/api/refresh?')) {
-    if (!ensureAdmin(req, res)) return true;
     if (refreshInFlight) return sendJson(res, 429, { error: 'Refresh already running' });
     const url = new URL(req.url, `http://${req.headers.host || `localhost:${PORT}`}`);
     const force = url.searchParams.get('force') === '1';

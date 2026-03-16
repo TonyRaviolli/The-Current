@@ -175,6 +175,43 @@ export function initTopicFilters() {
     chip.addEventListener('click', () => {
       document.querySelectorAll('.topic-chip').forEach((c) => c.classList.remove('active'));
       chip.classList.add('active');
+      const selectedTopic = chip.dataset.topic;
+      const topicsEl = document.getElementById('topicsContent');
+
+      if (selectedTopic === 'all') {
+        // Collapse all to preview mode
+        document.querySelectorAll('.topic-section').forEach((s) => {
+          s.classList.add('topic-section--collapsed');
+          s.style.display = '';
+        });
+        if (topicsEl) topicsEl.classList.remove('topics-detail-mode');
+      } else if (selectedTopic === 'today') {
+        // Show all sections with today's stories, expand them
+        document.querySelectorAll('.topic-section').forEach((section) => {
+          const hasTodayStory = section.querySelector(`[data-story-date="${today}"]`);
+          if (hasTodayStory) {
+            section.style.display = '';
+            section.classList.remove('topic-section--collapsed');
+          } else {
+            section.style.display = 'none';
+          }
+        });
+        if (topicsEl) topicsEl.classList.add('topics-detail-mode');
+      } else {
+        // Expand selected, collapse others
+        document.querySelectorAll('.topic-section').forEach((section) => {
+          if (section.dataset.topicSection === selectedTopic) {
+            section.style.display = '';
+            section.classList.remove('topic-section--collapsed');
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else {
+            section.classList.add('topic-section--collapsed');
+            section.style.display = '';
+          }
+        });
+        if (topicsEl) topicsEl.classList.add('topics-detail-mode');
+      }
+
       applyTopicView();
     });
   });
@@ -197,6 +234,30 @@ export function initTopicFilters() {
       if (!group) return;
       group.classList.toggle('collapsed');
       applyTopicView();
+    });
+  }
+
+  // "Browse all N stories" expand button via event delegation (bound once globally)
+  if (document.body.dataset.topicExpandBound !== '1') {
+    document.body.dataset.topicExpandBound = '1';
+    document.body.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-expand-topic]');
+      if (!btn) return;
+      const topicId = btn.dataset.expandTopic;
+      const section = document.querySelector(`.topic-section[data-topic-section="${CSS.escape(topicId)}"]`);
+      if (section) {
+        section.classList.remove('topic-section--collapsed');
+        // Activate the corresponding chip
+        document.querySelectorAll('.topic-chip').forEach((c) => {
+          c.classList.toggle('active', c.dataset.topic === topicId);
+        });
+        const topicsEl = document.getElementById('topicsContent');
+        if (topicsEl) topicsEl.classList.add('topics-detail-mode');
+        // Collapse other sections
+        document.querySelectorAll('.topic-section').forEach((s) => {
+          if (s !== section) s.classList.add('topic-section--collapsed');
+        });
+      }
     });
   }
 
