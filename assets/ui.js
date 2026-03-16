@@ -130,7 +130,7 @@ export function initTierTabs() {
       container.querySelectorAll('.tier-tab').forEach((t) => t.classList.remove('active'));
       tab.classList.add('active');
       const tier = tab.dataset.tier;
-      const activePills = [...document.querySelectorAll('#trending-bar .topic-pill.active')].map((p) => p.dataset.topic);
+      const activePills = [...document.querySelectorAll('#trending-bar .topic-pill.active')].map((p) => p.dataset.topic).filter((t) => t !== '__all__');
       const storyList = container.querySelector('#storyList') || container;
       storyList.querySelectorAll('.story-card').forEach((card) => {
         const tierMatch = tier === 'all' || card.dataset.tier === tier;
@@ -872,7 +872,7 @@ export function filterFeedByTopic(topicId) {
     const pill = bar?.querySelector(`.topic-pill[data-topic="${CSS.escape(topicId)}"]`);
     if (pill) pill.classList.toggle('active');
   }
-  const activePills = bar ? [...bar.querySelectorAll('.topic-pill.active')].map((p) => p.dataset.topic) : [];
+  const activePills = bar ? [...bar.querySelectorAll('.topic-pill.active')].map((p) => p.dataset.topic).filter((t) => t !== '__all__') : [];
   const storyList = document.getElementById('storyList');
   if (!storyList) return;
   const activeTierTab = document.querySelector('.tier-tab.active');
