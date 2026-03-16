@@ -160,10 +160,19 @@ function scoreLabel(score) {
   return { value, tier: 'Low', color: '#374151' };
 }
 
-function scoreBadgeHtml(score) {
+function confidenceDots(sourceCount) {
+  const n = typeof sourceCount === 'number' ? sourceCount : 1;
+  const filled = Math.min(5, Math.max(1, n));
+  return Array.from({ length: 5 }, (_, i) =>
+    `<span class="confidence-dot${i < filled ? ' filled' : ''}" aria-hidden="true"></span>`
+  ).join('');
+}
+
+function scoreBadgeHtml(score, sourceCount) {
   const s = scoreLabel(score);
   const tierClass = s.tier.toLowerCase();
-  return `<span class="score-badge score-badge--${tierClass}" style="border-left-color:${s.color};color:${s.color}">${s.value} \u00B7 ${s.tier}</span>`;
+  const dots = confidenceDots(sourceCount);
+  return `<span class="score-badge score-badge--${tierClass}" style="border-left-color:${s.color};color:${s.color}">${s.value} \u00B7 ${s.tier}<span class="confidence-dots" title="${sourceCount || 1} source${(sourceCount || 1) === 1 ? '' : 's'}">${dots}</span></span>`;
 }
 
 function isLegislativeStory(story) {
@@ -305,7 +314,7 @@ export function renderTopStories(store) {
       <div class="top3-category">${escapeHtml(story.topics?.[0] || 'Priority')}</div>
       <h3 class="top3-title"><a href="/story/${escapeHtml(story.slug)}">${escapeHtml(story.headline)}</a></h3>
       <p class="top3-excerpt">${escapeHtml(story.dek || '')}</p>
-      <div class="top3-score"><div class="top3-score-bar"><div class="top3-score-fill" style="width:${Math.round((story.score || 0) * 100)}%"></div></div>${scoreBadgeHtml(story.score)}</div>
+      <div class="top3-score"><div class="top3-score-bar"><div class="top3-score-fill" style="width:${Math.round((story.score || 0) * 100)}%"></div></div>${scoreBadgeHtml(story.score, story.sources?.length)}</div>
       ${story.url ? `<a class="story-external-link" href="${safeUrl(story.url)}" target="_blank" rel="noopener">Source Link</a>` : ''}
       <div class="citation"><div class="citation-author">${escapeHtml(story.sources?.[0]?.name || '')}</div><div class="citation-date">${formatDate(story.updatedAt)}</div></div>
     </div>`;
@@ -431,7 +440,7 @@ export function renderDailyFeed(store, saved = new Set(), followed = new Set(), 
       <div class="story-card-header">
         ${newBadge}
         <span class="story-card-tier tier-${story.tier}">Tier ${story.tier}</span>
-        ${scoreBadgeHtml(story.score)}
+        ${scoreBadgeHtml(story.score, story.sources?.length)}
       </div>
       <h3 class="story-card-title"><a href="/story/${escapeHtml(story.slug)}" onclick="window.openStory('${escapeHtml(story.slug)}');return false;">${escapeHtml(story.headline)}</a></h3>
       <p class="story-card-excerpt">${escapeHtml(story.dek || '')}</p>
@@ -499,10 +508,15 @@ export function renderTopicBreakdownStrip(store) {
   if (!target) return;
   const degrees = {};
   (store.stories || []).forEach((s) => (s.topics || []).forEach((t) => { degrees[t] = (degrees[t] || 0) + 1; }));
+  const totalMentions = Object.values(degrees).reduce((a, b) => a + b, 0) || 1;
   const TOPIC_LABELS = { economy:'Economy',uspolitics:'U.S. Politics',geopolitics:'Geopolitics',tech:'Technology',defense:'Defense',health:'Health',law:'Law',finance:'Finance',global_trade:'Trade',elections:'Elections',ai:'AI',biotech:'Biotech',housing:'Housing',labor:'Labor',climate:'Climate',energy:'Energy',science:'Science',education:'Education',banking:'Banking',international:'International',cyber:'Cyber',macroeconomics:'Macroeconomics' };
-  const chips = Object.entries(degrees).filter(([id, n]) => n > 0 && TOPIC_LABELS[id]).map(([id, count]) => {
+  const sorted = Object.entries(degrees).filter(([id, n]) => n > 0 && TOPIC_LABELS[id]).sort((a, b) => b[1] - a[1]);
+  const maxCount = sorted.length ? sorted[0][1] : 1;
+  const chips = sorted.map(([id, count]) => {
     const color = TOPIC_PASTEL[id] || '#b0b8c4';
-    return `<button class="topic-count-chip" data-topic="${escapeHtml(id)}" style="border-left-color:${color}" type="button">${escapeHtml(TOPIC_LABELS[id] || id)} <span class="topic-breakdown-count">${count}</span></button>`;
+    const pct = Math.round((count / totalMentions) * 100);
+    const barWidth = Math.round((count / maxCount) * 100);
+    return `<button class="topic-count-chip" data-topic="${escapeHtml(id)}" style="border-left-color:${color};--bar-fill:${barWidth}%;--bar-color:${color}" type="button">${escapeHtml(TOPIC_LABELS[id] || id)} <span class="topic-breakdown-count">${count}</span><span class="topic-breakdown-pct">${pct}%</span></button>`;
   });
   if (chips.length < 2) { target.style.display = 'none'; return; }
   target.style.display = '';
@@ -927,17 +941,29 @@ export function renderSourceSpectrum(stories) {
   if (!hasOrientationData) return;
   const total = Object.values(orientCounts).reduce((a, b) => a + b, 0) || 1;
   const rows = [
-    { key: 'left',         label: 'Left',   color: '#4a90d9' },
-    { key: 'center-left',  label: 'Ctr-L',  color: '#6eb5ff' },
-    { key: 'center',       label: 'Center', color: '#a0a0a0' },
-    { key: 'center-right', label: 'Ctr-R',  color: '#e8923a' },
-    { key: 'right',        label: 'Right',  color: '#d45454' },
+    { key: 'left',         label: 'Left',         color: '#4a90d9', weight: -2 },
+    { key: 'center-left',  label: 'Center-Left',  color: '#6eb5ff', weight: -1 },
+    { key: 'center',       label: 'Center',       color: '#a0a0a0', weight:  0 },
+    { key: 'center-right', label: 'Center-Right', color: '#e8923a', weight:  1 },
+    { key: 'right',        label: 'Right',        color: '#d45454', weight:  2 },
   ];
-  container.innerHTML = rows.map((row) => {
+  // Compute lean score: weighted average of orientation counts
+  let weightedSum = 0;
+  rows.forEach((row) => { weightedSum += (orientCounts[row.key] || 0) * row.weight; });
+  const leanScore = weightedSum / total;
+  const centristPct = Math.round(((orientCounts['center'] || 0) + (orientCounts['center-left'] || 0) + (orientCounts['center-right'] || 0)) / total * 100);
+  let leanLabel = 'Balanced';
+  if (leanScore <= -0.8) leanLabel = 'Left-Leaning';
+  else if (leanScore <= -0.3) leanLabel = 'Center-Left';
+  else if (leanScore >= 0.8) leanLabel = 'Right-Leaning';
+  else if (leanScore >= 0.3) leanLabel = 'Center-Right';
+
+  const barsHtml = rows.map((row) => {
     const count = orientCounts[row.key] || 0;
     const pct = Math.round((count / total) * 100);
-    return `<div class="spectrum-row"><span class="spectrum-label">${escapeHtml(row.label)}</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:${pct}%;background:${row.color}"></div></div><span class="spectrum-count">${count}</span></div>`;
+    return `<div class="spectrum-row"><span class="spectrum-label">${escapeHtml(row.label)}</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill spectrum-bar-fill--animated" style="--target-width:${pct}%;background:${row.color}"></div></div><span class="spectrum-count">${pct}%</span></div>`;
   }).join('');
+  container.innerHTML = `<div class="spectrum-lean-summary"><span class="spectrum-lean-label">Lean: ${escapeHtml(leanLabel)}</span><span class="spectrum-lean-detail">${centristPct}% centrist coverage</span></div>${barsHtml}`;
 }
 
 export function renderOps(store) {

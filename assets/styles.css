@@ -1642,3 +1642,20 @@ body.dark-mode .site-header {
 #topicsContent.topics-detail-mode {
   display: block;
 }
+
+/* ── Task 18: Confidence dots on score badges ─────────────────────────────── */
+.confidence-dots{display:inline-flex;gap:2px;margin-left:6px;vertical-align:middle}
+.confidence-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--border-subtle,#d1d5db);transition:background var(--dur-fast,0.15s)}
+.confidence-dot.filled{background:currentColor}
+
+/* ── Task 18: Topic breakdown strip — percentage + bar fill ───────────────── */
+.topic-breakdown-pct{font-family:var(--font-mono);font-size:var(--text-2xs);opacity:0.55;margin-left:4px}
+.topic-count-chip{position:relative;overflow:hidden}
+.topic-count-chip::before{content:'';position:absolute;inset:0;right:auto;width:var(--bar-fill,0%);background:var(--bar-color,#b0b8c4);opacity:0.08;transition:width 0.6s ease-out;pointer-events:none;border-radius:inherit}
+
+/* ── Task 18: Source spectrum — lean summary + animated fills ─────────────── */
+.spectrum-lean-summary{display:flex;justify-content:space-between;align-items:center;padding:0 0 var(--sp-2);margin-bottom:var(--sp-2);border-bottom:1px solid var(--border-subtle,#e5e7eb)}
+.spectrum-lean-label{font-family:var(--font-mono);font-size:var(--text-xs);font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-primary)}
+.spectrum-lean-detail{font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--text-muted);letter-spacing:0.04em}
+.spectrum-bar-fill--animated{width:var(--target-width,0%);animation:spectrumGrow 0.8s ease-out forwards}
+@keyframes spectrumGrow{from{width:0}to{width:var(--target-width,0%)}}
