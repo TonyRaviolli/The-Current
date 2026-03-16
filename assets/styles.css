@@ -1659,3 +1659,64 @@ body.dark-mode .site-header {
 .spectrum-lean-detail{font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--text-muted);letter-spacing:0.04em}
 .spectrum-bar-fill--animated{width:var(--target-width,0%);animation:spectrumGrow 0.8s ease-out forwards}
 @keyframes spectrumGrow{from{width:0}to{width:var(--target-width,0%)}}
+
+/* ── Task 19b: Source spectrum stacked bar ────────────────────────────────── */
+.spectrum-stacked-bar{display:flex;height:22px;border-radius:6px;overflow:hidden;margin:var(--sp-3) 0 var(--sp-2);border:1px solid var(--border-subtle)}
+.spectrum-stacked-segment{display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:0.6rem;font-weight:700;color:#fff;letter-spacing:0.02em;overflow:hidden;white-space:nowrap;min-width:0;animation:segmentGrow 0.8s ease-out forwards}
+@keyframes segmentGrow{from{flex:0}to{flex:1}}
+.spectrum-stacked-legend{display:flex;flex-wrap:wrap;gap:var(--sp-1) var(--sp-3);margin-bottom:var(--sp-3)}
+.spectrum-stacked-legend-item{display:inline-flex;align-items:center;gap:3px;font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--text-muted)}
+.spectrum-stacked-legend-item i{display:inline-block;width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+/* ── Task 19c: Story graph ───────────────────────────────────────────────── */
+.story-graph-section{margin:var(--sp-6) 0}
+.story-graph-wrap{position:relative;width:100%;border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden;background:var(--bg-surface)}
+#storyGraphCanvas{display:block;width:100%;height:360px}
+@media(max-width:640px){#storyGraphCanvas{height:240px}}
+.story-graph-tooltip{position:absolute;pointer-events:none;padding:4px 10px;border-radius:6px;background:var(--bg-glass,rgba(0,0,0,0.78));color:#fff;font-family:var(--font-sans);font-size:var(--text-xs);white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis;transform:translateX(-50%);display:none;z-index:10}
+
+/* ── Task 19d: Text-only view mode ───────────────────────────────────────── */
+.text-view .story-card-thumb,
+.text-view .top3-thumb,
+.text-view .hero-thumb,
+.text-view .archive-grid-thumb,
+.text-view .topic-story-thumb,
+.text-view .story-graph-section,
+.text-view .spectrum-mini,
+.text-view .entity-tags,
+.text-view .spectrum-stacked-bar,
+.text-view .lead-priority-bar{display:none!important}
+.text-view .story-card--has-thumb{grid-template-columns:1fr}
+.text-view .story-card--has-thumb .story-card-header,
+.text-view .story-card--has-thumb .story-card-title,
+.text-view .story-card--has-thumb .story-card-excerpt,
+.text-view .story-card--has-thumb .story-card-footer,
+.text-view .story-card--has-thumb .story-actions,
+.text-view .story-card--has-thumb .citation{grid-column:1}
+.text-view .archive-grid{grid-template-columns:1fr}
+.text-view .archive-grid-card{flex-direction:row;gap:var(--sp-3)}
+.text-view .archive-grid-body{padding:var(--sp-3)}
+.text-view .story-card{border-left:3px solid var(--accent-gold);border-radius:0 var(--radius-md) var(--radius-md) 0}
+.text-view .story-card-excerpt{display:block;-webkit-line-clamp:unset;line-clamp:unset}
+#textViewToggle.active{background:var(--accent-gold-glow);border-color:var(--accent-gold);color:var(--accent-gold-dim);font-weight:600}
+
+/* ── Task 19d: Reduced motion ────────────────────────────────────────────── */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;scroll-behavior:auto!important}
+  .spectrum-bar-fill--animated{animation:none;width:var(--target-width,0%)}
+  .spectrum-stacked-segment{animation:none}
+  .developing-card,.archive-grid-card,.story-card,.top3-card,.heatmap-tile,.digest-support-item{transition:none!important;transform:none!important}
+  .depth-particle{display:none}
+  .badge-developing{animation:none}
+}
+
+/* ── Task 19d: High contrast ─────────────────────────────────────────────── */
+@media(prefers-contrast:more){
+  :root{--border-subtle:rgba(0,0,0,0.22);--border-default:rgba(0,0,0,0.35);--border-strong:rgba(0,0,0,0.55);--text-muted:#555;--text-tertiary:#444;--text-secondary:#222}
+  .story-card,.archive-grid-card,.sidebar-card,.market-tile,.top3-card{border-width:2px}
+  .spectrum-bar-track,.score-bar-track{border:1px solid rgba(0,0,0,0.2)}
+  .confidence-dot{border:1px solid rgba(0,0,0,0.3)}
+  .topic-pill,.archive-date-chip,.topic-date-pill,.topic-count-chip{border-width:2px}
+  a{text-decoration:underline}
+  .story-card-title a{text-decoration-thickness:2px;text-underline-offset:3px}
+}

@@ -196,6 +196,16 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
   <div id="marketIntelCard"></div>
 </section>
 
+<section id="storyGraphSection" class="story-graph-section" style="display:none">
+  <div class="section-header" style="padding-top:var(--sp-6)">
+    <span class="section-title">Story Graph</span>
+    <span class="section-badge">Topic clusters</span>
+  </div>
+  <div class="story-graph-wrap">
+    <canvas id="storyGraphCanvas" aria-label="Force-directed graph of stories grouped by topic"></canvas>
+  </div>
+</section>
+
 <section id="cartoonsSection" style="display:none">
   <div class="section-header" style="padding-top:var(--sp-6)">
     <span class="section-title">Cartoons &amp; Commentary</span>
@@ -228,6 +238,7 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
       <button id="unreadToggle" class="unread-toggle" type="button">Unread Only</button>
       <button class="unread-toggle" type="button" data-export-briefing title="Download briefing as JSON">&#8681; JSON</button>
       <button class="unread-toggle" type="button" data-export-text title="Download briefing as plain text">&#8681; Text</button>
+      <button id="textViewToggle" class="unread-toggle" type="button" title="Toggle text-only view for accessibility">&#9776; Text View</button>
       <span class="section-badge">Latest 48 hrs</span>
     </div>
   </div>

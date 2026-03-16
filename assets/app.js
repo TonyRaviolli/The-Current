@@ -1,5 +1,6 @@
 import { fetchFeed, runRefresh, fetchResources, fetchSearch, fetchStory, fetchDigest, trackEvent, fetchSources, toggleSource, addSource, deleteSource, fetchScoring, saveScoring, invalidateFeedCache, adminQuerySuffix, setAdminToken } from './api.js';
 import { renderHero, renderTopStories, renderDailyFeed, renderHighImportance, renderArchive, renderTopics, renderDailyInsight, renderResources, renderWeeklyDigest, renderMetaRibbon, renderTodayBrief, renderDeveloping, renderTopicBlocks, renderGlobalSearchResults, renderStoryPage, renderDigestPage, renderOps, renderSinceLastVisit, renderArchiveDays, renderSourceManager, renderScoringPanel, renderMarketIntel, renderCartoons, renderDevelopingStrip, renderMarketHeatmap, renderTopicBreakdownStrip, renderSourceSpectrum } from './render.js';
+import { renderStoryGraph } from './storyGraph.js';
 import { initNavigation, initRunSelector, initTierTabs, initTopicFilters, initSearchFilter, initForms, initCtas, initSaveFollow, getSavedStories, getFollowedTopics, initReaderMode, initShortcuts, initGlobalSearch, applySaveFollowState, initArchiveWeekToggles, recordVisitAndGetLastTime, exportBriefing, exportBriefingText, copyStoryLink, initMyTopicsFilter, getWatches, initKeywordWatches, markAsRead, applyReadState, initUnreadFilter, initDarkMode, initNavMore, initAlertStrip, renderTrendingBar, renderEditorsPicks, subscribeToFeedUpdates, initTopicBreakdownStrip } from './ui.js';
 
 const refreshButton = document.getElementById('refreshButton');
@@ -81,6 +82,13 @@ async function loadAll() {
     renderSinceLastVisit(feedResult?.newCount || 0, lastVisitAt);
     renderHighImportance(store);
     renderSourceSpectrum(store.stories || []);
+    // Story graph — show section only if we have enough stories
+    const graphCanvas = document.getElementById('storyGraphCanvas');
+    const graphSection = document.getElementById('storyGraphSection');
+    if (graphCanvas && (store.stories || []).length >= 5) {
+      if (graphSection) graphSection.style.display = '';
+      renderStoryGraph(graphCanvas, store.stories);
+    }
     await loadAndRenderArchive();
     renderTopics(store);
     initTopicDateNav();
@@ -975,6 +983,22 @@ window.openDigest = async (key = 'latest') => {
   }
 };
 
+function initTextView() {
+  const btn = document.getElementById('textViewToggle');
+  if (!btn) return;
+  // Restore saved preference
+  const saved = localStorage.getItem('uc:text-view');
+  if (saved === '1') {
+    document.body.classList.add('text-view');
+    btn.classList.add('active');
+  }
+  btn.addEventListener('click', () => {
+    const active = document.body.classList.toggle('text-view');
+    btn.classList.toggle('active', active);
+    localStorage.setItem('uc:text-view', active ? '1' : '0');
+  });
+}
+
 initNavigation();
 initRunSelector();
 initTierTabs();
@@ -995,6 +1019,7 @@ initExportButtons();
 initKeywordWatches();
 initUnreadFilter();
 initDarkMode();
+initTextView();
 initNavMore();
 // subscribeToFeedUpdates() is superseded by the unified pollForUpdates() below
 // which opens a single SSE connection handling both banners (Issue 1).
