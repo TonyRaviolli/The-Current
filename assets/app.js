@@ -80,7 +80,7 @@ async function loadAll() {
     const feedResult = renderDailyFeed(store, saved, followed, lastVisitAt);
     renderSinceLastVisit(feedResult?.newCount || 0, lastVisitAt);
     renderHighImportance(store);
-    renderSourceSpectrum(store);
+    renderSourceSpectrum(feedResult?.items || []);
     await loadAndRenderArchive();
     renderTopics(store);
     initTopicDateNav();
