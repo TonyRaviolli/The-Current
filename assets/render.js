@@ -17,6 +17,32 @@ const TOPIC_VISUAL = {
   default:      { bg: '#1a1a2a', accent: '#94a3b8', icon: '\u25C9', label: 'Intelligence' },
 };
 
+// ── Pastel/matte color palette for topic accents ─────────────────────────────
+const TOPIC_PASTEL = {
+  economy:      '#7ab88a',
+  uspolitics:   '#8f8fba',
+  geopolitics:  '#7aafc0',
+  tech:         '#9d8fc0',
+  defense:      '#b8a87a',
+  health:       '#7ab8a8',
+  law:          '#c09d7a',
+  finance:      '#7a9dc0',
+  global_trade: '#b87aaa',
+  elections:    '#c07a7a',
+  ai:           '#a07ac0',
+  biotech:      '#7ac0a0',
+  housing:      '#c0a07a',
+  labor:        '#8fb87a',
+  climate:      '#7ac0b8',
+  energy:       '#c0b07a',
+  science:      '#7a90c0',
+  education:    '#c07a90',
+  banking:      '#7ab0c0',
+  international:'#aa7ac0',
+  cyber:        '#c08f7a',
+  macroeconomics:'#7ab888',
+};
+
 function escapeHtml(text) {
   return String(text)
     .replace(/&/g, '&amp;')
@@ -456,19 +482,18 @@ export function renderDailyFeed(store, saved = new Set(), followed = new Set(), 
     list.innerHTML = items.map(buildCardHtml).join('');
   }
 
-  return { newCount };
+  return { newCount, items };
 }
 
 export function renderTopicBreakdownStrip(store) {
-  const target = document.getElementById('topicBreakdownStrip');
+  const target = document.getElementById('topicCountStrip');
   if (!target) return;
   const degrees = {};
   (store.stories || []).forEach((s) => (s.topics || []).forEach((t) => { degrees[t] = (degrees[t] || 0) + 1; }));
-  const TOPIC_COLORS = { economy:'#22c55e',uspolitics:'#6366f1',geopolitics:'#38bdf8',tech:'#a78bfa',defense:'#f59e0b',health:'#34d399',law:'#f97316',finance:'#0ea5e9',global_trade:'#e879f9',elections:'#ef4444' };
-  const TOPIC_LABELS = { economy:'Economy',uspolitics:'U.S. Politics',geopolitics:'Geopolitics',tech:'Technology',defense:'Defense',health:'Health',law:'Law',finance:'Finance',global_trade:'Trade',elections:'Elections' };
+  const TOPIC_LABELS = { economy:'Economy',uspolitics:'U.S. Politics',geopolitics:'Geopolitics',tech:'Technology',defense:'Defense',health:'Health',law:'Law',finance:'Finance',global_trade:'Trade',elections:'Elections',ai:'AI',biotech:'Biotech',housing:'Housing',labor:'Labor',climate:'Climate',energy:'Energy',science:'Science',education:'Education',banking:'Banking',international:'International',cyber:'Cyber',macroeconomics:'Macroeconomics' };
   const chips = Object.entries(degrees).filter(([id, n]) => n > 0 && TOPIC_LABELS[id]).map(([id, count]) => {
-    const color = TOPIC_COLORS[id] || '#94a3b8';
-    return `<button class="topic-breakdown-chip" data-topic="${escapeHtml(id)}" style="border-left-color:${color}" type="button">${escapeHtml(TOPIC_LABELS[id] || id)} <span class="topic-breakdown-count">${count}</span></button>`;
+    const color = TOPIC_PASTEL[id] || '#b0b8c4';
+    return `<button class="topic-count-chip" data-topic="${escapeHtml(id)}" style="border-left-color:${color}" type="button">${escapeHtml(TOPIC_LABELS[id] || id)} <span class="topic-breakdown-count">${count}</span></button>`;
   });
   if (chips.length < 2) { target.style.display = 'none'; return; }
   target.style.display = '';
@@ -780,7 +805,8 @@ export function renderTopics(store) {
       ? `<div class="topic-date-nav" data-topic-nav="${escapeHtml(topic.topic)}">${datePills}</div>`
       : '';
 
-    return `<div class="topic-section" data-topic-section="${escapeHtml(topic.topic)}"><div class="topic-section-header"><h2 class="topic-section-title">${escapeHtml(topic.label || topic.topic)}</h2><span class="topic-section-meta">${topic.count} stories${todayCount ? ` · ${todayCount} today` : ''}${range}</span></div>${clusterIntro}${dateNav}${groups}</div>`;
+    const sectionColor = TOPIC_PASTEL[topic.topic] || '#b0b8c4';
+    return `<div class="topic-section" data-topic-section="${escapeHtml(topic.topic)}" style="border-left: 4px solid ${sectionColor}"><div class="topic-section-header"><h2 class="topic-section-title" style="color: ${sectionColor}">${escapeHtml(topic.label || topic.topic)}</h2><span class="topic-section-meta">${topic.count} stories${todayCount ? ` · ${todayCount} today` : ''}${range}</span></div>${clusterIntro}${dateNav}${groups}</div>`;
   }).join('');
 }
 
@@ -855,11 +881,11 @@ export function renderDigestPage(digest) {
   container.innerHTML = editorialGrid + recapSection + remainingHtml;
 }
 
-export function renderSourceSpectrum(store) {
+export function renderSourceSpectrum(stories) {
   const container = document.querySelector('.sidebar .source-spectrum');
   if (!container) return;
   container.dataset.renderedAt = new Date().toISOString();
-  const stories = store.stories || [];
+  if (!Array.isArray(stories)) stories = [];
   if (!stories.length) {
     container.innerHTML = '<p class="spectrum-empty">Source data unavailable for this refresh cycle.</p>';
     return;
