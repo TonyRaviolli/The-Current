@@ -1795,34 +1795,7 @@ body.dark-mode .depth-bg {
 .topic-section .topic-preview { display: block; }
 .topic-section:not(.topic-section--collapsed) .topic-preview { display: none; }
 
-.topic-preview-list {
-  list-style: none;
-  padding: 0;
-  margin: var(--sp-2) 0 var(--sp-3);
-}
-.topic-preview-item {
-  display: flex;
-  align-items: baseline;
-  gap: var(--sp-3);
-  padding: 6px 0;
-  font-family: var(--font-serif);
-  font-size: var(--text-sm);
-  line-height: 1.4;
-  color: var(--text-secondary);
-}
-.topic-preview-item + .topic-preview-item{border-top:1px solid var(--border-subtle)}
-.topic-preview-item a {
-  flex: 1;
-  color: var(--text-primary);
-  text-decoration: none;
-}
-.topic-preview-item a:hover { color: var(--text-secondary);text-decoration:underline }
-.topic-preview-score {
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
+/* (topic-preview-list/item consolidated into revision section below) */
 .topic-expand-btn {
   background: none;
   border: 1px solid var(--border-default);
@@ -1935,8 +1908,8 @@ body.dark-mode .depth-bg {
    ╚══════════════════════════════════════════════════════════════════════════╝ */
 
 /* ── Task 1: Topic section header overflow fix ─────────────────────────── */
-.topic-section-header{overflow:hidden;gap:var(--sp-3)}
-.topic-section-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.topic-section-header{overflow:hidden;gap:var(--sp-2)}
+.topic-section-title{min-width:0;overflow-wrap:break-word}
 .topic-section-meta{white-space:nowrap;flex-shrink:0;font-size:0.68rem;padding:3px 10px;border-radius:999px;background:rgba(73,56,27,0.05);border:1px solid var(--border-subtle)}
 
 /* ── Task 3: Date navigation strip ─────────────────────────────────────── */
@@ -1950,13 +1923,39 @@ body.dark-mode .depth-bg {
 .topic-date-nav-arrow:hover{border-color:var(--border-default);color:var(--text-secondary);background:var(--bg-elevated)}
 
 /* ── Task 6: Topics page modern redesign ───────────────────────────────── */
-.topic-section--collapsed{padding:var(--sp-5) var(--sp-5);border-radius:var(--radius-lg);background:var(--bg-surface);border:1px solid var(--border-subtle);transition:transform var(--dur-fast),box-shadow var(--dur-fast)}
+.topic-section--collapsed{padding:var(--sp-5);border-radius:var(--radius-lg);background:var(--bg-surface);border:1px solid var(--border-subtle);transition:transform var(--dur-fast),box-shadow var(--dur-fast);overflow:hidden}
 .topic-section--collapsed:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(20,58,92,0.08)}
-.topic-section--collapsed .topic-section-header{border-bottom:none;margin-bottom:var(--sp-2);padding-bottom:0}
-.topic-section--collapsed .topic-section-title{font-family:var(--font-serif);font-weight:500;font-size:var(--text-lg);color:var(--text-primary);white-space:normal;overflow:visible;text-overflow:clip}
+/* Stacked header: title on top, meta badge below */
+.topic-section--collapsed .topic-section-header{
+  flex-direction:column;
+  align-items:flex-start;
+  gap:var(--sp-2);
+  border-bottom:none;
+  margin-bottom:var(--sp-2);
+  padding-bottom:0;
+}
+.topic-section--collapsed .topic-section-title{
+  font-family:var(--font-serif);
+  font-weight:600;
+  font-size:var(--text-lg);
+  color:var(--text-primary) !important;
+  line-height:1.25;
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+  width:100%;
+}
+.topic-section--collapsed .topic-section-meta{margin-left:0}
 
 .topic-preview-source{font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--text-muted);flex-shrink:0}
 .topic-expand-empty{font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--text-muted);display:block;margin-top:var(--sp-2)}
+
+/* Preview list: clean serif headlines, source attribution */
+.topic-preview-list{list-style:none;padding:0;margin:var(--sp-2) 0 var(--sp-3)}
+.topic-preview-item{display:flex;align-items:baseline;gap:var(--sp-3);padding:6px 0;font-family:var(--font-serif);font-size:var(--text-sm);line-height:1.4;color:var(--text-secondary)}
+.topic-preview-item + .topic-preview-item{border-top:1px solid var(--border-subtle)}
+.topic-preview-item a{flex:1;min-width:0;color:var(--text-primary);text-decoration:none}
+.topic-preview-item a:hover{color:var(--text-secondary);text-decoration:underline}
 
 /* Expanded topic: clean reading pane */
 .topic-section:not(.topic-section--collapsed){background:var(--bg-surface);border-radius:var(--radius-lg);padding:var(--sp-6);border:1px solid var(--border-subtle);border-left:4px solid var(--border-default)}
