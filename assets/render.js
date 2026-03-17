@@ -1,3 +1,30 @@
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  render.js — The UnderCurrent DOM Rendering Module                     ║
+// ╠══════════════════════════════════════════════════════════════════════════╣
+// ║                                                                        ║
+// ║  TABLE OF CONTENTS                                                     ║
+// ║                                                                        ║
+// ║   §1  CONSTANTS & PALETTES ........... Feed caps, topic visuals/labels ║
+// ║   §2  SHARED UTILITIES ............... escapeHtml, formatDate, helpers  ║
+// ║   §3  SVG FALLBACK SYSTEM ............ Topic icons, scene SVGs, cache  ║
+// ║   §4  SCORE BADGES & CARD HELPERS .... Score labels, badges, actions   ║
+// ║   §5  HOME — UPPER MODULES .......... MetaRibbon → TopicBlocks        ║
+// ║   §6  HOME — DAILY FEED ............. Feed rendering + reconciliation  ║
+// ║   §7  HOME — MARKET & SIDEBAR ....... MarketIntel, Heatmap, Spectrum  ║
+// ║   §8  TOPICS TAB .................... Full topic section renderer      ║
+// ║   §9  SECONDARY PAGES ............... About, Digest, Ops, Sources     ║
+// ║  §10  SEARCH & STORY DETAIL ......... Global search, story page       ║
+// ║  §11  ARCHIVE TAB ................... Date-grouped archive renderer    ║
+// ║  §12  ADMIN & SEO ................... Scoring panel, JSON-LD          ║
+// ║                                                                        ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §1  CONSTANTS & PALETTES                                              ║
+// ║  Feed display caps, topic color palettes, and label maps               ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
 // ── Feed size caps (adjust here to change across all tier sections) ───────────
 const FEED_MAX_STORIES = 10; // total articles shown across Tier 1/2/3 on briefing tab
 const FEED_MAX_PER_TIER = 3;  // target per tier before overflow fills remaining slots
@@ -44,6 +71,11 @@ export const TOPIC_PASTEL = {
 };
 
 export const TOPIC_LABELS = { economy:'Economy',uspolitics:'U.S. Politics',geopolitics:'Geopolitics',tech:'Technology',defense:'Defense',health:'Health',law:'Law',finance:'Finance',global_trade:'Trade',elections:'Elections',ai:'AI',biotech:'Biotech',housing:'Housing',labor:'Labor',climate:'Climate',energy:'Energy',science:'Science',education:'Education',banking:'Banking',international:'International',cyber:'Cyber',macroeconomics:'Macroeconomics' };
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §2  SHARED UTILITIES                                                  ║
+// ║  Text escaping, date formatting, topic degree computation              ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
 /** Compute topic → story count from a story array. Cached result can be passed to multiple renderers. */
 export function computeTopicDegrees(stories) {
@@ -96,7 +128,11 @@ function groupStoriesByDate(stories = []) {
     }));
 }
 
-// ── Topic-keyed SVG fallback icons ───────────────────────────────────────────
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §3  SVG FALLBACK SYSTEM                                               ║
+// ║  Topic-keyed icons, illustrated scene SVGs, data URI cache             ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
 function getTopicSvgIcon(topics) {
   const t = (topics || []).map((x) => String(x).toLowerCase());
   if (t.some((x) => ['finance', 'economy', 'macroeconomics', 'banking', 'markets'].includes(x)))
@@ -183,6 +219,11 @@ function renderStoryThumb(imageUrl, className, altText = '', topics = []) {
   return renderStoryThumbFallback(className, topics);
 }
 
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §4  SCORE BADGES & CARD HELPERS                                       ║
+// ║  Score labels, confidence dots, badges, story actions, legislative      ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
 function renderStoryActions(story, baseClass = 'topic-story-link') {
   const slug = escapeHtml(story.slug || '');
   const hasSlug = Boolean(story.slug);
@@ -258,6 +299,12 @@ function governmentDocLabel(doc) {
   if (/fema\.gov/i.test(url)) return 'FEMA';
   return doc?.label || 'Official document';
 }
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §5  HOME — UPPER MODULES                                              ║
+// ║  MetaRibbon, TodayBrief, Hero, TopStories, Developing, TopicBlocks,    ║
+// ║  DailyInsight — rendered top-to-bottom on the Home (Briefing) tab      ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
 export function renderMetaRibbon(store) {
   const runTime = document.getElementById('runTime');
@@ -420,6 +467,12 @@ export function renderDailyInsight(store) {
   text.textContent = store.quotes?.dailyInsight || 'Signal will appear after refresh.';
   source.textContent = `Source: ${store.quotes?.source || 'Original'}`;
 }
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §6  HOME — DAILY FEED                                                 ║
+// ║  Main story feed with tier capping, dedup, DOM reconciliation,         ║
+// ║  topic breakdown strip, and since-last-visit banner                    ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
 export function renderDailyFeed(store, saved = new Set(), followed = new Set(), lastVisitAt = null, claimed = null) {
   const list = document.getElementById('storyList');
@@ -598,6 +651,12 @@ function formatTimeAgo(date) {
   if (diffHours < 24) return `${diffHours}h ago`;
   return `${Math.floor(diffHours / 24)}d ago`;
 }
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §7  HOME — MARKET, SIDEBAR & BOTTOM MODULES                          ║
+// ║  Market Intelligence card, Market Heatmap, Cartoons,                   ║
+// ║  High Importance / Legislative, Source Spectrum sidebar                 ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
 /**
  * Render the AI-generated market intelligence card.
@@ -794,6 +853,12 @@ export function renderHighImportance(store, claimed) {
   }).join('');
 }
 
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §8  TOPICS TAB                                                        ║
+// ║  Full topic section renderer with date groups, previews, expand/       ║
+// ║  collapse, date navigation pills, cluster intros                       ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
 export function renderTopics(store) {
   const container = document.getElementById('topicsContent');
   if (!container) return;
@@ -871,6 +936,12 @@ export function renderTopics(store) {
     </div>`;
   }).join('');
 }
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §9  SECONDARY PAGES                                                   ║
+// ║  About (Resources), Weekly Digest, Digest Page, Source Spectrum,       ║
+// ║  Ops Metrics, Source Manager                                           ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
 export function renderResources(resources) {
   const container = document.getElementById('resourcesContent');
@@ -1061,6 +1132,12 @@ export function renderSourceManager(data = {}) {
     return `<div class="sm-tier"><div class="sm-tier-label">${tierLabels[tier]} <span class="sm-tier-count">${byTier[tier].length}</span></div>${rows}</div>`;
   }).join('');
 }
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §10  SEARCH & STORY DETAIL PAGE                                       ║
+// ║  Global search results, story page (spectrum, timeline, entities,      ║
+// ║  confidence breakdown, related stories)                                ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
 export function renderGlobalSearchResults(results = [], meta = {}) {
   const container = document.getElementById('globalSearchResults');
@@ -1263,6 +1340,11 @@ export function renderStoryPage(story) {
   renderArticleJsonLd(story);
 }
 
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §11  ARCHIVE TAB                                                      ║
+// ║  Date-grouped archive with chip navigation, card grid, show-more       ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
 /**
  * Render the historical archive from the /api/archive response format.
  * Each entry is { date, count, stories[] }.
@@ -1355,6 +1437,11 @@ function formatArchiveDate(isoDate) {
   if (isNaN(d)) return isoDate;
   return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 }
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §12  ADMIN & SEO                                                      ║
+// ║  Scoring panel (admin sliders) and JSON-LD structured data             ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
 export function renderScoringPanel(config = {}) {
   const sc = config.scoring || {};

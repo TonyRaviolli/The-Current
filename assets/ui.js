@@ -1,3 +1,26 @@
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  ui.js — The UnderCurrent UI Interactions & State                      ║
+// ╠══════════════════════════════════════════════════════════════════════════╣
+// ║                                                                        ║
+// ║  TABLE OF CONTENTS                                                     ║
+// ║                                                                        ║
+// ║   §1  IMPORTS & STORAGE KEYS ......... Module imports, localStorage    ║
+// ║   §2  READ STATE & UNREAD FILTER ..... Mark-as-read, unread toggle     ║
+// ║   §3  NAVIGATION & ROUTING ........... Page nav, mobile nav, routing   ║
+// ║   §4  TAB & FILTER CONTROLS .......... Tier tabs, topic filters, runs  ║
+// ║   §5  FORMS & USER ACTIONS ........... Contact, source, CTA handlers   ║
+// ║   §6  SAVE, FOLLOW & PERSONALIZATION . Bookmarks, follows, exports    ║
+// ║   §7  KEYWORD WATCHES ................ Watch list CRUD, alerts         ║
+// ║   §8  PREFERENCES & CHROME ........... Dark mode, reader, shortcuts   ║
+// ║   §9  HOME WIDGETS ................... Trending bar, editors' picks    ║
+// ║                                                                        ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §1  IMPORTS & STORAGE KEYS                                            ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
 import { submitForm, trackEvent } from './api.js';
 import { TOPIC_PASTEL, TOPIC_LABELS, escapeHtml, computeTopicDegrees } from './render.js';
 
@@ -8,7 +31,10 @@ const LAST_VISIT_KEY = 'uc_last_visit_at';
 const WATCHES_KEY = 'uc_keyword_watches';
 const READ_KEY = 'uc_read_stories';
 
-// ── Read state ────────────────────────────────────────────────────────────────
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §2  READ STATE & UNREAD FILTER                                        ║
+// ║  Track which stories have been read, toggle unread-only view           ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
 export function getReadStories() {
   try { return new Set(JSON.parse(localStorage.getItem(READ_KEY) || '[]')); } catch { return new Set(); }
@@ -59,6 +85,11 @@ export function initUnreadFilter() {
     toggle.textContent = active ? 'All Stories' : 'Unread Only';
   });
 }
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §3  NAVIGATION & ROUTING                                              ║
+// ║  Page navigation, mobile menu, keyboard nav, route handling            ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
 export function initNavigation() {
   document.querySelectorAll('.nav-link').forEach((link) => {
@@ -112,6 +143,11 @@ export function initNavigation() {
     }
   });
 }
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §4  TAB & FILTER CONTROLS                                             ║
+// ║  Run selector, tier tabs, topic chip filters, search filters           ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
 export function initRunSelector() {
   document.querySelectorAll('.run-btn').forEach((btn) => {
@@ -291,6 +327,11 @@ export function initSearchFilter(onSearch) {
   if (from && from.dataset.bound !== '1') { from.dataset.bound = '1'; from.addEventListener('change', handler); }
   if (to && to.dataset.bound !== '1') { to.dataset.bound = '1'; to.addEventListener('change', handler); }
 }
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §5  FORMS & USER ACTIONS                                              ║
+// ║  Contact/source/topic forms, CTA handlers, save/follow toggles        ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
 export function initForms() {
   const contactSubmit = document.getElementById('contactSubmit');
@@ -475,6 +516,11 @@ export function initArchiveWeekToggles() {
   });
 }
 
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §6  SAVE, FOLLOW & PERSONALIZATION                                    ║
+// ║  Bookmarks, followed topics, visit tracking, briefing export           ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
 export function getSavedStories() {
   try {
     return JSON.parse(localStorage.getItem(SAVED_KEY) || '[]');
@@ -504,7 +550,10 @@ function toggleFollowTopic(topic) {
   try { localStorage.setItem(FOLLOW_KEY, JSON.stringify(Array.from(items))); } catch { /* quota */ }
 }
 
-// ─── Keyword Watches ──────────────────────────────────────────────────────────
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §7  KEYWORD WATCHES                                                   ║
+// ║  Watch list CRUD, renders watch chips, targeted alert matching         ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
 export function getWatches() {
   try {
@@ -722,7 +771,11 @@ export function initMyTopicsFilter(getStore) {
   });
 }
 
-// Dark mode toggle
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §8  PREFERENCES & CHROME                                              ║
+// ║  Dark mode, nav dropdown, alert strip, My Topics filter                ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
 export function initDarkMode() {
   const toggle = document.getElementById('dark-mode-toggle');
   const icon = document.getElementById('dark-mode-icon');
@@ -776,7 +829,11 @@ export function initAlertStrip(stories) {
   }
 }
 
-// Trending topics bar
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §9  HOME WIDGETS                                                      ║
+// ║  Trending bar, Editors' Picks, feed topic filter, topic breakdown      ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
 export function renderTrendingBar(stories, precomputedDegrees) {
   const bar = document.getElementById('trending-bar');
   if (!bar) return;

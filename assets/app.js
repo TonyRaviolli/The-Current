@@ -1,3 +1,29 @@
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  app.js — The UnderCurrent Application Orchestrator                    ║
+// ╠══════════════════════════════════════════════════════════════════════════╣
+// ║                                                                        ║
+// ║  TABLE OF CONTENTS                                                     ║
+// ║                                                                        ║
+// ║   §1  IMPORTS & MODULE STATE ......... API, render, UI imports + vars  ║
+// ║   §2  BOOTSTRAP ...................... Admin token, boot data, loader  ║
+// ║   §3  CORE DATA PIPELINE ............ loadAll, loadResources/Sources   ║
+// ║   §4  ADMIN PANELS .................. Scoring panel, source manager    ║
+// ║   §5  ARCHIVE ....................... Load, render, filter archive     ║
+// ║   §6  LIVE UPDATES .................. SSE/poll, banners, watch match  ║
+// ║   §7  UI CHROME ..................... Loader, particles, date, toast  ║
+// ║   §8  REFRESH ....................... SSE stream, button, auto-refresh ║
+// ║   §9  INTERACTIONS .................. Depth tilt, market tiles, reveal ║
+// ║  §10  FILTERS & SEARCH .............. Feed search, archive filters    ║
+// ║  §11  ROUTING ....................... openStory, openDigest, boot     ║
+// ║  §12  INITIALIZATION ................ All init calls (boot sequence)  ║
+// ║                                                                        ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §1  IMPORTS & MODULE STATE                                            ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
 import { fetchFeed, runRefresh, fetchResources, fetchSearch, fetchStory, fetchDigest, trackEvent, fetchSources, toggleSource, addSource, deleteSource, fetchScoring, saveScoring, invalidateFeedCache, adminQuerySuffix, setAdminToken } from './api.js';
 import { renderHero, renderTopStories, renderDailyFeed, renderHighImportance, renderTopics, renderDailyInsight, renderResources, renderWeeklyDigest, renderMetaRibbon, renderTodayBrief, renderDeveloping, renderTopicBlocks, renderGlobalSearchResults, renderStoryPage, renderDigestPage, renderOps, renderSinceLastVisit, renderArchiveDays, renderSourceManager, renderScoringPanel, renderMarketIntel, renderCartoons, renderMarketHeatmap, renderTopicBreakdownStrip, renderSourceSpectrum, computeTopicDegrees } from './render.js';
 import { renderStoryGraph } from './storyGraph.js';
@@ -21,6 +47,11 @@ const depths = [
 
 let storeCache = null;
 
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §2  BOOTSTRAP                                                         ║
+// ║  Admin token extraction, boot data parsing                             ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
 function bootstrapAdminTokenFromUrl() {
   const url = new URL(window.location.href);
   const token = url.searchParams.get('admin_token');
@@ -40,6 +71,11 @@ function getBootData() {
     return {};
   }
 }
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §3  CORE DATA PIPELINE                                                ║
+// ║  loadAll (main render pipeline), loadResources, loadScoring            ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
 async function loadAll() {
   try {
@@ -147,6 +183,11 @@ async function loadScoring() {
     console.error('[uc] scoring load failed:', err);
   }
 }
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §4  ADMIN PANELS                                                      ║
+// ║  Scoring configuration panel, source manager CRUD                      ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
 // TODO [audit]: Issue 13 — Replace scattered sc-* ID strings with a single
 // SCORING_ELEMENTS map and log a warning + abort if any element is missing.
@@ -288,6 +329,11 @@ function initSourceManager() {
   }
 }
 
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §5  ARCHIVE                                                           ║
+// ║  Load and render archive data, run filtering, show-more expansion      ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
 // TODO [audit]: Issue 7 — Archive renders all cards before filtering. Render
 // only current week immediately; lazy-render collapsed week groups on expand
 // using IntersectionObserver on collapsed week headers. Deferred: requires
@@ -354,7 +400,11 @@ function matchWatches(stories, watches) {
   return Array.from(matched.entries()).map(([keyword, count]) => ({ keyword, count }));
 }
 
-// ── Unified update manager (Issue 1) ─────────────────────────────────────────
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §6  LIVE UPDATES                                                      ║
+// ║  SSE primary + polling fallback, debounced update checks,              ║
+// ║  keyword watch matching, live update banner                            ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 // Primary: SSE /api/feed-updates. Fallback: 10-min /api/status poll if SSE
 // unavailable or drops. A 2-second debounce coalesces concurrent signals.
 
@@ -477,6 +527,11 @@ function showLiveUpdateBanner(lastUpdated, matchInfo = null) {
   }, { once: true });
 }
 
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §7  UI CHROME                                                         ║
+// ║  Dateline, loader animation, depth particles, toast notifications      ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
 function updateDateline() {
   const d = new Date();
   const opts = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
@@ -527,7 +582,11 @@ function initParticles() {
   }
 }
 
-// ── Refresh: SSE-driven progress phases ───────────────────────────────────────
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §8  REFRESH                                                           ║
+// ║  SSE-driven refresh stream, refresh button state machine,              ║
+// ║  auto-refresh interval, new-card highlighting                          ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
 function runRefreshStream({ onPhase, onDone, onError }) {
   return new Promise((resolve) => {
@@ -676,7 +735,12 @@ function initAutoRefresh() {
   }, AUTO_MS);
 }
 
-// Stores observer ref so it can be disconnected before re-init (Issue 2).
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §9  INTERACTIONS                                                      ║
+// ║  Scroll reveal, topic date navigation, market tile expand,             ║
+// ║  depth-tilt parallax, share/export buttons                             ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
 let _revealObserver = null;
 function initReveal() {
   if (_revealObserver) {
@@ -794,6 +858,11 @@ function initDepthInteractions() {
     });
   }
 }
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §10  FILTERS & SEARCH                                                 ║
+// ║  Feed search/filter, archive filters, global search panel              ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
 function initSearch() {
   // Issue 6: debounce search filter at 120ms; use rAF for DOM mutations
@@ -947,6 +1016,11 @@ function initExportButtons() {
   });
 }
 
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §11  ROUTING                                                          ║
+// ║  Deep-link boot handling, openStory, openDigest, text view toggle      ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
 function handleBoot() {
   const boot = getBootData();
   if (boot.page === 'story' && boot.story) {
@@ -1000,6 +1074,11 @@ function initTextView() {
     localStorage.setItem('uc:text-view', active ? '1' : '0');
   });
 }
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §12  INITIALIZATION                                                   ║
+// ║  Boot sequence — order matters: nav/UI first, then data, then polls    ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
 initNavigation();
 initRunSelector();
