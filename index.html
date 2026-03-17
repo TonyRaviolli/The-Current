@@ -195,15 +195,6 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
   <div id="marketIntelCard"></div>
 </section>
 
-<section id="storyGraphSection" class="story-graph-section" style="display:none">
-  <div class="section-header" style="padding-top:var(--sp-6)">
-    <span class="section-title">Story Graph</span>
-    <span class="section-badge">Topic clusters</span>
-  </div>
-  <div class="story-graph-wrap">
-    <canvas id="storyGraphCanvas" aria-label="Force-directed graph of stories grouped by topic"></canvas>
-  </div>
-</section>
 
 <section id="cartoonsSection" style="display:none">
   <div class="section-header" style="padding-top:var(--sp-6)">
@@ -400,30 +391,30 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
 <div class="topics-nav" id="topicsNav">
   <button class="topic-chip active" data-topic="all" type="button">All Topics</button>
   <button class="topic-chip" data-topic="today" type="button">Today</button>
-  <button class="topic-chip" data-topic="ai" type="button" style="border-left: 3px solid #a07ac0">AI</button>
-  <button class="topic-chip" data-topic="tech" type="button" style="border-left: 3px solid #9d8fc0">Technology</button>
-  <button class="topic-chip" data-topic="biotech" type="button" style="border-left: 3px solid #7ac0a0">Biotech</button>
-  <button class="topic-chip" data-topic="health" type="button" style="border-left: 3px solid #7ab8a8">Health</button>
-  <button class="topic-chip" data-topic="finance" type="button" style="border-left: 3px solid #7a9dc0">Finance</button>
-  <button class="topic-chip" data-topic="macroeconomics" type="button" style="border-left: 3px solid #7ab888">Macroeconomics</button>
-  <button class="topic-chip" data-topic="economy" type="button" style="border-left: 3px solid #7ab88a">Economy</button>
-  <button class="topic-chip" data-topic="housing" type="button" style="border-left: 3px solid #c0a07a">Housing</button>
-  <button class="topic-chip" data-topic="labor" type="button" style="border-left: 3px solid #8fb87a">Labor</button>
-  <button class="topic-chip" data-topic="law" type="button" style="border-left: 3px solid #c09d7a">Law &amp; Regulation</button>
-  <button class="topic-chip" data-topic="uspolitics" type="button" style="border-left: 3px solid #8f8fba">U.S. Politics</button>
-  <button class="topic-chip" data-topic="elections" type="button" style="border-left: 3px solid #c07a7a">Elections</button>
-  <button class="topic-chip" data-topic="geopolitics" type="button" style="border-left: 3px solid #7aafc0">Geopolitics</button>
-  <button class="topic-chip" data-topic="global_trade" type="button" style="border-left: 3px solid #b87aaa">Global Trade</button>
-  <button class="topic-chip" data-topic="defense" type="button" style="border-left: 3px solid #b8a87a">Defense</button>
-  <button class="topic-chip" data-topic="cyber" type="button" style="border-left: 3px solid #c08f7a">Cyber</button>
-  <button class="topic-chip" data-topic="infrastructure" type="button">Infrastructure</button>
-  <button class="topic-chip" data-topic="energy" type="button" style="border-left: 3px solid #c0b07a">Energy</button>
-  <button class="topic-chip" data-topic="climate" type="button" style="border-left: 3px solid #7ac0b8">Climate</button>
-  <button class="topic-chip" data-topic="science" type="button" style="border-left: 3px solid #7a90c0">Science</button>
-  <button class="topic-chip" data-topic="engineering" type="button">Engineering</button>
-  <button class="topic-chip" data-topic="education" type="button" style="border-left: 3px solid #c07a90">Education</button>
-  <button class="topic-chip" data-topic="banking" type="button" style="border-left: 3px solid #7ab0c0">Banking</button>
-  <button class="topic-chip" data-topic="international" type="button" style="border-left: 3px solid #aa7ac0">International</button>
+  <button class="topic-chip" data-topic="ai" type="button" style="--chip-color:#7c3aed">AI</button>
+  <button class="topic-chip" data-topic="tech" type="button" style="--chip-color:#6366f1">Technology</button>
+  <button class="topic-chip" data-topic="biotech" type="button" style="--chip-color:#10b981">Biotech</button>
+  <button class="topic-chip" data-topic="health" type="button" style="--chip-color:#14b8a6">Health</button>
+  <button class="topic-chip" data-topic="finance" type="button" style="--chip-color:#0284c7">Finance</button>
+  <button class="topic-chip" data-topic="macroeconomics" type="button" style="--chip-color:#059669">Macroeconomics</button>
+  <button class="topic-chip" data-topic="economy" type="button" style="--chip-color:#16a34a">Economy</button>
+  <button class="topic-chip" data-topic="housing" type="button" style="--chip-color:#d97706">Housing</button>
+  <button class="topic-chip" data-topic="labor" type="button" style="--chip-color:#65a30d">Labor</button>
+  <button class="topic-chip" data-topic="law" type="button" style="--chip-color:#ea580c">Law &amp; Regulation</button>
+  <button class="topic-chip" data-topic="uspolitics" type="button" style="--chip-color:#4f46e5">U.S. Politics</button>
+  <button class="topic-chip" data-topic="elections" type="button" style="--chip-color:#dc2626">Elections</button>
+  <button class="topic-chip" data-topic="geopolitics" type="button" style="--chip-color:#0891b2">Geopolitics</button>
+  <button class="topic-chip" data-topic="global_trade" type="button" style="--chip-color:#a21caf">Global Trade</button>
+  <button class="topic-chip" data-topic="defense" type="button" style="--chip-color:#b45309">Defense</button>
+  <button class="topic-chip" data-topic="cyber" type="button" style="--chip-color:#e11d48">Cyber</button>
+  <button class="topic-chip" data-topic="infrastructure" type="button" style="--chip-color:#78716c">Infrastructure</button>
+  <button class="topic-chip" data-topic="energy" type="button" style="--chip-color:#ca8a04">Energy</button>
+  <button class="topic-chip" data-topic="climate" type="button" style="--chip-color:#0d9488">Climate</button>
+  <button class="topic-chip" data-topic="science" type="button" style="--chip-color:#2563eb">Science</button>
+  <button class="topic-chip" data-topic="engineering" type="button" style="--chip-color:#64748b">Engineering</button>
+  <button class="topic-chip" data-topic="education" type="button" style="--chip-color:#db2777">Education</button>
+  <button class="topic-chip" data-topic="banking" type="button" style="--chip-color:#0369a1">Banking</button>
+  <button class="topic-chip" data-topic="international" type="button" style="--chip-color:#7c3aed">International</button>
 </div>
 <div id="topicCountStrip" class="topic-count-strip"></div>
 <div id="topicsContent"></div>

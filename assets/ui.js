@@ -216,14 +216,14 @@ export function initTopicFilters() {
       const topicsEl = document.getElementById('topicsContent');
 
       if (selectedTopic === 'all') {
-        // Collapse all to preview mode
+        // Show all sections in collapsed grid view
         document.querySelectorAll('.topic-section').forEach((s) => {
           s.classList.add('topic-section--collapsed');
           s.style.display = '';
         });
         if (topicsEl) topicsEl.classList.remove('topics-detail-mode');
       } else if (selectedTopic === 'today') {
-        // Show all sections with today's stories, expand them
+        // Show only sections with today's stories, fully expanded
         document.querySelectorAll('.topic-section').forEach((section) => {
           const hasTodayStory = section.querySelector(`[data-story-date="${today}"]`);
           if (hasTodayStory) {
@@ -235,15 +235,14 @@ export function initTopicFilters() {
         });
         if (topicsEl) topicsEl.classList.add('topics-detail-mode');
       } else {
-        // Expand selected, collapse others
+        // Subset view: show ONLY the selected topic, hide all others
         document.querySelectorAll('.topic-section').forEach((section) => {
           if (section.dataset.topicSection === selectedTopic) {
             section.style.display = '';
             section.classList.remove('topic-section--collapsed');
             section.scrollIntoView({ behavior: 'smooth', block: 'start' });
           } else {
-            section.classList.add('topic-section--collapsed');
-            section.style.display = '';
+            section.style.display = 'none';
           }
         });
         if (topicsEl) topicsEl.classList.add('topics-detail-mode');
@@ -292,9 +291,9 @@ export function initTopicFilters() {
         });
         const topicsEl = document.getElementById('topicsContent');
         if (topicsEl) topicsEl.classList.add('topics-detail-mode');
-        // Collapse other sections
+        // Hide other sections entirely (subset view)
         document.querySelectorAll('.topic-section').forEach((s) => {
-          if (s !== section) s.classList.add('topic-section--collapsed');
+          if (s !== section) s.style.display = 'none';
         });
       }
     });

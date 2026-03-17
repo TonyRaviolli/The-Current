@@ -46,28 +46,28 @@ const TOPIC_VISUAL = {
 
 // ── Pastel/matte color palette for topic accents ─────────────────────────────
 export const TOPIC_PASTEL = {
-  economy:      '#7ab88a',
-  uspolitics:   '#8f8fba',
-  geopolitics:  '#7aafc0',
-  tech:         '#9d8fc0',
-  defense:      '#b8a87a',
-  health:       '#7ab8a8',
-  law:          '#c09d7a',
-  finance:      '#7a9dc0',
-  global_trade: '#b87aaa',
-  elections:    '#c07a7a',
-  ai:           '#a07ac0',
-  biotech:      '#7ac0a0',
-  housing:      '#c0a07a',
-  labor:        '#8fb87a',
-  climate:      '#7ac0b8',
-  energy:       '#c0b07a',
-  science:      '#7a90c0',
-  education:    '#c07a90',
-  banking:      '#7ab0c0',
-  international:'#aa7ac0',
-  cyber:        '#c08f7a',
-  macroeconomics:'#7ab888',
+  economy:      '#16a34a',
+  uspolitics:   '#4f46e5',
+  geopolitics:  '#0891b2',
+  tech:         '#6366f1',
+  defense:      '#b45309',
+  health:       '#14b8a6',
+  law:          '#ea580c',
+  finance:      '#0284c7',
+  global_trade: '#a21caf',
+  elections:    '#dc2626',
+  ai:           '#7c3aed',
+  biotech:      '#10b981',
+  housing:      '#d97706',
+  labor:        '#65a30d',
+  climate:      '#0d9488',
+  energy:       '#ca8a04',
+  science:      '#2563eb',
+  education:    '#db2777',
+  banking:      '#0369a1',
+  international:'#7c3aed',
+  cyber:        '#e11d48',
+  macroeconomics:'#059669',
 };
 
 export const TOPIC_LABELS = { economy:'Economy',uspolitics:'U.S. Politics',geopolitics:'Geopolitics',tech:'Technology',defense:'Defense',health:'Health',law:'Law',finance:'Finance',global_trade:'Trade',elections:'Elections',ai:'AI',biotech:'Biotech',housing:'Housing',labor:'Labor',climate:'Climate',energy:'Energy',science:'Science',education:'Education',banking:'Banking',international:'International',cyber:'Cyber',macroeconomics:'Macroeconomics' };
@@ -195,7 +195,7 @@ function renderStoryThumbFallbackDataUri(topics) {
   const scene = sceneFn(accent);
   // Grid overlay for editorial feel
   const grid = `<line x1="0" y1="56" x2="400" y2="56" stroke="${accent}" stroke-width="0.4" opacity="0.06"/><line x1="0" y1="112" x2="400" y2="112" stroke="${accent}" stroke-width="0.4" opacity="0.06"/><line x1="0" y1="168" x2="400" y2="168" stroke="${accent}" stroke-width="0.4" opacity="0.06"/><line x1="100" y1="0" x2="100" y2="225" stroke="${accent}" stroke-width="0.4" opacity="0.04"/><line x1="200" y1="0" x2="200" y2="225" stroke="${accent}" stroke-width="0.4" opacity="0.04"/><line x1="300" y1="0" x2="300" y2="225" stroke="${accent}" stroke-width="0.4" opacity="0.04"/>`;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 225" preserveAspectRatio="xMidYMid slice"><defs><radialGradient id="rg" cx="50%" cy="45%" r="60%"><stop offset="0%" stop-color="${accent}" stop-opacity="0.18"/><stop offset="100%" stop-color="${accent}" stop-opacity="0"/></radialGradient></defs><rect width="400" height="225" fill="${bg}"/><rect width="400" height="225" fill="url(#rg)"/>${grid}${scene}<text x="200" y="210" text-anchor="middle" dominant-baseline="middle" font-family="system-ui,sans-serif" font-size="11" fill="${accent}" opacity="0.7" letter-spacing="3" font-weight="500">${label.toUpperCase()}</text></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 225" width="800" height="450" preserveAspectRatio="xMidYMid slice"><defs><radialGradient id="rg" cx="50%" cy="45%" r="60%"><stop offset="0%" stop-color="${accent}" stop-opacity="0.18"/><stop offset="100%" stop-color="${accent}" stop-opacity="0"/></radialGradient></defs><rect width="400" height="225" fill="${bg}"/><rect width="400" height="225" fill="url(#rg)"/>${grid}${scene}<text x="200" y="210" text-anchor="middle" dominant-baseline="middle" font-family="system-ui,sans-serif" font-size="11" fill="${accent}" opacity="0.7" letter-spacing="3" font-weight="500">${label.toUpperCase()}</text></svg>`;
   let uri;
   try {
     uri = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
@@ -895,11 +895,10 @@ export function renderTopics(store) {
           <div class="topic-story-main">
             <div class="topic-story-head">
               <div class="topic-story-title">${hasSlug ? `<a href="/story/${slug}" onclick="window.openStory('${slug}');return false;">${escapeHtml(story.headline || story.title)}</a>` : escapeHtml(story.headline || story.title)}</div>
-              <span class="topic-story-date">${escapeHtml(storyTime || group.label)}</span>
             </div>
             <div class="topic-story-excerpt">${escapeHtml(story.dek || story.summary || '')}</div>
             <div class="topic-story-footer">
-              <div class="topic-story-info">${escapeHtml(story.sources?.[0]?.name || story.source || '')}${storyDate ? ` &middot; ${escapeHtml(formatDate(story.updatedAt || story.publishedAt))}` : ''}</div>
+              <div class="topic-story-info">${escapeHtml(story.sources?.[0]?.name || story.source || '')}${storyDate ? ` &middot; ${escapeHtml(formatDate(story.updatedAt || story.publishedAt))}` : ''}${storyTime ? ` &middot; ${escapeHtml(storyTime)}` : ''}</div>
               <div class="topic-story-actions">${open}${external}</div>
             </div>
           </div>
