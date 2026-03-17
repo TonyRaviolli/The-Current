@@ -897,9 +897,6 @@ export function renderTopics(store) {
   container.innerHTML = topics.map((topic) => {
     const todayCount = topic.items.filter((story) => String(story.updatedAt || story.publishedAt || '').slice(0, 10) === today).length;
     const dateGroups = groupStoriesByDate(topic.items);
-    const range = topic.range?.start && topic.range?.end
-      ? ` · ${escapeHtml(formatDate(topic.range.start))} to ${escapeHtml(formatDate(topic.range.end))}`
-      : '';
     const clusterIntro = (topic.items[0]?.whyItMatters || topic.items[0]?.whatsNext)
       ? `<div class="topic-cluster-intro">
           ${topic.items[0].whyItMatters ? `<p class="topic-cluster-lead">${escapeHtml(topic.items[0].whyItMatters)}</p>` : ''}
@@ -939,21 +936,21 @@ export function renderTopics(store) {
       return `<button class="topic-date-pill${gi === 0 ? ' active' : ''}" data-target-date="${escapeHtml(group.date || '')}" type="button">${escapeHtml(short)}</button>`;
     }).join('');
     const dateNav = dateGroups.length > 1
-      ? `<div class="topic-date-nav" data-topic-nav="${escapeHtml(topic.topic)}">${datePills}</div>`
+      ? `<div class="topic-date-nav" data-topic-nav="${escapeHtml(topic.topic)}"><button class="topic-date-nav-arrow" data-dir="left" type="button" aria-label="Scroll dates left">&#8249;</button><div class="topic-date-nav-strip">${datePills}</div><button class="topic-date-nav-arrow" data-dir="right" type="button" aria-label="Scroll dates right">&#8250;</button></div>`
       : '';
 
     const sectionColor = TOPIC_PASTEL[topic.topic] || '#b0b8c4';
     return `<div class="topic-section topic-section--collapsed" data-topic-section="${escapeHtml(topic.topic)}" style="border-left: 4px solid ${sectionColor}">
       <div class="topic-section-header">
         <h2 class="topic-section-title" style="color: ${sectionColor}">${escapeHtml(topic.label || topic.topic)}</h2>
-        <span class="topic-section-meta">${topic.count} stories${todayCount ? ` \u00B7 ${todayCount} today` : ''}${range}</span>
+        <span class="topic-section-meta">${todayCount ? `${todayCount} today` : 'No stories today'}</span>
       </div>
       ${clusterIntro}
       <div class="topic-preview">
         <ul class="topic-preview-list">
-          ${topic.items.slice(0, 3).map((s) => `<li class="topic-preview-item"><a href="/story/${escapeHtml(s.slug || '')}" onclick="window.openStory && window.openStory('${escapeHtml(s.slug || '')}');return false;">${escapeHtml(s.headline || s.title || '')}</a><span class="topic-preview-score">${scoreOutOfTen(s.score)}</span></li>`).join('')}
+          ${topic.items.slice(0, 3).map((s) => `<li class="topic-preview-item"><a href="/story/${escapeHtml(s.slug || '')}" onclick="window.openStory && window.openStory('${escapeHtml(s.slug || '')}');return false;">${escapeHtml(s.headline || s.title || '')}</a><span class="topic-preview-source">${escapeHtml(s.sources?.[0]?.name || s.source || '')}</span></li>`).join('')}
         </ul>
-        ${topic.items.length > 3 ? `<button class="topic-expand-btn" data-expand-topic="${escapeHtml(topic.topic)}" type="button">Browse all ${topic.items.length} stories \u2192</button>` : ''}
+        ${todayCount > 0 ? `<button class="topic-expand-btn" data-expand-topic="${escapeHtml(topic.topic)}" type="button">Browse all ${todayCount} stories \u2192</button>` : '<span class="topic-expand-empty">No stories today</span>'}
       </div>
       <div class="topic-full">
         ${dateNav}${groups}

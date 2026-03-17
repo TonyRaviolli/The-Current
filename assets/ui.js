@@ -295,7 +295,46 @@ export function initTopicFilters() {
         document.querySelectorAll('.topic-section').forEach((s) => {
           if (s !== section) s.style.display = 'none';
         });
+        // Auto-select first date pill (today)
+        const firstPill = section.querySelector('.topic-date-pill');
+        if (firstPill) firstPill.click();
       }
+    });
+  }
+
+  // Date pill navigation within expanded topics (bound once globally)
+  if (document.body.dataset.topicDateNavBound !== '1') {
+    document.body.dataset.topicDateNavBound = '1';
+    document.body.addEventListener('click', (e) => {
+      const pill = e.target.closest('.topic-date-pill');
+      if (!pill) return;
+      const nav = pill.closest('.topic-date-nav');
+      if (!nav) return;
+      // Toggle active state
+      nav.querySelectorAll('.topic-date-pill').forEach((p) => p.classList.remove('active'));
+      pill.classList.add('active');
+      // Show only the matching date group
+      const targetDate = pill.dataset.targetDate;
+      const section = nav.closest('.topic-section');
+      if (!section) return;
+      section.querySelectorAll('.topic-date-group').forEach((group) => {
+        const match = group.dataset.topicDate === targetDate;
+        group.style.display = match ? '' : 'none';
+        // Uncollapse matched group so stories show
+        if (match) group.classList.remove('collapsed');
+      });
+    });
+
+    // Date nav arrow scroll buttons
+    document.body.addEventListener('click', (e) => {
+      const arrow = e.target.closest('.topic-date-nav-arrow');
+      if (!arrow) return;
+      const nav = arrow.closest('.topic-date-nav');
+      if (!nav) return;
+      const strip = nav.querySelector('.topic-date-nav-strip');
+      if (!strip) return;
+      const dir = arrow.dataset.dir === 'left' ? -1 : 1;
+      strip.scrollBy({ left: dir * 160, behavior: 'smooth' });
     });
   }
 
@@ -588,7 +627,7 @@ function renderWatchesList() {
     return;
   }
   container.innerHTML = watches.map((kw) =>
-    `<span class="watch-chip"><span class="watch-chip-label">${kw}</span><button class="watch-chip-remove" data-remove-watch="${kw}" title="Remove" aria-label="Remove watch for ${kw}">&#10005;</button></span>`
+    `<span class="watch-chip"><span class="watch-chip-label">${escapeHtml(kw)}</span><button class="watch-chip-remove" data-remove-watch="${escapeHtml(kw)}" title="Remove" aria-label="Remove watch for ${escapeHtml(kw)}">&#10005;</button></span>`
   ).join('');
 }
 

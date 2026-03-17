@@ -1929,3 +1929,101 @@ body.dark-mode .depth-bg {
   a{text-decoration:underline}
   .story-card-title a{text-decoration-thickness:2px;text-underline-offset:3px}
 }
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  REVISION: Tasks 1-6 — Topics redesign, date nav, mobile, etc.       ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+/* ── Task 1: Topic section header overflow fix ─────────────────────────── */
+.topic-section-header{overflow:hidden;gap:var(--sp-3)}
+.topic-section-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.topic-section-meta{white-space:nowrap;flex-shrink:0;font-size:0.68rem;padding:3px 10px;border-radius:999px;background:rgba(73,56,27,0.05);border:1px solid var(--border-subtle)}
+
+/* ── Task 3: Date navigation strip ─────────────────────────────────────── */
+.topic-date-nav{display:flex;align-items:center;gap:var(--sp-2);position:sticky;top:calc(var(--nav-height) + 8px);z-index:10;background:var(--bg-deep);padding:var(--sp-2) 0;margin-bottom:var(--sp-4);border-bottom:1px solid var(--border-rule)}
+.topic-date-nav-strip{display:flex;gap:var(--sp-2);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-width:0}
+.topic-date-nav-strip::-webkit-scrollbar{display:none}
+.topic-date-pill{padding:6px 14px;border-radius:999px;border:1px solid var(--border-subtle);background:var(--bg-surface);font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);cursor:pointer;transition:all var(--dur-fast);white-space:nowrap;flex-shrink:0}
+.topic-date-pill:hover{border-color:var(--border-default);background:var(--bg-elevated)}
+.topic-date-pill.active{border-color:var(--accent-gold);background:rgba(180,138,58,0.12);color:var(--accent-gold-dim);font-weight:600}
+.topic-date-nav-arrow{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:1px solid var(--border-subtle);background:var(--bg-surface);color:var(--text-muted);cursor:pointer;font-size:1.1rem;line-height:1;flex-shrink:0;transition:all var(--dur-fast)}
+.topic-date-nav-arrow:hover{border-color:var(--border-default);color:var(--text-secondary);background:var(--bg-elevated)}
+
+/* ── Task 6: Topics page modern redesign ───────────────────────────────── */
+.topic-section--collapsed{padding:var(--sp-5) var(--sp-5);border-radius:var(--radius-lg);background:var(--bg-surface);border:1px solid var(--border-subtle);transition:transform var(--dur-fast),box-shadow var(--dur-fast)}
+.topic-section--collapsed:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(20,58,92,0.08)}
+.topic-section--collapsed .topic-section-header{border-bottom:none;margin-bottom:var(--sp-2);padding-bottom:0}
+.topic-section--collapsed .topic-section-title{font-family:var(--font-serif);font-weight:500;font-size:var(--text-lg);color:var(--text-primary);white-space:normal;overflow:visible;text-overflow:clip}
+
+.topic-preview-source{font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--text-muted);flex-shrink:0}
+.topic-expand-empty{font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--text-muted);display:block;margin-top:var(--sp-2)}
+
+/* Expanded topic: clean reading pane */
+.topic-section:not(.topic-section--collapsed){background:var(--bg-surface);border-radius:var(--radius-lg);padding:var(--sp-6);border:1px solid var(--border-subtle);border-left:4px solid var(--border-default)}
+.topic-section:not(.topic-section--collapsed) .topic-story{border:none;border-radius:0;background:transparent;margin-bottom:0;padding:var(--sp-4) 0;border-bottom:1px solid var(--border-subtle)}
+.topic-section:not(.topic-section--collapsed) .topic-story:last-child{border-bottom:none}
+.topic-section:not(.topic-section--collapsed) .topic-story:hover{background:rgba(180,138,58,0.03);box-shadow:none}
+
+/* Smooth expand/collapse animation */
+#topicsContent .topic-section{transition:all var(--dur-base) var(--ease-out)}
+
+/* ── Task 5: Mobile responsive overhaul ────────────────────────────────── */
+@media(max-width:640px){
+  :root{--nav-height:56px}
+  .page{padding-top:calc(var(--nav-height) + var(--sp-4))}
+  .main{padding-top:var(--nav-height)}
+  .nav{height:var(--nav-height)}
+
+  /* Text overflow prevention */
+  .story-card-title,.topic-story-title,.hero-headline,.top3-title{overflow-wrap:break-word;word-break:break-word}
+
+  /* Touch targets */
+  .nav-link,.topic-chip,.story-btn,.refresh-btn,.month-btn,.archive-filter,.unread-toggle,.topic-date-pill,.topic-expand-btn,.topic-date-nav-arrow{min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}
+
+  /* Topic chips wrap */
+  .topics-nav{display:flex;flex-wrap:wrap;gap:var(--sp-2);overflow-x:visible}
+
+  /* Hero single column */
+  .hero-brief-grid{grid-template-columns:1fr}
+  .hero-visual{max-height:260px;border-radius:var(--radius-md);order:-1}
+  .hero-headline{font-size:clamp(1.75rem,6vw,2.4rem)}
+
+  /* Story cards single column */
+  .stories-grid{grid-template-columns:1fr}
+  .story-card--has-thumb{grid-template-columns:1fr}
+  .story-card-thumb{max-width:none;width:100%;margin-bottom:var(--sp-3)}
+  .story-card--has-thumb .story-card-thumb{grid-row:auto}
+
+  /* Topics page */
+  #topicsContent{grid-template-columns:1fr}
+  .topic-section--collapsed{padding:var(--sp-4)}
+  .topic-story,.topic-story--has-thumb{grid-template-columns:40px minmax(0,1fr)}
+  .topic-story-thumb{display:none}
+
+  /* Date nav responsive */
+  .topic-date-nav{position:sticky;top:var(--nav-height)}
+  .topic-date-pill{padding:8px 12px;font-size:0.7rem;min-height:44px}
+}
+
+@media(max-width:375px){
+  .container{padding:0 12px}
+  .hero-headline{font-size:1.65rem}
+  .topic-section--collapsed{padding:var(--sp-3)}
+  .topic-story{padding:var(--sp-3)}
+  .topic-date-pill{padding:6px 10px}
+  .story-card{padding:var(--sp-3)}
+  .top3-grid{grid-template-columns:1fr}
+}
+
+/* ── Dark mode additions for new styles ────────────────────────────────── */
+body.dark-mode .topic-section--collapsed{background:var(--bg-surface);border-color:var(--border-default)}
+body.dark-mode .topic-section--collapsed:hover{box-shadow:0 8px 24px rgba(0,0,0,0.3)}
+body.dark-mode .topic-section:not(.topic-section--collapsed){background:var(--bg-surface);border-color:var(--border-default)}
+body.dark-mode .topic-section:not(.topic-section--collapsed) .topic-story{border-bottom-color:var(--border-default)}
+body.dark-mode .topic-section-meta{background:rgba(255,255,255,0.05);border-color:var(--border-default)}
+body.dark-mode .topic-date-nav{background:var(--bg-deep)}
+body.dark-mode .topic-date-pill{background:var(--bg-surface);border-color:var(--border-default);color:var(--text-secondary)}
+body.dark-mode .topic-date-pill.active{background:rgba(212,168,73,0.14);border-color:var(--accent-gold);color:var(--accent-gold)}
+body.dark-mode .topic-date-nav-arrow{background:var(--bg-surface);border-color:var(--border-default);color:var(--text-muted)}
+body.dark-mode .topic-preview-source{color:var(--text-muted)}
+body.dark-mode .topic-expand-empty{color:var(--text-muted)}
