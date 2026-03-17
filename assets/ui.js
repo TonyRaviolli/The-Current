@@ -115,6 +115,9 @@ export function initNavigation() {
     mobile.classList.remove('open');
     mobile.setAttribute('aria-hidden', 'true');
     mobileOpen?.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('mobile-nav-open');
+    // Restore focus to the hamburger button
+    mobileOpen?.focus();
   };
 
   const openMobileNav = () => {
@@ -122,7 +125,26 @@ export function initNavigation() {
     mobile.classList.add('open');
     mobile.setAttribute('aria-hidden', 'false');
     mobileOpen?.setAttribute('aria-expanded', 'true');
+    document.body.classList.add('mobile-nav-open');
+    // Focus the close button for keyboard users
+    mobileClose?.focus();
   };
+
+  // Focus trap: keep Tab within mobile nav when open
+  mobile?.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    const focusable = mobile.querySelectorAll('button, [href], [tabindex]:not([tabindex="-1"])');
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  });
 
   mastheadButton?.addEventListener('click', () => navigateTo('home'));
   mobileOpen?.addEventListener('click', openMobileNav);
