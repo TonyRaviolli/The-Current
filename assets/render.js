@@ -1,6 +1,6 @@
 // ── Feed size caps (adjust here to change across all tier sections) ───────────
-const FEED_MAX_STORIES = 6; // total articles shown across Tier 1/2/3 on briefing tab
-const FEED_MAX_PER_TIER = 2; // target per tier before overflow fills remaining slots
+const FEED_MAX_STORIES = 10; // total articles shown across Tier 1/2/3 on briefing tab
+const FEED_MAX_PER_TIER = 3;  // target per tier before overflow fills remaining slots
 
 // ── Topic-keyed visual palette for SVG placeholder images ────────────────────
 const TOPIC_VISUAL = {
@@ -42,6 +42,15 @@ export const TOPIC_PASTEL = {
   cyber:        '#c08f7a',
   macroeconomics:'#7ab888',
 };
+
+export const TOPIC_LABELS = { economy:'Economy',uspolitics:'U.S. Politics',geopolitics:'Geopolitics',tech:'Technology',defense:'Defense',health:'Health',law:'Law',finance:'Finance',global_trade:'Trade',elections:'Elections',ai:'AI',biotech:'Biotech',housing:'Housing',labor:'Labor',climate:'Climate',energy:'Energy',science:'Science',education:'Education',banking:'Banking',international:'International',cyber:'Cyber',macroeconomics:'Macroeconomics' };
+
+/** Compute topic → story count from a story array. Cached result can be passed to multiple renderers. */
+export function computeTopicDegrees(stories) {
+  const degrees = {};
+  (stories || []).forEach((s) => (s.topics || []).forEach((t) => { degrees[t] = (degrees[t] || 0) + 1; }));
+  return degrees;
+}
 
 export function escapeHtml(text) {
   return String(text)
@@ -132,8 +141,11 @@ const TOPIC_SCENE = {
   default: (a) => `<path d="M60 120 Q110 90 160 120 Q210 150 260 120 Q310 90 360 120" fill="none" stroke="${a}" stroke-width="2.5" stroke-linecap="round" opacity="0.25"/><path d="M60 145 Q110 115 160 145 Q210 175 260 145 Q310 115 360 145" fill="none" stroke="${a}" stroke-width="1.5" stroke-linecap="round" opacity="0.12"/><circle cx="320" cy="70" r="3" fill="${a}" opacity="0.2"/><circle cx="80" cy="80" r="2" fill="${a}" opacity="0.15"/>`,
 };
 
+const _svgUriCache = new Map();
 function renderStoryThumbFallbackDataUri(topics) {
   const t = (topics || []).map((x) => String(x).toLowerCase());
+  const cacheKey = t.sort().join(',') || '__default__';
+  if (_svgUriCache.has(cacheKey)) return _svgUriCache.get(cacheKey);
   let visual = TOPIC_VISUAL.default;
   for (const key of Object.keys(TOPIC_VISUAL)) {
     if (key !== 'default' && t.includes(key)) { visual = TOPIC_VISUAL[key]; break; }
@@ -148,11 +160,14 @@ function renderStoryThumbFallbackDataUri(topics) {
   // Grid overlay for editorial feel
   const grid = `<line x1="0" y1="56" x2="400" y2="56" stroke="${accent}" stroke-width="0.4" opacity="0.06"/><line x1="0" y1="112" x2="400" y2="112" stroke="${accent}" stroke-width="0.4" opacity="0.06"/><line x1="0" y1="168" x2="400" y2="168" stroke="${accent}" stroke-width="0.4" opacity="0.06"/><line x1="100" y1="0" x2="100" y2="225" stroke="${accent}" stroke-width="0.4" opacity="0.04"/><line x1="200" y1="0" x2="200" y2="225" stroke="${accent}" stroke-width="0.4" opacity="0.04"/><line x1="300" y1="0" x2="300" y2="225" stroke="${accent}" stroke-width="0.4" opacity="0.04"/>`;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 225" preserveAspectRatio="xMidYMid slice"><defs><radialGradient id="rg" cx="50%" cy="45%" r="60%"><stop offset="0%" stop-color="${accent}" stop-opacity="0.18"/><stop offset="100%" stop-color="${accent}" stop-opacity="0"/></radialGradient></defs><rect width="400" height="225" fill="${bg}"/><rect width="400" height="225" fill="url(#rg)"/>${grid}${scene}<text x="200" y="210" text-anchor="middle" dominant-baseline="middle" font-family="system-ui,sans-serif" font-size="11" fill="${accent}" opacity="0.7" letter-spacing="3" font-weight="500">${label.toUpperCase()}</text></svg>`;
+  let uri;
   try {
-    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+    uri = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
   } catch {
-    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+    uri = `data:image/svg+xml,${encodeURIComponent(svg)}`;
   }
+  _svgUriCache.set(cacheKey, uri);
+  return uri;
 }
 
 function renderStoryThumbFallback(className, topics) {
@@ -276,7 +291,7 @@ export function renderTodayBrief(store) {
     : `<li>${hasStories ? 'Story summaries are being synthesized for this run.' : 'No new items from sources in this run.'}</li>`;
 }
 
-export function renderHero(store) {
+export function renderHero(store, claimed) {
   const lead = store.stories?.[0] || store.daily?.[0];
   const headline = document.getElementById('heroHeadline');
   const subhead = document.getElementById('heroSubhead');
@@ -312,7 +327,7 @@ export function renderHero(store) {
   headline.innerHTML = escapeHtml(lead.headline || lead.title);
   subhead.textContent = lead.dek || lead.summary || 'Briefing update ready.';
   const refreshed = store.lastUpdated ? formatTime(store.lastUpdated) : '';
-  meta.innerHTML = `<span style="display:inline-block;width:5px;height:5px;background:var(--accent-gold);border-radius:50%"></span><span>${formatDate(lead.updatedAt || lead.publishedAt)}</span><span style="color:var(--border-strong)">&middot;</span><span>Score ${scoreLabel(lead.score).value}/10</span>${refreshed ? `<span style="color:var(--border-strong)">&middot;</span><span>Refreshed ${escapeHtml(refreshed)}</span>` : ''}`;
+  meta.innerHTML = `<span class="hero-meta-dot"></span><span>${formatDate(lead.updatedAt || lead.publishedAt)}</span><span class="hero-meta-sep">&middot;</span>${scoreBadgeHtml(lead.score, lead.sources?.length)}${refreshed ? `<span class="hero-meta-sep">&middot;</span><span>Refreshed ${escapeHtml(refreshed)}</span>` : ''}`;
   citation.innerHTML = lead.url ? `<div class="citation-link"><a href="${safeUrl(lead.url)}" target="_blank" rel="noopener">${escapeHtml(lead.url)}</a> <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1h7v7M11 1L5 7"/></svg></div>` : '';
   if (lead.source) {
     citation.innerHTML += `<div class="citation-author">${escapeHtml(lead.source)}</div><div class="citation-date">${formatDate(lead.updatedAt || lead.publishedAt)}</div>`;
@@ -326,23 +341,25 @@ export function renderHero(store) {
       heroThumb.innerHTML = `<img src="${fallbackSrc}" alt="" loading="eager" decoding="async">`;
     }
   }
+  if (claimed && lead.id) claimed.add(lead.id);
   renderArticleJsonLd(lead);
 }
 
-export function renderTopStories(store) {
+export function renderTopStories(store, claimed) {
   const container = document.getElementById('topStories');
   if (!container) return;
-  const top = store.stories?.slice(0, 3) || [];
+  // Pick top stories that haven't been claimed by a higher module (e.g. hero)
+  const top = (store.stories || []).filter((s) => !claimed || !claimed.has(s.id)).slice(0, 3);
   if (!top.length) {
     container.innerHTML = '<div class=\"story-card\">No Top 3 stories yet. Refresh to populate prioritized intelligence.</div>';
     return;
   }
+  top.forEach((s) => { if (claimed && s.id) claimed.add(s.id); });
   container.innerHTML = top.map((story, index) => {
     const thumb = renderStoryThumb(story.imageUrl, 'top3-thumb', '', story.topics);
     return `<div class="top3-card depth-tilt reveal ${index ? 'stagger-' + index : ''}">
       ${thumb}
       <span class="top3-rank">${String(index + 1).padStart(2, '0')}</span>
-      <div class="top3-lock locked">&#x1F512; Locked</div>
       <div class="top3-category">${escapeHtml(story.topics?.[0] || 'Priority')}</div>
       <h3 class="top3-title"><a href="/story/${escapeHtml(story.slug)}">${escapeHtml(story.headline)}</a></h3>
       <p class="top3-excerpt">${escapeHtml(story.dek || '')}</p>
@@ -353,14 +370,15 @@ export function renderTopStories(store) {
   }).join('');
 }
 
-export function renderDeveloping(store) {
+export function renderDeveloping(store, claimed) {
   const container = document.getElementById('developingList');
   if (!container) return;
-  const items = (store.stories || []).filter((story) => story.developing).slice(0, 6);
+  const items = (store.stories || []).filter((story) => story.developing && (!claimed || !claimed.has(story.id))).slice(0, 6);
   if (!items.length) {
     container.innerHTML = '<div class=\"story-card\">No developing clusters are active right now.</div>';
     return;
   }
+  items.forEach((s) => { if (claimed && s.id) claimed.add(s.id); });
   container.innerHTML = items.map((story) => {
     return `<div class="developing-card depth-tilt">
       <div class="developing-meta">${escapeHtml(story.verificationTier)} &middot; ${story.sources?.length || 0} sources</div>
@@ -374,7 +392,7 @@ export function renderDeveloping(store) {
   }).join('');
 }
 
-export function renderTopicBlocks(store) {
+export function renderTopicBlocks(store, claimed) {
   const container = document.getElementById('topicBlocks');
   if (!container) return;
   const blocks = store.topicBlocks || [];
@@ -383,13 +401,16 @@ export function renderTopicBlocks(store) {
     return;
   }
   container.innerHTML = blocks.map((block) => {
+    // Filter out stories already shown in higher-priority modules
+    const filteredItems = claimed ? block.items.filter((item) => !claimed.has(item.id)) : block.items;
+    if (!filteredItems.length) return '';
     return `<div class="topic-block-card depth-tilt">
       <div class="topic-block-title">${escapeHtml(block.label)}</div>
       <ul class="topic-block-list">
-        ${block.items.map((item) => `<li class="topic-block-item"><a href="/story/${escapeHtml(item.slug)}">${escapeHtml(item.headline)}</a></li>`).join('')}
+        ${filteredItems.map((item) => `<li class="topic-block-item"><a href="/story/${escapeHtml(item.slug)}">${escapeHtml(item.headline)}</a></li>`).join('')}
       </ul>
     </div>`;
-  }).join('');
+  }).filter(Boolean).join('');
 }
 
 export function renderDailyInsight(store) {
@@ -400,7 +421,7 @@ export function renderDailyInsight(store) {
   source.textContent = `Source: ${store.quotes?.source || 'Original'}`;
 }
 
-export function renderDailyFeed(store, saved = new Set(), followed = new Set(), lastVisitAt = null) {
+export function renderDailyFeed(store, saved = new Set(), followed = new Set(), lastVisitAt = null, claimed = null) {
   const list = document.getElementById('storyList');
   if (!list) return;
   const debug = new URLSearchParams(window.location.search).get('debug') === '1';
@@ -410,17 +431,18 @@ export function renderDailyFeed(store, saved = new Set(), followed = new Set(), 
     return { newCount: 0 };
   }
 
+  // Exclude stories already claimed by higher-priority modules (hero, top3, developing)
+  const unclaimed = claimed ? rawItems.filter((s) => !claimed.has(s.id)) : rawItems;
+
   // Relevance pre-filter: exclude foreign-local stories with no US angle.
-  // Only removes stories where topics are exclusively local/housing/labor/education
-  // AND regions does not include 'US' or 'US-CA'.
   const LOCAL_ONLY_TOPICS = new Set(['local', 'housing', 'labor', 'education']);
-  const relevantItems = rawItems.filter((s) => {
+  const relevantItems = unclaimed.filter((s) => {
     const topics = s.topics || [];
     if (!topics.length) return true;
     const allLocal = topics.every((t) => LOCAL_ONLY_TOPICS.has(t));
     if (!allLocal) return true;
     const regions = s.regions || [];
-    return regions.some((r) => r === 'US' || r === 'US-CA');
+    return regions.some((r) => r === 'US' || String(r).startsWith('US-'));
   });
 
   // Cap feed: take up to FEED_MAX_PER_TIER from each tier, then fill remaining
@@ -535,13 +557,11 @@ export function renderDailyFeed(store, saved = new Set(), followed = new Set(), 
   return { newCount, items };
 }
 
-export function renderTopicBreakdownStrip(store) {
+export function renderTopicBreakdownStrip(store, precomputedDegrees) {
   const target = document.getElementById('topicCountStrip');
   if (!target) return;
-  const degrees = {};
-  (store.stories || []).forEach((s) => (s.topics || []).forEach((t) => { degrees[t] = (degrees[t] || 0) + 1; }));
+  const degrees = precomputedDegrees || computeTopicDegrees(store.stories);
   const totalMentions = Object.values(degrees).reduce((a, b) => a + b, 0) || 1;
-  const TOPIC_LABELS = { economy:'Economy',uspolitics:'U.S. Politics',geopolitics:'Geopolitics',tech:'Technology',defense:'Defense',health:'Health',law:'Law',finance:'Finance',global_trade:'Trade',elections:'Elections',ai:'AI',biotech:'Biotech',housing:'Housing',labor:'Labor',climate:'Climate',energy:'Energy',science:'Science',education:'Education',banking:'Banking',international:'International',cyber:'Cyber',macroeconomics:'Macroeconomics' };
   const sorted = Object.entries(degrees).filter(([id, n]) => n > 0 && TOPIC_LABELS[id]).sort((a, b) => b[1] - a[1]);
   const maxCount = sorted.length ? sorted[0][1] : 1;
   const chips = sorted.map(([id, count]) => {
@@ -634,17 +654,17 @@ export function renderMarketIntel(store) {
   const signalLabel = signals[0] ? escapeHtml(signals[0].split(' ').slice(0, 3).join(' ')) : '';
 
   const signalItems = signals.slice(0, 3).map((s) =>
-    `<li class="market-signal-item"><span class="market-signal-dot" style="background:${pColor}"></span>${escapeHtml(s)}</li>`
+    `<li class="market-signal-item"><span class="market-signal-dot" style="--signal-color:${pColor}"></span>${escapeHtml(s)}</li>`
   ).join('');
 
   container.innerHTML = `
-    <div class="market-intel-card" style="background:${tileBackground}">
+    <div class="market-intel-card" style="--regime-bg:${tileBackground};--pulse-color:${pColor};--regime-color:${rColor}">
       <div class="market-intel-header">
-        <span class="market-intel-pulse" style="background:${pColor}20;color:${pColor};border-color:${pColor}40">${escapeHtml(intel.pulse)}</span>
-        <span class="market-intel-regime" style="color:${rColor};font-family:var(--font-mono);font-size:var(--text-xl);font-weight:700">${escapeHtml(intel.regime)}</span>
+        <span class="market-intel-pulse">${escapeHtml(intel.pulse)}</span>
+        <span class="market-intel-regime">${escapeHtml(intel.regime)}</span>
         <span class="market-intel-label">AI Market Read</span>
       </div>
-      ${signalLabel ? `<div style="font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--text-muted);letter-spacing:0.08em;margin-bottom:4px">${signalLabel}</div>` : ''}
+      ${signalLabel ? `<div class="market-intel-signal-label">${signalLabel}</div>` : ''}
       ${sparkline}
       <p class="market-intel-summary">${escapeHtml(intel.summary || '')}</p>
       ${signalItems ? `<ul class="market-signal-list">${signalItems}</ul>` : ''}
@@ -656,7 +676,7 @@ export function renderMarketIntel(store) {
   });
 }
 
-export function renderMarketHeatmap(stories, container) {
+export function renderMarketHeatmap(stories, container, precomputedDegrees) {
   if (!container) return;
   const sectors = [
     { id: 'economy',     label: 'Economy',    color: 'rgba(41,128,185,' },
@@ -666,8 +686,7 @@ export function renderMarketHeatmap(stories, container) {
     { id: 'global_trade',label: 'Trade',      color: 'rgba(243,156,18,' },
     { id: 'uspolitics',  label: 'Policy',     color: 'rgba(180,138,58,' },
   ];
-  const degrees = {};
-  (stories || []).forEach((s) => (s.topics || []).forEach((t) => { degrees[t] = (degrees[t] || 0) + 1; }));
+  const degrees = precomputedDegrees || computeTopicDegrees(stories);
   const maxDeg = Math.max(1, ...Object.values(degrees));
   container.innerHTML = `
     <div class="market-heatmap">
@@ -703,42 +722,31 @@ export function renderCartoons(store) {
   if (container?.closest('.tier-section')) container.closest('.tier-section').style.display = '';
   if (rail?.closest('.sidebar-card')) rail.closest('.sidebar-card').style.display = '';
 
-  const cards = items.map((story) => {
+  function cartoonCard(story, variant = '') {
     const thumb = story.imageUrl
       ? `<figure class="cartoon-thumb"><img src="${escapeHtml(story.imageUrl)}" alt="${escapeHtml(story.headline)}" loading="lazy" decoding="async" onerror="this.parentElement.style.display='none'"></figure>`
       : `<div class="cartoon-thumb cartoon-thumb--placeholder"><svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><circle cx="24" cy="24" r="20"/><path d="M16 20c2-3 8-5 10 0s7 6 8 2"/><circle cx="18" cy="22" r="2" fill="currentColor"/><circle cx="30" cy="22" r="2" fill="currentColor"/><path d="M18 31c2 3 10 3 12 0"/></svg></div>`;
-    return `<div class="cartoon-card depth-tilt">
+    return `<div class="cartoon-card${variant ? ' ' + variant : ' depth-tilt'}">
       ${thumb}
       <div class="cartoon-meta">
         <div class="cartoon-source">${escapeHtml(story.sources?.[0]?.name || '')}</div>
         <a class="cartoon-title" href="${safeUrl(story.url)}" target="_blank" rel="noopener">${escapeHtml(story.headline)}</a>
       </div>
     </div>`;
-  }).join('');
+  }
 
-  if (container) container.innerHTML = cards;
-  if (rail) rail.innerHTML = items.slice(0, 3).map((story) => {
-    const thumb = story.imageUrl
-      ? `<figure class="cartoon-thumb"><img src="${escapeHtml(story.imageUrl)}" alt="${escapeHtml(story.headline)}" loading="lazy" decoding="async" onerror="this.parentElement.style.display='none'"></figure>`
-      : `<div class="cartoon-thumb cartoon-thumb--placeholder"><svg width="40" height="40" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><circle cx="24" cy="24" r="20"/><path d="M16 20c2-3 8-5 10 0s7 6 8 2"/><circle cx="18" cy="22" r="2" fill="currentColor"/><circle cx="30" cy="22" r="2" fill="currentColor"/><path d="M18 31c2 3 10 3 12 0"/></svg></div>`;
-    return `<div class="cartoon-card cartoon-card--rail">
-      ${thumb}
-      <div class="cartoon-meta">
-        <div class="cartoon-source">${escapeHtml(story.sources?.[0]?.name || '')}</div>
-        <a class="cartoon-title" href="${safeUrl(story.url)}" target="_blank" rel="noopener">${escapeHtml(story.headline)}</a>
-      </div>
-    </div>`;
-  }).join('');
+  if (container) container.innerHTML = items.map((s) => cartoonCard(s)).join('');
+  if (rail) rail.innerHTML = items.slice(0, 3).map((s) => cartoonCard(s, 'cartoon-card--rail')).join('');
 }
 
-export function renderHighImportance(store) {
+export function renderHighImportance(store, claimed) {
   const list = document.getElementById('highImportanceList');
   const section = document.getElementById('legisSection');
   if (!list) return;
   const pool = [...(store.highImportance || []), ...(store.stories || [])];
   const seen = new Set();
   const items = pool
-    .filter((story) => story?.id && !seen.has(story.id) && isLegislativeStory(story) && findGovernmentDoc(story) && seen.add(story.id))
+    .filter((story) => story?.id && !seen.has(story.id) && (!claimed || !claimed.has(story.id)) && isLegislativeStory(story) && findGovernmentDoc(story) && seen.add(story.id))
     .sort((a, b) => legislativeRank(b) - legislativeRank(a))
     .slice(0, 8);
 
@@ -1388,22 +1396,6 @@ export function renderScoringPanel(config = {}) {
   }
 }
 
-export function renderDevelopingStrip(stories) {
-  const developing = (stories || []).filter((s) => s.developing);
-  const strip = document.getElementById('developing-strip');
-  if (!strip) return;
-  if (!developing.length) { strip.hidden = true; return; }
-  strip.hidden = false;
-  strip.innerHTML = developing.slice(0, 6).map((s) => `
-    <div class="developing-card" data-slug="${escapeHtml(s.slug || '')}">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-        <span class="badge-developing">DEVELOPING</span>
-      </div>
-      <div class="developing-card-title">${escapeHtml(s.headline || s.dek || '')}</div>
-      <div class="developing-card-source">${escapeHtml(s.sources?.[0]?.name || '')} &middot; ${escapeHtml(formatTime(s.publishedAt))}</div>
-    </div>
-  `).join('');
-}
 
 function renderArticleJsonLd(article) {
   const node = document.getElementById('jsonLdArticle');

@@ -1,5 +1,5 @@
 import { fetchFeed, runRefresh, fetchResources, fetchSearch, fetchStory, fetchDigest, trackEvent, fetchSources, toggleSource, addSource, deleteSource, fetchScoring, saveScoring, invalidateFeedCache, adminQuerySuffix, setAdminToken } from './api.js';
-import { renderHero, renderTopStories, renderDailyFeed, renderHighImportance, renderTopics, renderDailyInsight, renderResources, renderWeeklyDigest, renderMetaRibbon, renderTodayBrief, renderDeveloping, renderTopicBlocks, renderGlobalSearchResults, renderStoryPage, renderDigestPage, renderOps, renderSinceLastVisit, renderArchiveDays, renderSourceManager, renderScoringPanel, renderMarketIntel, renderCartoons, renderDevelopingStrip, renderMarketHeatmap, renderTopicBreakdownStrip, renderSourceSpectrum } from './render.js';
+import { renderHero, renderTopStories, renderDailyFeed, renderHighImportance, renderTopics, renderDailyInsight, renderResources, renderWeeklyDigest, renderMetaRibbon, renderTodayBrief, renderDeveloping, renderTopicBlocks, renderGlobalSearchResults, renderStoryPage, renderDigestPage, renderOps, renderSinceLastVisit, renderArchiveDays, renderSourceManager, renderScoringPanel, renderMarketIntel, renderCartoons, renderMarketHeatmap, renderTopicBreakdownStrip, renderSourceSpectrum, computeTopicDegrees } from './render.js';
 import { renderStoryGraph } from './storyGraph.js';
 import { initNavigation, initRunSelector, initTierTabs, initTopicFilters, initSearchFilter, initForms, initCtas, initSaveFollow, getSavedStories, getFollowedTopics, initReaderMode, initShortcuts, initGlobalSearch, applySaveFollowState, initArchiveWeekToggles, recordVisitAndGetLastTime, exportBriefing, exportBriefingText, copyStoryLink, initMyTopicsFilter, getWatches, initKeywordWatches, markAsRead, applyReadState, initUnreadFilter, initDarkMode, initNavMore, initAlertStrip, renderTrendingBar, renderEditorsPicks, initTopicBreakdownStrip } from './ui.js';
 
@@ -63,24 +63,26 @@ async function loadAll() {
     })();
     const saved = new Set(getSavedStories());
     const followed = new Set(getFollowedTopics());
+    // Editorial dedup: stories claimed by a prominent module are excluded from later ones
+    const claimed = new Set();
     renderMetaRibbon(store);
     renderTodayBrief(store);
-    renderHero(store);
-    renderTopStories(store);
-    renderDeveloping(store);
-    renderTopicBlocks(store);
+    renderHero(store, claimed);
+    renderTopStories(store, claimed);
+    renderDeveloping(store, claimed);
+    renderTopicBlocks(store, claimed);
     renderDailyInsight(store);
     renderMarketIntel(store);
-    renderMarketHeatmap(store.stories, document.getElementById('market-heatmap-container'));
-    renderDevelopingStrip(store.stories);
+    const topicDegrees = computeTopicDegrees(store.stories);
+    renderMarketHeatmap(store.stories, document.getElementById('market-heatmap-container'), topicDegrees);
     initAlertStrip(store.stories);
-    renderTrendingBar(store.stories);
-    renderTopicBreakdownStrip(store);
-    renderEditorsPicks(store.stories);
+    renderTrendingBar(store.stories, topicDegrees);
+    renderTopicBreakdownStrip(store, topicDegrees);
+    renderEditorsPicks(store.stories, claimed);
     renderCartoons(store);
-    const feedResult = renderDailyFeed(store, saved, followed, lastVisitAt);
+    const feedResult = renderDailyFeed(store, saved, followed, lastVisitAt, claimed);
     renderSinceLastVisit(feedResult?.newCount || 0, lastVisitAt);
-    renderHighImportance(store);
+    renderHighImportance(store, claimed);
     renderSourceSpectrum(store.stories || []);
     // Story graph — show section only if we have enough stories
     const graphCanvas = document.getElementById('storyGraphCanvas');

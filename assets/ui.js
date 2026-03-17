@@ -1,5 +1,5 @@
 import { submitForm, trackEvent } from './api.js';
-import { TOPIC_PASTEL, escapeHtml } from './render.js';
+import { TOPIC_PASTEL, TOPIC_LABELS, escapeHtml, computeTopicDegrees } from './render.js';
 
 const SAVED_KEY = 'uc_saved_stories';
 const FOLLOW_KEY = 'uc_follow_topics';
@@ -777,16 +777,10 @@ export function initAlertStrip(stories) {
 }
 
 // Trending topics bar
-export function renderTrendingBar(stories) {
+export function renderTrendingBar(stories, precomputedDegrees) {
   const bar = document.getElementById('trending-bar');
   if (!bar) return;
-  const degrees = {};
-  const labelMap = {
-    economy: 'Economy', uspolitics: 'US Politics', geopolitics: 'Geopolitics',
-    tech: 'Tech', law: 'Law', defense: 'Defense', global_trade: 'Trade',
-    health: 'Health', elections: 'Elections', finance: 'Finance',
-  };
-  (stories || []).forEach((s) => (s.topics || []).forEach((t) => { degrees[t] = (degrees[t] || 0) + 1; }));
+  const degrees = precomputedDegrees || computeTopicDegrees(stories);
   const top5 = Object.entries(degrees).sort((a, b) => b[1] - a[1]).slice(0, 5);
   if (!top5.length) { bar.style.display = 'none'; return; }
   bar.style.display = 'flex';
@@ -794,7 +788,7 @@ export function renderTrendingBar(stories) {
     `<button class="topic-pill topic-pill--all active" data-topic="__all__" type="button">All</button>` +
     top5.map(([id]) => {
       const color = TOPIC_PASTEL[id] || '#94a3b8';
-      return `<button class="topic-pill" data-topic="${escapeHtml(id)}" style="border-left:3px solid ${color}">${escapeHtml(labelMap[id] || id)}</button>`;
+      return `<button class="topic-pill" data-topic="${escapeHtml(id)}" style="border-left:3px solid ${color}">${escapeHtml(TOPIC_LABELS[id] || id)}</button>`;
     }).join('');
   bar.querySelectorAll('.topic-pill').forEach((pill) => {
     pill.addEventListener('click', () => {
@@ -817,12 +811,12 @@ export function renderTrendingBar(stories) {
 }
 
 // Editors' Picks sidebar pod
-export function renderEditorsPicks(stories) {
+export function renderEditorsPicks(stories, claimed) {
   const card = document.getElementById('editors-picks');
   const list = document.getElementById('editors-picks-list');
   if (!card || !list) return;
   const picks = (stories || [])
-    .filter((s) => (s.score || 0) >= 0.7 && s.verificationTier === 'Corroborated')
+    .filter((s) => (s.score || 0) >= 0.7 && s.verificationTier === 'Corroborated' && (!claimed || !claimed.has(s.id)))
     .slice(0, 3);
   if (!picks.length) { card.style.display = 'none'; return; }
   card.style.display = 'block';
