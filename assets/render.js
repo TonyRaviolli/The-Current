@@ -211,10 +211,34 @@ function renderStoryThumbFallback(className, topics) {
   return `<figure class="${escapeHtml(className)} story-thumb--fallback" aria-hidden="true"><img src="${src}" alt="" loading="lazy" decoding="async"></figure>`;
 }
 
+/**
+ * Attempt to upgrade an image URL to a higher resolution version.
+ * Many CMS/CDN URLs contain resize parameters that cap the image at a
+ * small thumbnail size. This function rewrites known patterns to request
+ * a larger image so thumbnails and hero images appear crisp.
+ */
+function upgradeImageUrl(url) {
+  if (!url) return url;
+  let u = url;
+  // WordPress/Jetpack: strip -NNxNN before extension (e.g. image-150x150.jpg → image.jpg)
+  u = u.replace(/-\d{2,4}x\d{2,4}(\.\w{3,4}(?:[?#]|$))/, '$1');
+  // Generic width/height query params: upgrade to 1200 wide
+  u = u.replace(/([?&])w=\d+/i, '$1w=1200');
+  u = u.replace(/([?&])width=\d+/i, '$1width=1200');
+  u = u.replace(/([?&])h=\d+/i, '$1h=800');
+  u = u.replace(/([?&])height=\d+/i, '$1height=800');
+  // Cloudinary: /c_fill,w_NNN,h_NNN/ → /c_fill,w_1200,h_800/
+  u = u.replace(/\/c_fill,w_\d+,h_\d+\//i, '/c_fill,w_1200,h_800/');
+  // imgix: auto=format&w=NNN → auto=format&w=1200
+  u = u.replace(/(auto=format[^&]*)&w=\d+/i, '$1&w=1200');
+  return u;
+}
+
 function renderStoryThumb(imageUrl, className, altText = '', topics = []) {
   const fallbackSrc = renderStoryThumbFallbackDataUri(topics);
   if (imageUrl) {
-    return `<figure class="${escapeHtml(className)}"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(altText)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${fallbackSrc}'"></figure>`;
+    const src = upgradeImageUrl(imageUrl);
+    return `<figure class="${escapeHtml(className)}"><img src="${escapeHtml(src)}" alt="${escapeHtml(altText)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${fallbackSrc}'"></figure>`;
   }
   return renderStoryThumbFallback(className, topics);
 }
@@ -383,7 +407,8 @@ export function renderHero(store, claimed) {
   if (heroThumb) {
     const fallbackSrc = renderStoryThumbFallbackDataUri(lead.topics || []);
     if (lead.imageUrl) {
-      heroThumb.innerHTML = `<img src="${escapeHtml(lead.imageUrl)}" alt="${escapeHtml(lead.headline || '')}" loading="eager" decoding="async" onerror="this.onerror=null;this.src='${fallbackSrc}'">`;
+      const heroSrc = upgradeImageUrl(lead.imageUrl);
+      heroThumb.innerHTML = `<img src="${escapeHtml(heroSrc)}" alt="${escapeHtml(lead.headline || '')}" loading="eager" decoding="async" fetchpriority="high" onerror="this.onerror=null;this.src='${fallbackSrc}'">`;
     } else {
       heroThumb.innerHTML = `<img src="${fallbackSrc}" alt="" loading="eager" decoding="async">`;
     }
@@ -1052,7 +1077,7 @@ export function renderSourceSpectrum(stories) {
   else if (leanScore >= 0.8) leanLabel = 'Right-Leaning';
   else if (leanScore >= 0.3) leanLabel = 'Center-Right';
 
-  const barsHtml = rows.map((row) => {
+  const barsHtml = rows.filter((row) => (orientCounts[row.key] || 0) > 0).map((row) => {
     const count = orientCounts[row.key] || 0;
     const pct = Math.round((count / total) * 100);
     return `<div class="spectrum-row"><span class="spectrum-label">${escapeHtml(row.label)}</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill spectrum-bar-fill--animated" style="--target-width:${pct}%;background:${row.color}"></div></div><span class="spectrum-count">${pct}%</span></div>`;

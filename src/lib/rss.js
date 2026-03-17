@@ -42,30 +42,68 @@ function extractImageUrl(item) {
   const mc = item['media:content'];
   if (mc) {
     const entries = Array.isArray(mc) ? mc : [mc];
-    // Prefer an entry explicitly typed as image
+    // Collect all image entries with their resolution, pick the largest
+    let best = null;
+    let bestArea = 0;
     for (const entry of entries) {
       if (typeof entry !== 'object') continue;
       const url = sanitizeImageUrl(entry.url || '');
       const medium = String(entry.medium || '');
       const type = String(entry.type || '');
-      if (url && (medium === 'image' || type.startsWith('image/'))) return url;
+      if (!url) continue;
+      const isImage = medium === 'image' || type.startsWith('image/') || !medium;
+      if (!isImage) continue;
+      const w = parseInt(entry.width, 10) || 0;
+      const h = parseInt(entry.height, 10) || 0;
+      const area = w * h;
+      if (area > bestArea || !best) {
+        best = url;
+        bestArea = area;
+      }
     }
-    // Fallback: any entry with a url
-    for (const entry of entries) {
-      if (typeof entry !== 'object') continue;
-      const url = sanitizeImageUrl(entry.url || '');
-      if (url) return url;
+    if (best) return best;
+  }
+
+  // 2b. <media:group> → <media:content> (used by Google News, YouTube, etc.)
+  const mg = item['media:group'];
+  if (mg) {
+    const mgContent = mg['media:content'];
+    if (mgContent) {
+      const entries = Array.isArray(mgContent) ? mgContent : [mgContent];
+      let best = null;
+      let bestArea = 0;
+      for (const entry of entries) {
+        if (typeof entry !== 'object') continue;
+        const url = sanitizeImageUrl(entry.url || '');
+        if (!url) continue;
+        const w = parseInt(entry.width, 10) || 0;
+        const h = parseInt(entry.height, 10) || 0;
+        const area = w * h;
+        if (area > bestArea || !best) { best = url; bestArea = area; }
+      }
+      if (best) return best;
     }
   }
 
-  // 3. <media:thumbnail>
+  // 3. <media:thumbnail> — pick largest if multiple sizes provided
   const mt = item['media:thumbnail'];
   if (mt) {
     const entries = Array.isArray(mt) ? mt : [mt];
+    let best = null;
+    let bestArea = 0;
     for (const entry of entries) {
       const url = sanitizeImageUrl(typeof entry === 'object' ? (entry.url || '') : entry);
-      if (url) return url;
+      if (!url) continue;
+      if (typeof entry === 'object') {
+        const w = parseInt(entry.width, 10) || 0;
+        const h = parseInt(entry.height, 10) || 0;
+        const area = w * h;
+        if (area > bestArea || !best) { best = url; bestArea = area; }
+      } else if (!best) {
+        best = url;
+      }
     }
+    if (best) return best;
   }
 
   // 4. First <img src="..."> found in description HTML
