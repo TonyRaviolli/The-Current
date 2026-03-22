@@ -430,12 +430,16 @@ export function renderHero(store, claimed) {
   }
   headline.innerHTML = escapeHtml(lead.headline || lead.title);
   subhead.textContent = lead.dek || lead.summary || 'Briefing update ready.';
-  const refreshed = store.lastUpdated ? formatTime(store.lastUpdated) : '';
-  meta.innerHTML = `<span class="hero-meta-dot"></span><span>${formatDate(lead.updatedAt || lead.publishedAt)}</span><span class="hero-meta-sep">&middot;</span>${scoreBadgeHtml(lead.score, lead.sources?.length)}${refreshed ? `<span class="hero-meta-sep">&middot;</span><span>Refreshed ${escapeHtml(refreshed)}</span>` : ''}`;
-  citation.innerHTML = lead.url ? `<div class="citation-link"><a href="${safeUrl(lead.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(lead.url)}</a> <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1h7v7M11 1L5 7"/></svg></div>` : '';
+  meta.innerHTML = `<span class="hero-meta-dot"></span><span>${formatDate(lead.updatedAt || lead.publishedAt)}</span><span class="hero-meta-sep">&middot;</span>${scoreBadgeHtml(lead.score, lead.sources?.length)}`;
+  let citationParts = '';
   if (lead.source) {
-    citation.innerHTML += `<div class="citation-author">${escapeHtml(lead.source)}</div><div class="citation-date">${formatDate(lead.updatedAt || lead.publishedAt)}</div>`;
+    citationParts += `<div class="citation-author">${escapeHtml(lead.source)}</div>`;
+    citationParts += `<div class="citation-date">${formatDate(lead.updatedAt || lead.publishedAt)}</div>`;
   }
+  if (lead.url) {
+    citationParts += `<div class="citation-link"><a href="${safeUrl(lead.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(lead.url)}</a> <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1h7v7M11 1L5 7"/></svg></div>`;
+  }
+  citation.innerHTML = citationParts;
   const heroThumb = document.getElementById('heroThumb');
   if (heroThumb) {
     const fallbackSrc = renderStoryThumbFallbackDataUri(lead.topics || []);
