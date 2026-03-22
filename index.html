@@ -20,30 +20,33 @@
 <meta property="twitter:title" content="{{PAGE_TITLE}}">
 <meta property="twitter:description" content="{{PAGE_DESCRIPTION}}">
 <link rel="alternate" type="application/rss+xml" title="The UnderCurrent Feed" href="/site-feed.xml">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"The UnderCurrent","url":"http://localhost:5173","potentialAction":{"@type":"SearchAction","target":"http://localhost:5173/?q={search_term_string}","query-input":"required name=search_term_string"}}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"The UnderCurrent","url":"http://localhost:5173","logo":"http://localhost:5173/shot.png"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"The UnderCurrent","url":"{{BASE_URL}}","potentialAction":{"@type":"SearchAction","target":"{{BASE_URL}}/?q={search_term_string}","query-input":"required name=search_term_string"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"The UnderCurrent","url":"{{BASE_URL}}","logo":"{{BASE_URL}}/shot.png"}</script>
 <script id="jsonLdArticle" type="application/ld+json">{}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self'; frame-ancestors 'none'">
 <link rel="stylesheet" href="/assets/styles.css">
 <style>
 html{font-size:16px;-webkit-font-smoothing:antialiased;scroll-behavior:smooth;color-scheme:light}
-body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-serif;background:#f8f9fb;color:#1a2332;line-height:1.65;min-height:100vh;overflow-x:hidden}
-.loader-overlay{position:fixed;inset:0;z-index:10000;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center}
+body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg-deep,#f6f1e7);color:var(--text-primary,#241b11);line-height:1.65;min-height:100vh;overflow-x:hidden}
+.loader-overlay{position:fixed;inset:0;z-index:10000;background:var(--bg-abyss,#fffdf8);display:flex;flex-direction:column;align-items:center;justify-content:center}
 </style>
 </head>
 <body>
 
+<div class="scroll-progress" aria-hidden="true"></div>
+
 <div id="alert-strip" class="alert-strip" hidden>
   <span class="alert-strip-label">DEVELOPING</span>
   <span id="alert-strip-text" class="alert-strip-text"></span>
-  <button class="alert-strip-dismiss" aria-label="Dismiss alert" onclick="document.getElementById('alert-strip').hidden=true">&times;</button>
+  <button class="alert-strip-dismiss" aria-label="Dismiss alert" data-dismiss="alert-strip">&times;</button>
 </div>
 <div id="refresh-banner" class="refresh-banner" role="status" aria-live="polite">
   <span id="refresh-banner-text"></span>
-  <button class="refresh-banner-btn" onclick="location.reload()">Reload</button>
-  <button class="refresh-banner-dismiss" aria-label="Dismiss" onclick="this.closest('.refresh-banner').classList.remove('visible')">&times;</button>
+  <button class="refresh-banner-btn" data-action="reload">Reload</button>
+  <button class="refresh-banner-dismiss" aria-label="Dismiss" data-dismiss="refresh-banner">&times;</button>
 </div>
 
 <a class="skip-link" href="#storyList">Skip to main content</a>
@@ -67,20 +70,20 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
   <button class="mobile-nav-link" type="button" data-nav-target="contact">Contact</button>
 </div>
 
-<nav class="nav">
+<nav class="nav" role="navigation" aria-label="Main navigation">
   <div class="nav-inner">
     <div class="nav-left">
       <button class="masthead" id="mastheadButton" type="button" aria-label="Go to daily briefings">
         <span class="masthead-mark">UC</span>
         <span class="masthead-title">The <span>Under</span>Current</span>
       </button>
-      <ul class="nav-links">
-        <li class="nav-link active" data-page="home">Daily Briefings</li>
-        <li class="nav-link" data-page="archive">Archive</li>
-        <li class="nav-link" data-page="topics">Topics</li>
-        <li class="nav-link" data-page="about">About</li>
-        <li class="nav-link" data-page="resources">Resources</li>
-        <li class="nav-link" data-page="contact">Contact</li>
+      <ul class="nav-links" role="list">
+        <li><button class="nav-link active" type="button" data-page="home">Daily Briefings</button></li>
+        <li><button class="nav-link" type="button" data-page="archive">Archive</button></li>
+        <li><button class="nav-link" type="button" data-page="topics">Topics</button></li>
+        <li><button class="nav-link" type="button" data-page="about">About</button></li>
+        <li><button class="nav-link" type="button" data-page="resources">Resources</button></li>
+        <li><button class="nav-link" type="button" data-page="contact">Contact</button></li>
       </ul>
     </div>
     <div class="nav-right">
@@ -133,7 +136,7 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
     <span class="section-title">Top 3 &mdash; Priority Intelligence</span>
     <span class="section-badge">Ranked by 7-criteria composite</span>
   </div>
-  <div class="top3-grid" id="topStories"></div>
+  <div class="top3-grid reveal-group" id="topStories"></div>
 </section>
 
 <section class="market-section">
@@ -270,9 +273,9 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
 </div><footer class="site-footer"><div class="container"><div class="footer-inner">
   <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
   <div class="footer-right">
-    <a href="#" onclick="window.navigateTo('about');return false">Methodology</a>
-    <a href="#" onclick="window.navigateTo('contact');return false">Contact</a>
-    <a href="#">Privacy</a>
+    <a href="#about" data-nav="about">Methodology</a>
+    <a href="#contact" data-nav="contact">Contact</a>
+    <a href="#about" data-nav="about">Privacy</a>
   </div>
 </div></div></footer></div>
 
@@ -308,7 +311,7 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
 </section>
 </div><footer class="site-footer"><div class="container"><div class="footer-inner">
   <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
-  <div class="footer-right"><a href="#" onclick="window.navigateTo('home');return false">Briefings</a><a href="#" onclick="window.navigateTo('archive');return false">Archive</a></div>
+  <div class="footer-right"><a href="#home" data-nav="home">Briefings</a><a href="#archive" data-nav="archive">Archive</a></div>
 </div></div></footer></div>
 
 <!-- ===== DIGEST ===== -->
@@ -317,7 +320,7 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
 <section class="about-section"><div class="about-section-label">Digest</div><h2 class="about-section-title">Week in Review</h2><div id="digestPageContent"></div></section>
 </div><footer class="site-footer"><div class="container"><div class="footer-inner">
   <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
-  <div class="footer-right"><a href="#" onclick="window.navigateTo('home');return false">Briefings</a></div>
+  <div class="footer-right"><a href="#home" data-nav="home">Briefings</a></div>
 </div></div></footer></div>
 
 <!-- ===== ARCHIVE ===== -->
@@ -379,7 +382,7 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
 <div id="archiveContent"></div>
 </div><footer class="site-footer"><div class="container"><div class="footer-inner">
   <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
-  <div class="footer-right"><a href="#" onclick="window.navigateTo('home');return false">Briefings</a><a href="#" onclick="window.navigateTo('about');return false">About</a></div>
+  <div class="footer-right"><a href="#home" data-nav="home">Briefings</a><a href="#" onclick="window.navigateTo('about');return false">About</a></div>
 </div></div></footer></div>
 
 <!-- ===== TOPICS ===== -->
@@ -422,7 +425,7 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
 <div id="topicsContent"></div>
 </div><footer class="site-footer"><div class="container"><div class="footer-inner">
   <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
-  <div class="footer-right"><a href="#" onclick="window.navigateTo('home');return false">Briefings</a><a href="#" onclick="window.navigateTo('about');return false">About</a></div>
+  <div class="footer-right"><a href="#home" data-nav="home">Briefings</a><a href="#" onclick="window.navigateTo('about');return false">About</a></div>
 </div></div></footer></div>
 
 <!-- ===== ABOUT ===== -->
@@ -440,7 +443,7 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
     <p>The information crisis isn&rsquo;t about too little news &mdash; it&rsquo;s about too much noise. Every day, thousands of stories compete for attention using every psychological lever available. Most don&rsquo;t deserve it. The UnderCurrent exists to solve that with rigorous prioritization, transparent methodology, and editorial discipline.</p>
     <p>We don&rsquo;t publish opinion. We don&rsquo;t editorialize headlines. We don&rsquo;t optimize for engagement. We optimize for one metric: did you walk away knowing exactly what matters today and why?</p>
   </div>
-  <div class="principles-grid">
+  <div class="principles-grid reveal-group">
     <div class="principle-card"><div class="principle-number">01</div><div class="principle-title">Primary Sources First</div><p class="principle-desc">Every claim traced to original source &mdash; government filings, earnings transcripts, official statements. We cite the document, not the interpretation.</p></div>
     <div class="principle-card"><div class="principle-number">02</div><div class="principle-title">No Opinion, No Sensationalism</div><p class="principle-desc">Headlines describe what happened. Analysis explains context. We never tell you how to feel about it.</p></div>
     <div class="principle-card"><div class="principle-number">03</div><div class="principle-title">Source Spectrum Transparency</div><p class="principle-desc">Every run shows the political orientation of cited sources. You see where information comes from &mdash; and where it doesn&rsquo;t.</p></div>
@@ -451,7 +454,7 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
   <div class="about-section-label">Methodology</div>
   <h2 class="about-section-title">The 7-Criteria Ranking System</h2>
   <div class="about-body"><p>Every story is scored against seven objective criteria. The composite score determines tier placement and ranking.</p></div>
-  <div class="criteria-grid">
+  <div class="criteria-grid reveal-group">
     <div class="criteria-item"><span class="criteria-num">01</span><div><div class="criteria-name">Systemic Impact</div><p class="criteria-desc">How many systems, markets, or populations affected?</p></div></div>
     <div class="criteria-item"><span class="criteria-num">02</span><div><div class="criteria-name">Irreversibility</div><p class="criteria-desc">Can this be undone? Structural shifts score higher.</p></div></div>
     <div class="criteria-item"><span class="criteria-num">03</span><div><div class="criteria-name">Source Strength</div><p class="criteria-desc">How reliable and proximate? Primary documents outrank single-source.</p></div></div>
@@ -527,9 +530,9 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
 </div><footer class="site-footer"><div class="container"><div class="footer-inner">
   <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
   <div class="footer-right">
-    <a href="#" onclick="window.navigateTo('home');return false">Briefings</a>
-    <a href="#" onclick="window.navigateTo('contact');return false">Contact</a>
-    <a href="#">Privacy</a>
+    <a href="#home" data-nav="home">Briefings</a>
+    <a href="#contact" data-nav="contact">Contact</a>
+    <a href="#about" data-nav="about">Privacy</a>
   </div>
 </div></div></footer></div>
 
@@ -627,7 +630,7 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
 
 </div><footer class="site-footer"><div class="container"><div class="footer-inner">
   <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
-  <div class="footer-right"><a href="#" onclick="window.navigateTo('home');return false">Briefings</a></div>
+  <div class="footer-right"><a href="#home" data-nav="home">Briefings</a></div>
 </div></div></footer></div>
 
 <!-- ===== CONTACT ===== -->
@@ -639,17 +642,17 @@ body{margin:0;font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-
 </section>
 <section class="about-section">
   <div class="contact-form">
-    <div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" placeholder="Your name"></div>
-    <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" placeholder="you@example.com"></div>
-    <div class="form-group"><label class="form-label">Category</label><select class="form-input" style="appearance:auto"><option>General Inquiry</option><option>Source Dispute</option><option>Methodology Question</option><option>Partnership</option><option>Bug Report</option></select></div>
-    <div class="form-group"><label class="form-label">Message</label><textarea class="form-textarea" placeholder="Your message&hellip;"></textarea></div>
+    <div class="form-group"><label class="form-label" for="contactName">Name</label><input type="text" class="form-input" id="contactName" name="name" placeholder="Your name" required></div>
+    <div class="form-group"><label class="form-label" for="contactEmail">Email</label><input type="email" class="form-input" id="contactEmail" name="email" placeholder="you@example.com" required></div>
+    <div class="form-group"><label class="form-label" for="contactCategory">Category</label><select class="form-input" id="contactCategory" name="category" style="appearance:auto"><option>General Inquiry</option><option>Source Dispute</option><option>Methodology Question</option><option>Partnership</option><option>Bug Report</option></select></div>
+    <div class="form-group"><label class="form-label" for="contactMessage">Message</label><textarea class="form-textarea" id="contactMessage" name="message" placeholder="Your message&hellip;" required></textarea></div>
     <button class="form-submit" id="contactSubmit" type="button">Send Message</button>
     <p class="form-note">We typically respond within 24 hours.</p>
   </div>
 </section>
 </div><footer class="site-footer"><div class="container"><div class="footer-inner">
   <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
-  <div class="footer-right"><a href="#" onclick="window.navigateTo('home');return false">Briefings</a><a href="#" onclick="window.navigateTo('about');return false">About</a></div>
+  <div class="footer-right"><a href="#home" data-nav="home">Briefings</a><a href="#" onclick="window.navigateTo('about');return false">About</a></div>
 </div></div></footer></div>
 
 </main>

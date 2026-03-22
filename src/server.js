@@ -139,6 +139,7 @@ function renderPage(template, { title, description, canonical, ogImage, ogImageT
   const safeBoot = JSON.stringify(bootData || {}).replace(/</g, '\\u003c');
   const safeArticle = JSON.stringify(articleJson || {}).replace(/</g, '\\u003c');
   return template
+    .replaceAll('{{BASE_URL}}', BASE_URL)
     .replaceAll('{{PAGE_TITLE}}', title)
     .replaceAll('{{PAGE_DESCRIPTION}}', description)
     .replaceAll('{{PAGE_CANONICAL}}', canonical)
@@ -538,7 +539,8 @@ async function handleApi(req, res) {
 
   if (req.url.startsWith('/api/sources/') && req.method === 'DELETE') {
     if (!ensureAdmin(req, res)) return true;
-    const id = decodeURIComponent(req.url.slice('/api/sources/'.length).split('?')[0]);
+    let id;
+    try { id = decodeURIComponent(req.url.slice('/api/sources/'.length).split('?')[0]); } catch { return sendJson(res, 400, { error: 'invalid id encoding' }); }
     if (!id) return sendJson(res, 400, { error: 'id required' });
     const config = JSON.parse(await readFile(SOURCES_CONFIG_PATH, 'utf-8'));
     let found = false;
@@ -626,7 +628,16 @@ async function handleApi(req, res) {
   }
 
   if (req.url === '/api/events' && req.method === 'POST') {
+    const ip = getClientIp(req);
+    const evKey = `events:${ip}`;
+    const evNow = Date.now();
+    const evLast = rateLimits.get(evKey) || 0;
+    if (evNow - evLast < 1000) return sendJson(res, 429, { error: 'Too many events' });
+    rateLimits.set(evKey, evNow);
     const body = await readBody(req);
+    if (!body || typeof body.type !== 'string' || body.type.length > 100 || Object.keys(body).length > 10) {
+      return sendJson(res, 400, { error: 'Invalid event payload' });
+    }
     await writeSubmission('events', body);
     return sendJson(res, 200, { ok: true });
   }
@@ -850,11 +861,15 @@ async function handleResources(req, res) {
   const files = ['methodology.md', 'weekly-briefing.md', 'government-civic-hub.md'];
   const result = [];
   for (const file of files) {
-    const content = await readFile(path.join(ROOT, 'content', file), 'utf8');
-    result.push({
-      id: file.replace('.md', ''),
-      html: marked.parse(content)
-    });
+    try {
+      const content = await readFile(path.join(ROOT, 'content', file), 'utf8');
+      result.push({
+        id: file.replace('.md', ''),
+        html: marked.parse(content)
+      });
+    } catch (err) {
+      result.push({ id: file.replace('.md', ''), html: '<p>Content unavailable.</p>' });
+    }
   }
   sendJson(res, 200, { items: result });
   return true;

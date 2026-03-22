@@ -208,7 +208,7 @@ function renderStoryThumbFallbackDataUri(topics) {
 
 function renderStoryThumbFallback(className, topics) {
   const src = renderStoryThumbFallbackDataUri(topics);
-  return `<figure class="${escapeHtml(className)} story-thumb--fallback" aria-hidden="true"><img src="${src}" alt="" loading="lazy" decoding="async"></figure>`;
+  return `<figure class="${escapeHtml(className)} story-thumb--fallback" aria-hidden="true"><img src="${src}" alt="" loading="lazy" decoding="async" width="400" height="225"></figure>`;
 }
 
 /**
@@ -234,11 +234,43 @@ function upgradeImageUrl(url) {
   return u;
 }
 
+/**
+ * T8: Build a responsive <img> tag with lazy loading, decode hints,
+ * explicit dimensions for CLS prevention, sizes for container-aware layout,
+ * and fetchpriority for above-fold images.
+ *
+ * @param {string} src       - Image URL (already escaped/upgraded)
+ * @param {string} alt       - Alt text (already escaped)
+ * @param {object} opts
+ * @param {string} opts.loading      - "lazy" (default) or "eager"
+ * @param {string} opts.fetchpriority - "high", "low", or "" (omit)
+ * @param {number} opts.width        - intrinsic width hint (default 400)
+ * @param {number} opts.height       - intrinsic height hint (default 225)
+ * @param {string} opts.sizes        - sizes attribute value
+ * @param {string} opts.fallbackSrc  - onerror fallback data-URI
+ */
+function responsiveImg(src, alt, opts = {}) {
+  const loading = opts.loading || 'lazy';
+  const w = opts.width || 400;
+  const h = opts.height || 225;
+  const priority = opts.fetchpriority ? ` fetchpriority="${opts.fetchpriority}"` : '';
+  const sizes = opts.sizes ? ` sizes="${escapeHtml(opts.sizes)}"` : '';
+  const onerror = opts.fallbackSrc ? ` onerror="this.onerror=null;this.src='${opts.fallbackSrc.replace(/'/g, "\\'").replace(/"/g, '&quot;')}'"` : '';
+  return `<img src="${src}" alt="${alt}" loading="${loading}" decoding="async" width="${w}" height="${h}"${priority}${sizes}${onerror}>`;
+}
+
 function renderStoryThumb(imageUrl, className, altText = '', topics = []) {
   const fallbackSrc = renderStoryThumbFallbackDataUri(topics);
   if (imageUrl) {
-    const src = upgradeImageUrl(imageUrl);
-    return `<figure class="${escapeHtml(className)}"><img src="${escapeHtml(src)}" alt="${escapeHtml(altText)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${fallbackSrc}'"></figure>`;
+    const src = escapeHtml(upgradeImageUrl(imageUrl));
+    const alt = escapeHtml(altText);
+    // Determine dimensions and sizes by context
+    let w = 400, h = 225, sizes = '(max-width:600px) 100vw, 400px';
+    if (className === 'top3-thumb') { w = 600; h = 338; sizes = '(max-width:600px) 100vw, 33vw'; }
+    else if (className === 'topic-story-thumb') { w = 80; h = 80; sizes = '80px'; }
+    else if (className === 'archive-grid-thumb') { w = 400; h = 225; sizes = '(max-width:500px) 100vw, 50vw'; }
+    const img = responsiveImg(src, alt, { width: w, height: h, sizes, fallbackSrc });
+    return `<figure class="${escapeHtml(className)}">${img}</figure>`;
   }
   return renderStoryThumbFallback(className, topics);
 }
@@ -251,10 +283,10 @@ function renderStoryThumb(imageUrl, className, altText = '', topics = []) {
 function renderStoryActions(story, baseClass = 'topic-story-link') {
   const slug = escapeHtml(story.slug || '');
   const hasSlug = Boolean(story.slug);
-  const external = story.url ? `<a class="${baseClass} secondary" href="${safeUrl(story.url)}" target="_blank" rel="noopener">Source</a>` : '';
+  const external = story.url ? `<a class="${baseClass} secondary" href="${safeUrl(story.url)}" target="_blank" rel="noopener noreferrer">Source</a>` : '';
   const open = hasSlug
-    ? `<a class="${baseClass}" href="/story/${slug}" onclick="window.openStory('${slug}');return false;">Open</a>`
-    : (story.url ? `<a class="${baseClass}" href="${safeUrl(story.url)}" target="_blank" rel="noopener">Open</a>` : '');
+    ? `<a class="${baseClass}" href="/story/${slug}" data-open-story="${slug}">Open</a>`
+    : (story.url ? `<a class="${baseClass}" href="${safeUrl(story.url)}" target="_blank" rel="noopener noreferrer">Open</a>` : '');
   return { open, external };
 }
 
@@ -400,7 +432,7 @@ export function renderHero(store, claimed) {
   subhead.textContent = lead.dek || lead.summary || 'Briefing update ready.';
   const refreshed = store.lastUpdated ? formatTime(store.lastUpdated) : '';
   meta.innerHTML = `<span class="hero-meta-dot"></span><span>${formatDate(lead.updatedAt || lead.publishedAt)}</span><span class="hero-meta-sep">&middot;</span>${scoreBadgeHtml(lead.score, lead.sources?.length)}${refreshed ? `<span class="hero-meta-sep">&middot;</span><span>Refreshed ${escapeHtml(refreshed)}</span>` : ''}`;
-  citation.innerHTML = lead.url ? `<div class="citation-link"><a href="${safeUrl(lead.url)}" target="_blank" rel="noopener">${escapeHtml(lead.url)}</a> <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1h7v7M11 1L5 7"/></svg></div>` : '';
+  citation.innerHTML = lead.url ? `<div class="citation-link"><a href="${safeUrl(lead.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(lead.url)}</a> <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1h7v7M11 1L5 7"/></svg></div>` : '';
   if (lead.source) {
     citation.innerHTML += `<div class="citation-author">${escapeHtml(lead.source)}</div><div class="citation-date">${formatDate(lead.updatedAt || lead.publishedAt)}</div>`;
   }
@@ -408,10 +440,13 @@ export function renderHero(store, claimed) {
   if (heroThumb) {
     const fallbackSrc = renderStoryThumbFallbackDataUri(lead.topics || []);
     if (lead.imageUrl) {
-      const heroSrc = upgradeImageUrl(lead.imageUrl);
-      heroThumb.innerHTML = `<img src="${escapeHtml(heroSrc)}" alt="${escapeHtml(lead.headline || '')}" loading="eager" decoding="async" fetchpriority="high" onerror="this.onerror=null;this.src='${fallbackSrc}'">`;
+      const heroSrc = escapeHtml(upgradeImageUrl(lead.imageUrl));
+      heroThumb.innerHTML = responsiveImg(heroSrc, escapeHtml(lead.headline || ''), {
+        loading: 'eager', fetchpriority: 'high', width: 800, height: 600,
+        sizes: '(max-width:900px) 100vw, 50vw', fallbackSrc
+      });
     } else {
-      heroThumb.innerHTML = `<img src="${fallbackSrc}" alt="" loading="eager" decoding="async">`;
+      heroThumb.innerHTML = responsiveImg(fallbackSrc, '', { loading: 'eager', width: 800, height: 600 });
     }
   }
   if (claimed && lead.id) claimed.add(lead.id);
@@ -437,7 +472,7 @@ export function renderTopStories(store, claimed) {
       <h3 class="top3-title"><a href="/story/${escapeHtml(story.slug)}">${escapeHtml(story.headline)}</a></h3>
       <p class="top3-excerpt">${escapeHtml(story.dek || '')}</p>
       <div class="top3-score"><div class="top3-score-bar"><div class="top3-score-fill" style="width:${Math.round((story.score || 0) * 100)}%"></div></div>${scoreBadgeHtml(story.score, story.sources?.length)}</div>
-      ${story.url ? `<a class="story-external-link" href="${safeUrl(story.url)}" target="_blank" rel="noopener">Source Link</a>` : ''}
+      ${story.url ? `<a class="story-external-link" href="${safeUrl(story.url)}" target="_blank" rel="noopener noreferrer">Source Link</a>` : ''}
       <div class="citation"><div class="citation-author">${escapeHtml(story.sources?.[0]?.name || '')}</div><div class="citation-date">${formatDate(story.updatedAt)}</div></div>
     </div>`;
   }).join('');
@@ -459,7 +494,7 @@ export function renderDeveloping(store, claimed) {
       <div class="story-card-excerpt">${escapeHtml(story.dek || '')}</div>
       <div class="developing-actions">
         ${(story.topics || []).slice(0, 3).map((topic) => `<span class="developing-chip">${escapeHtml(topic)}</span>`).join('')}
-        ${story.url ? `<a class="story-external-link" href="${safeUrl(story.url)}" target="_blank" rel="noopener">External</a>` : ''}
+        ${story.url ? `<a class="story-external-link" href="${safeUrl(story.url)}" target="_blank" rel="noopener noreferrer">External</a>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -575,7 +610,7 @@ export function renderDailyFeed(store, saved = new Set(), followed = new Set(), 
         <span class="story-card-tier tier-${story.tier}">Tier ${story.tier}</span>
         ${scoreBadgeHtml(story.score, story.sources?.length)}
       </div>
-      <h3 class="story-card-title"><a href="/story/${escapeHtml(story.slug)}" onclick="window.openStory('${escapeHtml(story.slug)}');return false;">${escapeHtml(story.headline)}</a></h3>
+      <h3 class="story-card-title"><a href="/story/${escapeHtml(story.slug)}" data-open-story="${escapeHtml(story.slug)}">${escapeHtml(story.headline)}</a></h3>
       <p class="story-card-excerpt">${escapeHtml(story.dek || '')}</p>
       ${entityTags ? `<div class="entity-tags">${entityTags}</div>` : ''}
       <div class="spectrum-mini">${(story.spectrum || []).map((row) => `<span style=\"width:${Number(row.percent)||0}%;background:${escapeHtml(row.color||'')}\"></span>`).join('')}</div>
@@ -584,7 +619,7 @@ export function renderDailyFeed(store, saved = new Set(), followed = new Set(), 
         <span>&middot;</span>
         <span class="story-card-source">${formatDate(story.updatedAt)}</span>
         <span>&middot;</span><span class="story-read-time">${readTime}</span>
-        ${story.url ? `<span>&middot;</span><a class="story-external-link" href="${safeUrl(story.url)}" target="_blank" rel="noopener">Original</a>` : ''}
+        ${story.url ? `<span>&middot;</span><a class="story-external-link" href="${safeUrl(story.url)}" target="_blank" rel="noopener noreferrer">Original</a>` : ''}
       </div>
       <div class="story-actions">
         <button class="story-btn ${saved.has(story.id) ? 'active' : ''}" data-save="${escapeHtml(story.id)}">${saved.has(story.id) ? 'Saved' : 'Save'}</button>
@@ -809,13 +844,13 @@ export function renderCartoons(store) {
 
   function cartoonCard(story, variant = '') {
     const thumb = story.imageUrl
-      ? `<figure class="cartoon-thumb"><img src="${escapeHtml(story.imageUrl)}" alt="${escapeHtml(story.headline)}" loading="lazy" decoding="async" onerror="this.parentElement.style.display='none'"></figure>`
+      ? `<figure class="cartoon-thumb">${responsiveImg(escapeHtml(story.imageUrl), escapeHtml(story.headline), { width: 300, height: 300, sizes: '(max-width:600px) 50vw, 200px' })}</figure>`
       : `<div class="cartoon-thumb cartoon-thumb--placeholder"><svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><circle cx="24" cy="24" r="20"/><path d="M16 20c2-3 8-5 10 0s7 6 8 2"/><circle cx="18" cy="22" r="2" fill="currentColor"/><circle cx="30" cy="22" r="2" fill="currentColor"/><path d="M18 31c2 3 10 3 12 0"/></svg></div>`;
     return `<div class="cartoon-card${variant ? ' ' + variant : ' depth-tilt'}">
       ${thumb}
       <div class="cartoon-meta">
         <div class="cartoon-source">${escapeHtml(story.sources?.[0]?.name || '')}</div>
-        <a class="cartoon-title" href="${safeUrl(story.url)}" target="_blank" rel="noopener">${escapeHtml(story.headline)}</a>
+        <a class="cartoon-title" href="${safeUrl(story.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(story.headline)}</a>
       </div>
     </div>`;
   }
@@ -852,11 +887,11 @@ export function renderHighImportance(store, claimed) {
       : (story.url ? escapeHtml(story.url) : '');
     const storyAction = storyUrl
       ? (story.slug
-        ? `<a class="legis-card-action legis-card-action--secondary" href="${storyUrl}" onclick="window.openStory('${escapeHtml(story.slug)}');return false;">Coverage</a>`
-        : `<a class="legis-card-action legis-card-action--secondary" href="${storyUrl}" target="_blank" rel="noopener">Coverage</a>`)
+        ? `<a class="legis-card-action legis-card-action--secondary" href="${storyUrl}" data-open-story="${escapeHtml(story.slug)}">Coverage</a>`
+        : `<a class="legis-card-action legis-card-action--secondary" href="${storyUrl}" target="_blank" rel="noopener noreferrer">Coverage</a>`)
       : '';
     const docAction = primary?.url
-      ? `<a class="legis-card-action" href="${safeUrl(primary.url)}" target="_blank" rel="noopener">${escapeHtml(governmentDocLabel(primary))}</a>`
+      ? `<a class="legis-card-action" href="${safeUrl(primary.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(governmentDocLabel(primary))}</a>`
       : '';
     const sourceName = primary?.label || story.sources?.[0]?.name || story.source || '';
     const updated = formatDate(story.updatedAt || story.publishedAt);
@@ -917,7 +952,7 @@ export function renderTopics(store) {
           ${thumb}
           <div class="topic-story-main">
             <div class="topic-story-head">
-              <div class="topic-story-title">${hasSlug ? `<a href="/story/${slug}" onclick="window.openStory('${slug}');return false;">${escapeHtml(story.headline || story.title)}</a>` : escapeHtml(story.headline || story.title)}</div>
+              <div class="topic-story-title">${hasSlug ? `<a href="/story/${slug}" data-open-story="${slug}">${escapeHtml(story.headline || story.title)}</a>` : escapeHtml(story.headline || story.title)}</div>
             </div>
             <div class="topic-story-excerpt">${escapeHtml(story.dek || story.summary || '')}</div>
             <div class="topic-story-footer">
@@ -948,7 +983,7 @@ export function renderTopics(store) {
       ${clusterIntro}
       <div class="topic-preview">
         <ul class="topic-preview-list">
-          ${topic.items.slice(0, 3).map((s) => `<li class="topic-preview-item"><a href="/story/${escapeHtml(s.slug || '')}" onclick="window.openStory && window.openStory('${escapeHtml(s.slug || '')}');return false;">${escapeHtml(s.headline || s.title || '')}</a><span class="topic-preview-source">${escapeHtml(s.sources?.[0]?.name || s.source || '')}</span></li>`).join('')}
+          ${topic.items.slice(0, 3).map((s) => `<li class="topic-preview-item"><a href="/story/${escapeHtml(s.slug || '')}" data-open-story="${escapeHtml(s.slug || '')}">${escapeHtml(s.headline || s.title || '')}</a><span class="topic-preview-source">${escapeHtml(s.sources?.[0]?.name || s.source || '')}</span></li>`).join('')}
         </ul>
         ${todayCount > 0 ? `<button class="topic-expand-btn" data-expand-topic="${escapeHtml(topic.topic)}" type="button">Browse all ${todayCount} stories \u2192</button>` : '<span class="topic-expand-empty">No stories today</span>'}
       </div>
@@ -1178,7 +1213,7 @@ export function renderGlobalSearchResults(results = [], meta = {}) {
     const meta = [item.source, dateStr].filter(Boolean).join(' &middot; ');
     return `<div class="global-search-card">
       <div class="meta">${meta}</div>
-      <h4><a href="${item.slug ? `/story/${escapeHtml(item.slug)}` : safeUrl(item.url)}"${item.slug ? '' : ' target="_blank" rel="noopener"'}>${escapeHtml(item.title)}</a></h4>
+      <h4><a href="${item.slug ? `/story/${escapeHtml(item.slug)}` : safeUrl(item.url)}"${item.slug ? '' : ' target="_blank" rel="noopener noreferrer"'}>${escapeHtml(item.title)}</a></h4>
       ${item.summary ? `<p class="story-card-excerpt">${escapeHtml(item.summary)}</p>` : ''}
     </div>`;
   }).join('');
@@ -1236,7 +1271,7 @@ function buildEntitiesHtml(entities) {
     <div class="entity-group">
       <span class="entity-group-label">${escapeHtml(g.label)}</span>
       ${g.items.map((name) =>
-        `<a href="#" class="entity-chip entity-chip--${g.type}" onclick="event.preventDefault();if(window.navigateSearch)window.navigateSearch('${escapeHtml(String(name).replace(/'/g, "\\'"))}')">${escapeHtml(name)}</a>`
+        `<a href="#" class="entity-chip entity-chip--${g.type}" data-search-entity="${escapeHtml(String(name))}">${escapeHtml(name)}</a>`
       ).join('')}
     </div>`
   ).join('');
@@ -1257,7 +1292,7 @@ function buildConfidenceBreakdownHtml(scoreBreakdown) {
   if (!rows.length) return '';
   return `
     <div class="confidence-breakdown">
-      <button class="confidence-breakdown-toggle" onclick="this.nextElementSibling.classList.toggle('open');this.setAttribute('aria-expanded',this.nextElementSibling.classList.contains('open'))" aria-expanded="false">
+      <button class="confidence-breakdown-toggle" data-toggle-breakdown aria-expanded="false">
         SCORE BREAKDOWN <span>&#9662;</span>
       </button>
       <div class="confidence-breakdown-body">
@@ -1314,7 +1349,7 @@ export function renderStoryPage(story) {
     sources.innerHTML = (story.sources || []).map((item) => `<div class="story-source-item"><div class="story-card-title">${escapeHtml(item.name)}</div><div class="story-card-footer">${escapeHtml(item.tierLabel || '')}</div></div>`).join('');
   }
   if (docs) {
-    docs.innerHTML = (story.primaryDocs || []).map((doc) => `<div class="story-doc-item"><a href="${safeUrl(doc.url)}" target="_blank" rel="noopener">${escapeHtml(doc.title)}</a>${doc.label ? `<div class="story-card-footer">${escapeHtml(doc.label)}</div>` : ''}</div>`).join('') || '<div class="story-doc-item">Primary filings listed when available.</div>';
+    docs.innerHTML = (story.primaryDocs || []).map((doc) => `<div class="story-doc-item"><a href="${safeUrl(doc.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(doc.title)}</a>${doc.label ? `<div class="story-card-footer">${escapeHtml(doc.label)}</div>` : ''}</div>`).join('') || '<div class="story-doc-item">Primary filings listed when available.</div>';
   }
   if (related) {
     related.innerHTML = (story.related || []).map((item) => `<div class="story-related-item"><a href="/story/${escapeHtml(item.slug)}">${escapeHtml(item.headline)}</a></div>`).join('') || '<div class="story-related-item">No related clusters yet.</div>';
@@ -1405,7 +1440,7 @@ export function renderArchiveDays(days = []) {
       const { open, external } = renderStoryActions(story);
       const thumb = renderStoryThumb(story.imageUrl, 'archive-grid-thumb', story.headline || '', story.topics);
       const titleHtml = slug
-        ? `<a href="/story/${slug}" onclick="window.openStory('${slug}');return false;">${escapeHtml(story.headline)}</a>`
+        ? `<a href="/story/${slug}" data-open-story="${slug}">${escapeHtml(story.headline)}</a>`
         : escapeHtml(story.headline);
       const storyHour = new Date(story.updatedAt || story.publishedAt || 0).getHours();
       const storyRun = storyHour < 11 ? 'morning' : storyHour < 15 ? 'midday' : 'evening';

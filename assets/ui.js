@@ -94,13 +94,6 @@ export function initUnreadFilter() {
 export function initNavigation() {
   document.querySelectorAll('.nav-link').forEach((link) => {
     link.addEventListener('click', () => navigateTo(link.dataset.page));
-    link.tabIndex = 0;
-    link.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        navigateTo(link.dataset.page);
-      }
-    });
   });
 
   window.navigateTo = navigateTo;
@@ -185,17 +178,25 @@ export function initTierTabs() {
     if (tab.dataset.bound === '1') return;
     tab.dataset.bound = '1';
     tab.addEventListener('click', () => {
-      const container = tab.closest('.tier-section') || document;
-      container.querySelectorAll('.tier-tab').forEach((t) => t.classList.remove('active'));
-      tab.classList.add('active');
-      const tier = tab.dataset.tier;
-      const activePills = [...document.querySelectorAll('#trending-bar .topic-pill.active')].map((p) => p.dataset.topic).filter((t) => t !== '__all__');
-      const storyList = container.querySelector('#storyList') || container;
-      storyList.querySelectorAll('.story-card').forEach((card) => {
-        const tierMatch = tier === 'all' || card.dataset.tier === tier;
-        const topicMatch = !activePills.length || activePills.some((t) => (card.dataset.topics || '').split(',').includes(t));
-        card.style.display = tierMatch && topicMatch ? '' : 'none';
-      });
+      const applyFilter = () => {
+        const container = tab.closest('.tier-section') || document;
+        container.querySelectorAll('.tier-tab').forEach((t) => t.classList.remove('active'));
+        tab.classList.add('active');
+        const tier = tab.dataset.tier;
+        const activePills = [...document.querySelectorAll('#trending-bar .topic-pill.active')].map((p) => p.dataset.topic).filter((t) => t !== '__all__');
+        const storyList = container.querySelector('#storyList') || container;
+        storyList.querySelectorAll('.story-card').forEach((card) => {
+          const tierMatch = tier === 'all' || card.dataset.tier === tier;
+          const topicMatch = !activePills.length || activePills.some((t) => (card.dataset.topics || '').split(',').includes(t));
+          card.style.display = tierMatch && topicMatch ? '' : 'none';
+        });
+      };
+      // T5: Wrap filter changes in View Transition
+      if (document.startViewTransition) {
+        document.startViewTransition(applyFilter);
+      } else {
+        applyFilter();
+      }
     });
   });
 }
@@ -842,13 +843,24 @@ export function initDarkMode() {
   const saved = localStorage.getItem('uc_dark_mode');
   if (saved === 'true') {
     document.body.classList.add('dark-mode');
+    document.documentElement.setAttribute('data-theme', 'dark');
     if (icon) icon.textContent = '\u2600\uFE0F';
   }
   if (toggle) {
     toggle.addEventListener('click', () => {
-      const isDark = document.body.classList.toggle('dark-mode');
-      localStorage.setItem('uc_dark_mode', isDark);
-      if (icon) icon.textContent = isDark ? '\u2600\uFE0F' : '\uD83C\uDF19';
+      const applyTheme = () => {
+        const isDark = document.body.classList.toggle('dark-mode');
+        // Also toggle data-theme for CSS token dark mode
+        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        localStorage.setItem('uc_dark_mode', isDark);
+        if (icon) icon.textContent = isDark ? '\u2600\uFE0F' : '\uD83C\uDF19';
+      };
+      // T5: View Transition for theme switch
+      if (document.startViewTransition) {
+        document.startViewTransition(applyTheme);
+      } else {
+        applyTheme();
+      }
     });
   }
 }
@@ -978,16 +990,24 @@ export function navigateSearch(query) {
 }
 
 function navigateTo(page) {
-  document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
-  document.querySelectorAll('.nav-link').forEach((l) => l.classList.remove('active'));
-  const target = document.getElementById(`page-${page}`);
-  if (target) {
-    target.classList.add('active');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const applyNav = () => {
+    document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
+    document.querySelectorAll('.nav-link').forEach((l) => l.classList.remove('active'));
+    const target = document.getElementById(`page-${page}`);
+    if (target) {
+      target.classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    document.querySelectorAll('.nav-link').forEach((l) => {
+      if (l.dataset.page === page) l.classList.add('active');
+    });
+  };
+  // T5: Wrap page switch in View Transition if available
+  if (document.startViewTransition) {
+    document.startViewTransition(applyNav);
+  } else {
+    applyNav();
   }
-  document.querySelectorAll('.nav-link').forEach((l) => {
-    if (l.dataset.page === page) l.classList.add('active');
-  });
 }
 
 export function initTopicBreakdownStrip() {

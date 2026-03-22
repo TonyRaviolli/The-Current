@@ -747,7 +747,17 @@ function initReveal() {
       }
     });
   }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+  // Observe all .reveal elements + section headers for JS fallback
   document.querySelectorAll('.reveal').forEach((el) => _revealObserver.observe(el));
+  // T4 fallback: if no scroll-driven animation support, animate via IntersectionObserver
+  if (!CSS.supports('animation-timeline', 'view()')) {
+    document.querySelectorAll('.section-header, .sidebar-card, .principle-card, .topic-section').forEach((el) => {
+      if (!el.classList.contains('reveal')) {
+        el.classList.add('reveal');
+        _revealObserver.observe(el);
+      }
+    });
+  }
 }
 
 function initTopicDateNav() {
@@ -811,17 +821,30 @@ function initDepthInteractions() {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduceMotion) return;
 
+  // T3: Enhanced tilt card with specular highlight
+  const MAX_TILT = 10;
   document.querySelectorAll('.depth-tilt').forEach((node) => {
     if (node.dataset.tiltWired === '1') return;
     node.dataset.tiltWired = '1';
+    node.style.position = 'relative';
+    node.style.overflow = 'hidden';
+    // Add specular shine layer if not present (CSS handles styling via .tilt-shine)
+    if (!node.querySelector('.tilt-shine')) {
+      const shine = document.createElement('div');
+      shine.className = 'tilt-shine';
+      node.appendChild(shine);
+    }
     node.addEventListener('pointermove', (event) => {
       const rect = node.getBoundingClientRect();
-      const px = (event.clientX - rect.left) / rect.width - 0.5;
-      const py = (event.clientY - rect.top) / rect.height - 0.5;
-      const rotateX = py * -6;
-      const rotateY = px * 8;
-      node.style.transform = `perspective(900px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-2px)`;
+      const x = (event.clientX - rect.left) / rect.width;
+      const y = (event.clientY - rect.top) / rect.height;
+      const rotateX = (y - 0.5) * -MAX_TILT;
+      const rotateY = (x - 0.5) * MAX_TILT;
+      node.style.transform = `perspective(800px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.02,1.02,1.02)`;
       node.classList.add('is-hovering');
+      // Update specular highlight position
+      node.style.setProperty('--mouse-x', `${(x * 100).toFixed(1)}%`);
+      node.style.setProperty('--mouse-y', `${(y * 100).toFixed(1)}%`);
     });
     const reset = () => {
       node.style.transform = '';
@@ -829,6 +852,19 @@ function initDepthInteractions() {
     };
     node.addEventListener('pointerleave', reset);
     node.addEventListener('blur', reset, true);
+  });
+
+  // T3: Lighter tilt for sidebar cards (no full rotation — just subtle lift)
+  document.querySelectorAll('.sidebar-card').forEach((card) => {
+    if (card.dataset.tiltWired === '1') return;
+    card.dataset.tiltWired = '1';
+    card.addEventListener('pointermove', (event) => {
+      const rect = card.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / rect.width - 0.5;
+      const y = (event.clientY - rect.top) / rect.height - 0.5;
+      card.style.transform = `perspective(1000px) rotateX(${(y * -3).toFixed(2)}deg) rotateY(${(x * 3).toFixed(2)}deg) translateY(-2px)`;
+    });
+    card.addEventListener('pointerleave', () => { card.style.transform = ''; });
   });
 
   const hero = document.querySelector('.hero-inner');
@@ -1033,8 +1069,20 @@ window.openStory = async (slug) => {
   if (story?.story) {
     markAsRead(story.story.id);
     applyReadState();
-    renderStoryPage(story.story);
-    window.navigateTo('story');
+    // T5: Set view-transition-name on the clicked card for shared-element morph
+    const sourceCard = document.querySelector(`.story-card[data-story-id="${CSS.escape(story.story.id)}"]`);
+    if (sourceCard) sourceCard.style.viewTransitionName = 'story-card';
+    const applyStoryNav = () => {
+      renderStoryPage(story.story);
+      window.navigateTo('story');
+      // Clean up transition name after navigation
+      if (sourceCard) sourceCard.style.viewTransitionName = '';
+    };
+    if (document.startViewTransition) {
+      document.startViewTransition(applyStoryNav);
+    } else {
+      applyStoryNav();
+    }
     history.pushState({ story: slug }, '', `/story/${slug}`);
     trackEvent('story_read', { id: story.story.id, slug: story.story.slug });
     applySaveFollowState();
@@ -1044,8 +1092,16 @@ window.openStory = async (slug) => {
 window.openDigest = async (key = 'latest') => {
   const digest = await fetchDigest(key);
   if (digest?.digest) {
-    renderDigestPage(digest.digest);
-    window.navigateTo('digest');
+    // T5: Wrap digest navigation in View Transition
+    const applyDigestNav = () => {
+      renderDigestPage(digest.digest);
+      window.navigateTo('digest');
+    };
+    if (document.startViewTransition) {
+      document.startViewTransition(applyDigestNav);
+    } else {
+      applyDigestNav();
+    }
     history.pushState({ digest: key }, '', `/digest/${key}`);
     trackEvent('digest_view', { key });
   }
@@ -1071,6 +1127,48 @@ function initTextView() {
 // ║  §12  INITIALIZATION                                                   ║
 // ║  Boot sequence — order matters: nav/UI first, then data, then polls    ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
+
+// Delegated click handler for data-dismiss, data-action, data-nav attributes
+document.body.addEventListener('click', (e) => {
+  const dismiss = e.target.closest('[data-dismiss]');
+  if (dismiss) {
+    const id = dismiss.dataset.dismiss;
+    if (id === 'refresh-banner') {
+      dismiss.closest('.refresh-banner')?.classList.remove('visible');
+    } else {
+      const el = document.getElementById(id);
+      if (el) el.hidden = true;
+    }
+    return;
+  }
+  if (e.target.closest('[data-action="reload"]')) { location.reload(); return; }
+  const storyLink = e.target.closest('[data-open-story]');
+  if (storyLink) {
+    e.preventDefault();
+    const slug = storyLink.dataset.openStory;
+    if (slug && window.openStory) window.openStory(slug);
+    return;
+  }
+  const entityChip = e.target.closest('[data-search-entity]');
+  if (entityChip) {
+    e.preventDefault();
+    const name = entityChip.dataset.searchEntity;
+    if (name && window.navigateSearch) window.navigateSearch(name);
+    return;
+  }
+  const breakdownToggle = e.target.closest('[data-toggle-breakdown]');
+  if (breakdownToggle) {
+    const body = breakdownToggle.nextElementSibling;
+    if (body) body.classList.toggle('open');
+    breakdownToggle.setAttribute('aria-expanded', body?.classList.contains('open') ?? false);
+    return;
+  }
+  const navLink = e.target.closest('[data-nav]');
+  if (navLink) {
+    e.preventDefault();
+    window.navigateTo(navLink.dataset.nav);
+  }
+});
 
 initNavigation();
 initRunSelector();

@@ -1,5 +1,10 @@
 import { writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { info } from './lib/logger.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(__dirname, '..');
 
 export async function writeSitemap(store, baseUrl) {
   const pages = [
@@ -16,13 +21,13 @@ export async function writeSitemap(store, baseUrl) {
   const urls = all.map((path) => `<url><loc>${baseUrl}${path}</loc></url>`).join('');
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`;
-  await writeFile('sitemap.xml', xml);
+  await writeFile(path.join(ROOT, 'sitemap.xml'), xml);
   info('sitemap_written', { count: all.length });
 }
 
 export async function writeRobots(baseUrl) {
   const content = `User-agent: *\nAllow: /\nSitemap: ${baseUrl}/sitemap.xml\n`;
-  await writeFile('robots.txt', content);
+  await writeFile(path.join(ROOT, 'robots.txt'), content);
   info('robots_written');
 }
 
@@ -37,7 +42,7 @@ export async function writeSiteFeed(store, baseUrl) {
 
   const rss = `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<rss version="2.0"><channel><title>The UnderCurrent Feed</title><link>${baseUrl}</link><description>Daily intelligence briefing</description>${items}</channel></rss>`;
-  await writeFile('site-feed.xml', rss);
+  await writeFile(path.join(ROOT, 'site-feed.xml'), rss);
   info('site_feed_written', { count: (store.stories || []).length });
 }
 
