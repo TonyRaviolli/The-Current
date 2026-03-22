@@ -139,70 +139,6 @@ body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-dee
   <div class="top3-grid reveal-group" id="topStories"></div>
 </section>
 
-<div class="section-break" aria-hidden="true"><span class="section-break-icon">&#9670;</span></div>
-
-<section class="market-section">
-  <div class="section-header">
-    <span class="section-title">Market Indicators</span>
-    <span class="section-badge">15-min delay</span>
-  </div>
-  <div class="market-strip">
-    <button class="market-tile" type="button" aria-expanded="false">
-      <div class="market-tile-header"><span class="market-tile-label">S&amp;P 500</span><span class="market-tile-change down">&minus;1.2%</span></div>
-      <div class="market-tile-value">4,891.27</div>
-      <div class="market-sparkline"><svg viewBox="0 0 120 24" preserveAspectRatio="none"><polyline points="0,6 15,5 30,8 45,6 60,12 75,16 90,14 105,19 120,17" fill="none" stroke="#c94040" stroke-width="1.5" opacity="0.7"/></svg></div>
-      <div class="market-intel-toggle">&#9654; INTEL</div>
-      <div class="market-intel-panel">CPI miss triggered broad selloff. Tech leading. VIX +18%.</div>
-    </button>
-    <button class="market-tile" type="button" aria-expanded="false">
-      <div class="market-tile-header"><span class="market-tile-label">10Y Yield</span><span class="market-tile-change up">+8bp</span></div>
-      <div class="market-tile-value">4.32%</div>
-      <div class="market-sparkline"><svg viewBox="0 0 120 24" preserveAspectRatio="none"><polyline points="0,19 15,17 30,15 45,13 60,12 75,9 90,7 105,5 120,6" fill="none" stroke="#2a9460" stroke-width="1.5" opacity="0.7"/></svg></div>
-      <div class="market-intel-toggle">&#9654; INTEL</div>
-      <div class="market-intel-panel">Yields spiking on hot CPI. Zero March cuts priced.</div>
-    </button>
-    <button class="market-tile" type="button" aria-expanded="false">
-      <div class="market-tile-header"><span class="market-tile-label">DXY</span><span class="market-tile-change up">+0.6%</span></div>
-      <div class="market-tile-value">104.82</div>
-      <div class="market-sparkline"><svg viewBox="0 0 120 24" preserveAspectRatio="none"><polyline points="0,18 15,16 30,14 45,15 60,12 75,10 90,8 105,6 120,5" fill="none" stroke="#2a9460" stroke-width="1.5" opacity="0.7"/></svg></div>
-      <div class="market-intel-toggle">&#9654; INTEL</div>
-      <div class="market-intel-panel">Dollar strengthening across G10. EUR/USD below 1.07.</div>
-    </button>
-    <button class="market-tile" type="button" aria-expanded="false">
-      <div class="market-tile-header"><span class="market-tile-label">Gold</span><span class="market-tile-change down">&minus;0.4%</span></div>
-      <div class="market-tile-value">$2,148</div>
-      <div class="market-sparkline"><svg viewBox="0 0 120 24" preserveAspectRatio="none"><polyline points="0,8 15,6 30,10 45,12 60,9 75,11 90,14 105,13 120,16" fill="none" stroke="#c94040" stroke-width="1.5" opacity="0.7"/></svg></div>
-      <div class="market-intel-toggle">&#9654; INTEL</div>
-      <div class="market-intel-panel">Retreating on dollar strength. Central bank buying as floor.</div>
-    </button>
-    <button class="market-tile" type="button" aria-expanded="false">
-      <div class="market-tile-header"><span class="market-tile-label">BTC</span><span class="market-tile-change down">&minus;2.8%</span></div>
-      <div class="market-tile-value">$51,240</div>
-      <div class="market-sparkline"><svg viewBox="0 0 120 24" preserveAspectRatio="none"><polyline points="0,5 15,7 30,4 45,8 60,10 75,14 90,17 105,15 120,20" fill="none" stroke="#c94040" stroke-width="1.5" opacity="0.7"/></svg></div>
-      <div class="market-intel-toggle">&#9654; INTEL</div>
-      <div class="market-intel-panel">Risk-off hitting crypto. ETF inflows slowing.</div>
-    </button>
-    <button class="market-tile" type="button" aria-expanded="false">
-      <div class="market-tile-header"><span class="market-tile-label">WTI</span><span class="market-tile-change up">+1.1%</span></div>
-      <div class="market-tile-value">$78.34</div>
-      <div class="market-sparkline"><svg viewBox="0 0 120 24" preserveAspectRatio="none"><polyline points="0,16 15,14 30,12 45,14 60,10 75,8 90,6 105,8 120,5" fill="none" stroke="#2a9460" stroke-width="1.5" opacity="0.7"/></svg></div>
-      <div class="market-intel-toggle">&#9654; INTEL</div>
-      <div class="market-intel-panel">Inflation boosting commodities. OPEC+ discipline holding.</div>
-    </button>
-  </div>
-</section>
-
-<div id="market-heatmap-container"></div>
-
-<div class="section-break section-break--plain" aria-hidden="true"></div>
-
-<section id="marketIntelSection" style="display:none">
-  <div class="section-header" style="padding-top:var(--sp-6)">
-    <span class="section-title">Market Intelligence</span>
-    <span class="section-badge">AI-generated</span>
-  </div>
-  <div id="marketIntelCard"></div>
-</section>
 
 
 <section id="cartoonsSection" style="display:none">
@@ -434,7 +370,6 @@ body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-dee
   <button class="topic-chip" data-topic="banking" type="button" style="--chip-color:#0369a1">Banking</button>
   <button class="topic-chip" data-topic="international" type="button" style="--chip-color:#7c3aed">International</button>
 </div>
-<div id="topicCountStrip" class="topic-count-strip"></div>
 <div id="topicsContent"></div>
 </div><footer class="site-footer"><div class="container"><div class="footer-inner">
   <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
