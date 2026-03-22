@@ -84,7 +84,13 @@ export async function refreshOnce(options = {}) {
         const summary = safeText(item.summary || '');
         if (!url || !title) continue;
 
-        const publishedAt = item.published ? new Date(item.published).toISOString() : new Date().toISOString();
+        let publishedAt = new Date().toISOString();
+        if (item.published) {
+          try {
+            const d = new Date(item.published);
+            if (!isNaN(d.getTime())) publishedAt = d.toISOString();
+          } catch { /* invalid date — fall back to now */ }
+        }
         const id = stableId([source.id, url, title, publishedAt]);
 
         collected.push({

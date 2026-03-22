@@ -163,26 +163,32 @@ export async function enrichStories(stories, prevById = new Map()) {
 
   const batchTopics = await classifyTopicsBatch(batchInputs);
 
-  // Apply batch topics + run why/next + entity extraction concurrently per story
-  await Promise.all(toEnrich.map(async (story, i) => {
-    const items = story._clusterItems || [];
-    const aiTopics = batchTopics[i] || null;
+  // Apply batch topics + run why/next + entity extraction
+  // Process 3 stories at a time to avoid API rate limits (max ~9 concurrent calls)
+  const CONCURRENCY = 3;
+  for (let start = 0; start < toEnrich.length; start += CONCURRENCY) {
+    const batch = toEnrich.slice(start, start + CONCURRENCY);
+    await Promise.all(batch.map(async (story) => {
+      const idx = toEnrich.indexOf(story);
+      const items = story._clusterItems || [];
+      const aiTopics = batchTopics[idx] || null;
 
-    const [whyItMatters, whatsNext, aiEntities] = await Promise.all([
-      generateWhyItMatters(story.headline, story.dek, story.topics),
-      generateWhatsNext(story.headline, story.topics),
-      extractEntitiesAI(story.headline, story.dek)
-    ]);
+      const [whyItMatters, whatsNext, aiEntities] = await Promise.all([
+        generateWhyItMatters(story.headline, story.dek, story.topics),
+        generateWhatsNext(story.headline, story.topics),
+        extractEntitiesAI(story.headline, story.dek)
+      ]);
 
-    if (aiTopics?.length) {
-      story.topics = aiTopics;
-      story.topicConfidence = classifyTopicsKeyword(items, aiTopics).confidence;
-    }
-    if (whyItMatters) story.whyItMatters = whyItMatters;
-    if (whatsNext) story.whatsNext = whatsNext;
-    if (aiEntities) story.entities = mergeEntities(story.entities || {}, aiEntities);
-    story._enrichedAt = new Date().toISOString();
-  }));
+      if (aiTopics?.length) {
+        story.topics = aiTopics;
+        story.topicConfidence = classifyTopicsKeyword(items, aiTopics).confidence;
+      }
+      if (whyItMatters) story.whyItMatters = whyItMatters;
+      if (whatsNext) story.whatsNext = whatsNext;
+      if (aiEntities) story.entities = mergeEntities(story.entities || {}, aiEntities);
+      story._enrichedAt = new Date().toISOString();
+    }));
+  }
 
   // Strip internal-only field
   for (const story of stories) delete story._clusterItems;

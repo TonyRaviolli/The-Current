@@ -37,32 +37,46 @@ export async function aiComplete(prompt, { maxTokens = MAX_TOKENS_DEFAULT, syste
     return null;
   }
 
-  try {
-    const params = {
-      model: MODEL,
-      max_tokens: maxTokens,
-      messages: [{ role: 'user', content: prompt }]
-    };
-    if (useThinking) params.thinking = { type: 'adaptive' };
-    if (systemPrompt) params.system = systemPrompt;
+  const MAX_RETRIES = 3;
+  const BASE_DELAY_MS = 2000;
 
-    const stream = await client.messages.stream(params);
-    const final = await stream.finalMessage();
-    const textBlock = final.content.find((b) => b.type === 'text');
-    return textBlock?.text?.trim() || null;
-  } catch (err) {
-    // Issue 14: structured error type logging so failures are diagnosable
-    const status = err.status || err.statusCode || null;
-    let errorType = 'UNKNOWN';
-    if (status === 429 || /rate.?limit/i.test(err.message)) errorType = 'RATE_LIMIT';
-    else if (status === 401 || /auth|key/i.test(err.message)) errorType = 'AUTH';
-    else if (status === 529 || /overload/i.test(err.message)) errorType = 'OVERLOAD';
-    else if (status >= 500) errorType = 'SERVER_ERROR';
-    else if (/timeout|ETIMEDOUT/i.test(err.message)) errorType = 'TIMEOUT';
-    process.stderr.write(`[ai:complete] ${errorType} status=${status} ${err.message}\n`);
-    warn('ai_error', { type: errorType, status, message: err.message });
-    return null;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const params = {
+        model: MODEL,
+        max_tokens: maxTokens,
+        messages: [{ role: 'user', content: prompt }]
+      };
+      if (useThinking) params.thinking = { type: 'adaptive' };
+      if (systemPrompt) params.system = systemPrompt;
+
+      const stream = await client.messages.stream(params);
+      const final = await stream.finalMessage();
+      const textBlock = final.content.find((b) => b.type === 'text');
+      return textBlock?.text?.trim() || null;
+    } catch (err) {
+      const status = err.status || err.statusCode || null;
+      let errorType = 'UNKNOWN';
+      if (status === 429 || /rate.?limit/i.test(err.message)) errorType = 'RATE_LIMIT';
+      else if (status === 401 || /auth|key/i.test(err.message)) errorType = 'AUTH';
+      else if (status === 529 || /overload/i.test(err.message)) errorType = 'OVERLOAD';
+      else if (status >= 500) errorType = 'SERVER_ERROR';
+      else if (/timeout|ETIMEDOUT/i.test(err.message)) errorType = 'TIMEOUT';
+
+      const retryable = errorType === 'RATE_LIMIT' || errorType === 'OVERLOAD' || errorType === 'SERVER_ERROR';
+      if (retryable && attempt < MAX_RETRIES) {
+        const delay = BASE_DELAY_MS * Math.pow(2, attempt); // 2s, 4s, 8s
+        process.stderr.write(`[ai:complete] ${errorType} status=${status} — retry ${attempt + 1}/${MAX_RETRIES} in ${delay}ms\n`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+
+      process.stderr.write(`[ai:complete] ${errorType} status=${status} ${err.message}\n`);
+      warn('ai_error', { type: errorType, status, message: err.message });
+      return null;
+    }
   }
+  return null;
 }
 
 /**
