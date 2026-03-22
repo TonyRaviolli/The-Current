@@ -8,25 +8,38 @@ Repository: github.com/TonyRaviolli/The-Current
 All code must follow the techniques in elite-web-techniques-instructions.md.
 Apply those standards to any new or modified code without being asked.
 
-### Elite Techniques Audit (all 10 implemented)
-| # | Technique | Status | Implementation |
-|---|-----------|--------|----------------|
-| T1 | Design Tokens | DONE | Full `:root` system: surfaces, borders, text, accents, spacing, typography, radii, shadows, transitions, z-index scale, text-on-accent, hover surfaces, source-dot palette. Dark mode via `body.dark-mode` token swap. |
-| T2 | Layered Shadows | DONE | 6 shadow tokens (sm/md/lg/xl/lifted/inset), glass nav panel, colored CTA shadows. |
-| T3 | 3D Transforms | DONE | `perspective` on grids, `preserve-3d` on 8+ card types, `.depth-tilt` + `.tilt-shine` specular, JS mouse-tracking tilt in app.js. |
-| T4 | Scroll Animations | DONE | `animation-timeline: scroll()/view()` on 15+ element types, nav shrink, scroll progress bar, parallax hero, staggered reveals. |
-| T5 | View Transitions | DONE | Root fade, story-card morph, story-hero morph, `startViewTransition` wraps story nav, digest nav, filters, dark mode, page nav. |
-| T6 | Micro-interactions | DONE | Full CTA system (ripple, lift, press, loading spinner), form input focus glow, nav link animated underline, market/topic/archive press feedback. |
-| T7 | Container Queries | DONE | `container-type` on 6 containers, 10+ `@container` queries, fluid `clamp()` tokens on all typography (30+ values migrated from hardcoded rem). |
-| T8 | Image Pipeline | DONE | `aspect-ratio` + `object-fit: cover` containers, LQIP shimmer placeholders, fade-in on load, dark mode shimmer, fallback SVG handling. |
-| T9 | Core Web Vitals | DONE | Inline critical CSS in `<head>`, `content-visibility: auto` on 10+ below-fold sections, `min-height` on 6 async containers, Google Fonts `display=swap`. |
-| T10 | Design Selectors | DONE | `*:focus-visible` keyboard-only rings, `:where()` resets, `:is()` consolidation, `:has()` for saved cards / form validation / market tile state. |
+### Front-End Overhaul (8-stage redesign in progress)
+**Master prompt:** See the user's "SENIOR FRONT-END DEVELOPER MASTER PROMPT v2" for full stage definitions and 10 technique specs.
+
+#### Completed stages
+| Stage | Techniques | Commit | Summary |
+|-------|-----------|--------|---------|
+| 1 | T02, T08 | `b5d3c93` | `@layer` cascade (7 layers: reset/tokens/base/layout/components/utilities/overrides), OKLCH color tokens (33 values), dark mode purge (all CSS/HTML/JS), hardcoded hex→token replacement |
+| 2 | T03, T07 | `415d444` | Playfair Display + Source Serif 4 + Inter font system, fluid clamp() audit (13 hardcoded→token), drop caps, letter-spacing/line-height tokens, article-measure constraint |
+
+#### Current state
+- **Next stage:** 3 — OKLCH Color System & Light Mode Enhancement
+- **CSS architecture:** `@layer reset, tokens, base, layout, components, utilities, overrides;` (first line of styles.css)
+- **Color system:** All `:root` tokens converted to OKLCH. Topic colors at L=0.58 for perceptual balance.
+- **Font system:** `--font-display` (Playfair Display), `--font-body` (Source Serif 4), `--font-ui` (Inter), `--font-mono` (JetBrains Mono). All `var(--font-sans)` and `var(--font-serif)` eliminated.
+- **Dark mode:** Completely removed. Zero references in any file. Light mode only.
+- **Typography:** Fluid `clamp()` tokens for all sizes. `--leading-*` (4 values), `--tracking-*` (5 values), `--article-measure: 68ch`. Drop cap on `.story-section > p:first-of-type::first-letter`.
+- **Easing:** `--ease-out-expo`, `--ease-in-out-circ`, `--ease-spring`, `--ease-snap` + duration tokens.
+
+#### Remaining stages (3-8)
+| Stage | Focus | Key deliverables |
+|-------|-------|-----------------|
+| 3 | OKLCH palette & light mode | Category badge colors, `.dateline` styling, `.breaking-ticker` HTML, `.pull-quote` blockquotes, `.section-break` dividers, `.author-card`, `<meta theme-color>` |
+| 4 | Motion & scroll effects | Custom easing on all transitions, `will-change`/GPU compositing, `scroll-effects.js` (IntersectionObserver reveals + lazy images), reading progress bar CSS, card hover effects |
+| 5 | Responsive QA | `container-type: inline-size`, `@container` rules, hamburger nav (already exists — verify), 44px touch targets, `env(safe-area-inset-*)`, `aspect-ratio` on image wrappers, overflow/touch audits |
+| 6 | Homepage layout | 7fr/5fr golden ratio hero grid, `repeat(auto-fill, minmax(300px, 1fr))` story grid, subgrid card alignment, `.section-header` pattern, `.section-break` dividers |
+| 7 | Article deep polish | Article typography, bylines, reading progress, pull quotes, author card, figcaptions, lazy images |
+| 8 | Final audit & deploy | Lighthouse audit (Perf≥88, A11y≥95), accessibility fixes, `<meta description>`, `<link canonical>`, real device testing, push to Render |
 
 ### Remaining polish items
-- Inline `<style>` in index.html uses hardcoded `#f8f9fb`/`#1a2332` instead of CSS tokens
-- `dark-mode-toggle` uses `border-radius: 6px` instead of `var(--radius-sm)`
 - A few mobile-specific media query font-sizes remain hardcoded (0.6rem, 0.65rem, 1.6rem) — intentionally below clamp() floor values
 - 5 consolidated responsive breakpoints at 1100/900/640/480/375px plus `prefers-reduced-motion` and `prefers-contrast:more`
+- 3 hardcoded hex values remain in `prefers-contrast:more` accessibility block (intentional)
 
 ## File structure
 ```
@@ -41,7 +54,7 @@ Apply those standards to any new or modified code without being asked.
 │   ├── ui.js        (42KB)    # Visit tracking, export, copy link, keyword watches, polling
 │   ├── api.js       (5.6KB)   # Fetch wrappers for all /api/* endpoints
 │   ├── dateRanges.js (1.7KB)  # Date range utilities
-│   └── styles.css   (201KB)   # Full stylesheet — dark abyss theme, gold/teal accents
+│   └── styles.css   (185KB)   # @layer cascade, OKLCH tokens, light mode only, editorial typography
 │
 ├── config/
 │   ├── sources.json  (55KB)   # 135 RSS/API sources across tiers 1-3 (104 enabled)
