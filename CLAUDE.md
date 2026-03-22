@@ -18,23 +18,29 @@ Apply those standards to any new or modified code without being asked.
 | 2 | T03, T07 | `415d444` | Playfair Display + Source Serif 4 + Inter font system, fluid clamp() audit (13 hardcoded→token), drop caps, letter-spacing/line-height tokens, article-measure constraint |
 | 3 | T07, T10 | `45572a8` | 22 OKLCH topic tokens + tint variants, `[data-category]` badge coloring system, TOPIC_PASTEL/TOPIC_VISUAL→OKLCH, shadow tokens→OKLCH, score/market/spectrum colors→OKLCH, 5 editorial components (`.dateline`, `.breaking-ticker`, `.pull-quote`, `.section-break`, `.author-card`), `<meta theme-color>` updated |
 | 4 | T04, T05, T06 | `39a0999` | All transitions→design tokens (easing+duration), card hover spring physics (`--ease-spring`), `will-change` on scroll-progress/reveal/depth-tilt, view-transition durations→tokens, shimmer/loader→tokens, shadow-lift hover on story-card/top3/market-tile |
+| 5 | T09 | (pending) | 10 container contexts (`container-type:inline-size`) + 16 `@container` rules, `env(safe-area-inset-*)` on nav/footer/mobile-nav (14 refs), `viewport-fit=cover`, `touch-action` on 7 scroll areas, `overscroll-behavior` on html+body+scroll containers (9 refs), `100dvh` body, 44px touch targets verified, hamburger nav verified |
+| 6 | T01 | (pending) | `--golden-major:7fr/--golden-minor:5fr` tokens (φ ratio), hero-inner 7fr/5fr grid, story-list `auto-fill minmax(300px,1fr)`, top3-grid `subgrid` card alignment (6-row span + fallback), `.section-title::before` gold accent rule, 4 `.section-break` dividers in homepage HTML, all main/sidebar grids→golden ratio tokens |
 
 #### Current state
-- **Next stage:** 5 — Responsive QA
+- **Next stage:** 7 — Article deep polish
 - **CSS architecture:** `@layer reset, tokens, base, layout, components, utilities, overrides;` (first line of styles.css)
-- **Color system:** Full OKLCH everywhere. 22 topic color tokens + 22 tint tokens. `[data-category]` attribute system for category-colored badges. Shadow tokens OKLCH. Score/market/regime/spectrum colors OKLCH in render.js. Remaining component-level rgba values are opacity variants (deferred to Stage 8).
-- **Font system:** `--font-display` (Playfair Display), `--font-body` (Source Serif 4), `--font-ui` (Inter), `--font-mono` (JetBrains Mono). All `var(--font-sans)` and `var(--font-serif)` eliminated.
+- **Layout system:** Golden ratio `--golden-major:7fr / --golden-minor:5fr` tokens used for hero, stories-grid, story-grid, contact-layout, hero-brief-grid. Story-list uses `repeat(auto-fill, minmax(300px, 1fr))` auto-flowing grid.
+- **Container queries:** 10 container contexts (feed, sidebar, archive, top3, legis, market, hero, topics, contact, about) with 16 `@container` rules.
+- **Subgrid:** `grid-template-rows: subgrid` on `.top3-card` (6-row span) with `@supports not` flexbox fallback.
+- **Safe areas:** `env(safe-area-inset-*)` on nav (top+sides), footer (bottom+sides), mobile nav (all 4 edges), container inline padding. `viewport-fit=cover` on `<meta viewport>`.
+- **Touch:** `touch-action:pan-x` + `overscroll-behavior-x:contain` on 7 horizontal scroll areas. `overscroll-behavior:none` on html. 44px/48px touch targets throughout.
+- **Color system:** Full OKLCH everywhere. 22 topic color tokens + 22 tint tokens. `[data-category]` attribute system for category-colored badges.
+- **Font system:** `--font-display` (Playfair Display), `--font-body` (Source Serif 4), `--font-ui` (Inter), `--font-mono` (JetBrains Mono).
 - **Dark mode:** Completely removed. Zero references in any file. Light mode only.
-- **Typography:** Fluid `clamp()` tokens for all sizes. `--leading-*` (4 values), `--tracking-*` (5 values), `--article-measure: 68ch`. Drop cap on `.story-section > p:first-of-type::first-letter`.
+- **Typography:** Fluid `clamp()` tokens for all sizes. `--leading-*` (4), `--tracking-*` (5), `--article-measure: 68ch`. Drop cap on `.story-section > p:first-of-type::first-letter`.
 - **Easing:** `--ease-out-expo`, `--ease-in-out-circ`, `--ease-spring`, `--ease-snap` + duration tokens.
-- **Editorial components:** `.dateline` (mono with gold rule), `.breaking-ticker` (animated scroll with reduced-motion fallback), `.pull-quote` (gold top border, curly quote), `.section-break` (rule with center icon), `.author-card` (avatar + name/role/bio).
-- **Motion:** All transitions use design tokens (easing + duration). Card hovers use `--ease-spring` with `--dur-base`. `will-change` on scroll-progress, reveal, depth-tilt. View transitions, shimmer, loader all tokenized. Scroll-driven animation + IntersectionObserver fallback for `.reveal`.
+- **Editorial:** `.dateline`, `.breaking-ticker`, `.pull-quote`, `.section-break` (rule with center icon, also `--plain` variant), `.author-card`. Section-break dividers between hero/top3/market/feed.
+- **Section headers:** `.section-title::before` gold accent rule, mono font, uppercase tracking.
+- **Motion:** All transitions use design tokens (easing + duration). Card hovers use `--ease-spring` with `--dur-base`. `will-change` on scroll-progress, reveal, depth-tilt. Scroll-driven animation + IntersectionObserver fallback for `.reveal`.
 
-#### Remaining stages (5-8)
+#### Remaining stages (7-8)
 | Stage | Focus | Key deliverables |
 |-------|-------|-----------------|
-| 5 | Responsive QA | `container-type: inline-size`, `@container` rules, hamburger nav (already exists — verify), 44px touch targets, `env(safe-area-inset-*)`, `aspect-ratio` on image wrappers, overflow/touch audits |
-| 6 | Homepage layout | 7fr/5fr golden ratio hero grid, `repeat(auto-fill, minmax(300px, 1fr))` story grid, subgrid card alignment, `.section-header` pattern, `.section-break` dividers |
 | 7 | Article deep polish | Article typography, bylines, reading progress, pull quotes, author card, figcaptions, lazy images |
 | 8 | Final audit & deploy | Lighthouse audit (Perf≥88, A11y≥95), accessibility fixes, `<meta description>`, `<link canonical>`, real device testing, push to Render |
 

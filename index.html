@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>{{PAGE_TITLE}}</title>
 <meta name="description" content="{{PAGE_DESCRIPTION}}">
 <link rel="canonical" href="{{PAGE_CANONICAL}}">
@@ -30,8 +30,8 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self'; frame-ancestors 'none'">
 <link rel="stylesheet" href="/assets/styles.css">
 <style>
-html{font-size:16px;-webkit-font-smoothing:antialiased;scroll-behavior:smooth;color-scheme:light}
-body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-deep,#F2EDE3);color:var(--text-primary,#241b11);line-height:1.7;min-height:100vh;overflow-x:hidden}
+html{font-size:16px;-webkit-font-smoothing:antialiased;scroll-behavior:smooth;color-scheme:light;overscroll-behavior:none}
+body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-deep,#F2EDE3);color:var(--text-primary,#241b11);line-height:1.7;min-height:100vh;min-height:100dvh;overflow-x:hidden}
 .loader-overlay{position:fixed;inset:0;z-index:10000;background:var(--bg-abyss,#fffdf8);display:flex;flex-direction:column;align-items:center;justify-content:center}
 </style>
 </head>
@@ -124,7 +124,7 @@ body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-dee
   </div>
 </div></section>
 
-<hr class="editorial-rule-double">
+<div class="section-break" aria-hidden="true"><span class="section-break-icon">&#9670;</span></div>
 
 <nav id="trending-bar" class="trending-bar" aria-label="Trending topics" style="display:none"></nav>
 
@@ -136,6 +136,8 @@ body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-dee
   </div>
   <div class="top3-grid reveal-group" id="topStories"></div>
 </section>
+
+<div class="section-break" aria-hidden="true"><span class="section-break-icon">&#9670;</span></div>
 
 <section class="market-section">
   <div class="section-header">
@@ -190,6 +192,8 @@ body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-dee
 
 <div id="market-heatmap-container"></div>
 
+<div class="section-break section-break--plain" aria-hidden="true"></div>
+
 <section id="marketIntelSection" style="display:none">
   <div class="section-header" style="padding-top:var(--sp-6)">
     <span class="section-title">Market Intelligence</span>
@@ -222,6 +226,8 @@ body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-dee
   </div>
   <div class="legis-grid" id="highImportanceList"></div>
 </section>
+
+<div class="section-break" aria-hidden="true"><span class="section-break-icon">&#9670;</span></div>
 
 <section class="tier-section">
   <div class="section-header">
