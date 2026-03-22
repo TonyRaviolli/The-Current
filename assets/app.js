@@ -26,7 +26,7 @@
 
 import { fetchFeed, runRefresh, fetchResources, fetchSearch, fetchStory, fetchDigest, trackEvent, fetchSources, toggleSource, addSource, deleteSource, fetchScoring, saveScoring, invalidateFeedCache, adminQuerySuffix, setAdminToken } from './api.js';
 import { renderHero, renderTopStories, renderDailyFeed, renderHighImportance, renderTopics, renderDailyInsight, renderResources, renderWeeklyDigest, renderMetaRibbon, renderTodayBrief, renderDeveloping, renderTopicBlocks, renderGlobalSearchResults, renderStoryPage, renderDigestPage, renderOps, renderSinceLastVisit, renderArchiveDays, renderSourceManager, renderScoringPanel, renderMarketIntel, renderCartoons, renderMarketHeatmap, renderTopicBreakdownStrip, renderSourceSpectrum, computeTopicDegrees } from './render.js';
-import { initNavigation, initRunSelector, initTierTabs, initTopicFilters, initSearchFilter, initForms, initCtas, initSaveFollow, getSavedStories, getFollowedTopics, initReaderMode, initShortcuts, initGlobalSearch, applySaveFollowState, initArchiveWeekToggles, recordVisitAndGetLastTime, exportBriefing, exportBriefingText, copyStoryLink, initMyTopicsFilter, getWatches, initKeywordWatches, markAsRead, applyReadState, initUnreadFilter, initDarkMode, initNavMore, initAlertStrip, renderTrendingBar, renderEditorsPicks, initTopicBreakdownStrip } from './ui.js';
+import { initNavigation, initRunSelector, initTierTabs, initTopicFilters, initSearchFilter, initForms, initCtas, initSaveFollow, getSavedStories, getFollowedTopics, initReaderMode, initShortcuts, initGlobalSearch, applySaveFollowState, initArchiveWeekToggles, recordVisitAndGetLastTime, exportBriefing, exportBriefingText, copyStoryLink, initMyTopicsFilter, getWatches, initKeywordWatches, markAsRead, applyReadState, initUnreadFilter, initNavMore, initAlertStrip, renderTrendingBar, renderEditorsPicks, initTopicBreakdownStrip } from './ui.js';
 
 const refreshButton = document.getElementById('refreshButton');
 const refreshStatus = document.getElementById('refreshStatus');
@@ -1189,7 +1189,6 @@ initMyTopicsFilter(() => storeCache);
 initExportButtons();
 initKeywordWatches();
 initUnreadFilter();
-initDarkMode();
 initTextView();
 initNavMore();
 initScoringPanel();

@@ -837,33 +837,7 @@ export function initMyTopicsFilter(getStore) {
 // ║  Dark mode, nav dropdown, alert strip, My Topics filter                ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
-export function initDarkMode() {
-  const toggle = document.getElementById('dark-mode-toggle');
-  const icon = document.getElementById('dark-mode-icon');
-  const saved = localStorage.getItem('uc_dark_mode');
-  if (saved === 'true') {
-    document.body.classList.add('dark-mode');
-    document.documentElement.setAttribute('data-theme', 'dark');
-    if (icon) icon.textContent = '\u2600\uFE0F';
-  }
-  if (toggle) {
-    toggle.addEventListener('click', () => {
-      const applyTheme = () => {
-        const isDark = document.body.classList.toggle('dark-mode');
-        // Also toggle data-theme for CSS token dark mode
-        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-        localStorage.setItem('uc_dark_mode', isDark);
-        if (icon) icon.textContent = isDark ? '\u2600\uFE0F' : '\uD83C\uDF19';
-      };
-      // T5: View Transition for theme switch
-      if (document.startViewTransition) {
-        document.startViewTransition(applyTheme);
-      } else {
-        applyTheme();
-      }
-    });
-  }
-}
+// Dark mode removed — light mode only
 
 // Nav More dropdown
 export function initNavMore() {
