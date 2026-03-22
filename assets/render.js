@@ -1710,11 +1710,22 @@ function getPathCentroid(pathStr) {
   return [cx, cy];
 }
 
-// ── Manual centroid overrides for states where polygon centroid is off ──
+// ── Pre-computed visual centroids for all states (SVG coords, 960×600 viewBox) ──
+// Derived from bounding-box centers with manual adjustments for irregular shapes.
 const STATE_CENTROID_OVERRIDES = {
-  MI: [690, 225], FL: [795, 430], LA: [635, 415], MD: [830, 270],
-  MA: [878, 200], HI: [310, 550], AK: [170, 550], CA: [155, 320],
-  ID: [258, 200], NY: [840, 200], VA: [800, 302]
+  AK: [155, 550],  AL: [669, 425],  AR: [561, 385],  AZ: [200, 375],
+  CA: [85, 305],   CO: [322, 284],  CT: [879, 188],  DC: [820, 263],
+  DE: [847, 252],  FL: [730, 490],  GA: [728, 412],  HI: [270, 555],
+  IA: [534, 224],  ID: [195, 130],  IL: [603, 272],  IN: [658, 267],
+  KS: [449, 303],  KY: [673, 310],  LA: [570, 465],  MA: [890, 167],
+  MD: [810, 258],  ME: [916, 100],  MI: [665, 190],  MN: [531, 130],
+  MO: [554, 308],  MS: [607, 430],  MT: [278, 92],   NC: [775, 348],
+  ND: [423, 98],   NE: [428, 235],  NH: [888, 130],  NJ: [854, 227],
+  NM: [302, 385],  NV: [133, 270],  NY: [815, 170],  OH: [716, 248],
+  OK: [450, 370],  OR: [100, 125],  PA: [801, 224],  RI: [898, 181],
+  SC: [760, 390],  SD: [421, 171],  TN: [672, 355],  TX: [430, 425],
+  UT: [219, 260],  VA: [770, 300],  VT: [865, 134],  WA: [118, 55],
+  WI: [585, 158],  WV: [760, 278],  WY: [299, 189]
 };
 
 // ── Leader-line offsets for small states (SVG coordinate deltas) ──

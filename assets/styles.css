@@ -3022,14 +3022,14 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   stroke-dasharray: 4 3;
 }
 
-/* ── Choropleth fill colors ──────────────────────────────────────── */
+/* ── Choropleth fill colors (vibrant, visible on dark bg) ────────── */
 .leg-page {
-  --map-state-1: #1e3a5f;
-  --map-state-2: #2d4a3e;
-  --map-state-3: #4a2c3d;
-  --map-state-4: #3b3520;
-  --map-state-5: #1f3d4a;
-  --map-state-6: #3a2a1e;
+  --map-state-1: #2a5a94;
+  --map-state-2: #3d7a5e;
+  --map-state-3: #7a4068;
+  --map-state-4: #6b6030;
+  --map-state-5: #2d6a84;
+  --map-state-6: #6b4a35;
 }
 
 /* ── State paths ─────────────────────────────────────────────────────── */
