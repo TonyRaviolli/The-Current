@@ -411,10 +411,12 @@ body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-dee
       <div class="leg-view-inner">
         <h1 class="leg-view-title">State Legislation</h1>
         <p class="leg-view-subtitle">Select a state to explore its legislative activity and policy landscape.</p>
-        <div class="leg-placeholder">
-          <div class="leg-placeholder-icon">&#9873;</div>
-          <p>Interactive U.S. map — Stage 2</p>
+        <div class="leg-map-container" id="legMapContainer"></div>
+        <div class="leg-selected-bar" id="legSelectedBar">
+          <span id="legSelectedName"></span>
+          <button class="leg-back-btn" type="button" id="legBackToMap">&#8592; Back to Map</button>
         </div>
+        <div id="legStatePanel"></div>
       </div>
     </div>
   </div>

@@ -25,6 +25,8 @@
 // ║  Feed display caps, topic color palettes, and label maps               ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
+import { US_STATES } from './us-states.js';
+
 // ── Feed size caps (adjust here to change across all tier sections) ───────────
 const FEED_MAX_STORIES = 10; // total articles shown across Tier 1/2/3 on briefing tab
 const FEED_MAX_PER_TIER = 3;  // target per tier before overflow fills remaining slots
@@ -1660,4 +1662,187 @@ function renderArticleJsonLd(article) {
     }
   };
   node.textContent = JSON.stringify(data);
+}
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §L  LEGISLATION — Interactive US Map                                  ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+const SMALL_STATES = new Set(['RI','DE','CT','NJ','MD','MA','VT','NH','DC']);
+
+function getPathCentroid(pathStr) {
+  const nums = pathStr.match(/[\d.]+/g);
+  if (!nums || nums.length < 4) return [480, 300];
+  let sumX = 0, sumY = 0, count = 0;
+  // Sample every Nth coordinate pair for performance
+  const step = Math.max(2, Math.floor(nums.length / 40)) * 2;
+  for (let i = 0; i < nums.length - 1; i += step) {
+    const x = parseFloat(nums[i]);
+    const y = parseFloat(nums[i + 1]);
+    if (!isNaN(x) && !isNaN(y) && x > 0 && x < 960 && y > 0 && y < 600) {
+      sumX += x; sumY += y; count++;
+    }
+  }
+  return count ? [sumX / count, sumY / count] : [480, 300];
+}
+
+// Leader-line offsets for small states (push label outside the path)
+const SMALL_STATE_OFFSETS = {
+  NH: [35, -10], VT: [-35, -10], MA: [40, 0], RI: [35, 10],
+  CT: [35, 20], NJ: [30, 10], DE: [30, 10], MD: [35, 20], DC: [35, 30]
+};
+
+let legMapTooltip = null;
+let legMapSelectedState = null;
+
+export function renderUSMap(container) {
+  if (!container) return;
+  container.innerHTML = '';
+  legMapSelectedState = null;
+
+  // Create tooltip
+  if (!legMapTooltip) {
+    legMapTooltip = document.createElement('div');
+    legMapTooltip.className = 'leg-map-tooltip';
+    legMapTooltip.setAttribute('role', 'tooltip');
+    document.body.appendChild(legMapTooltip);
+  }
+  legMapTooltip.style.display = 'none';
+
+  // Build SVG
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('viewBox', '0 0 960 600');
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  svg.setAttribute('class', 'leg-map-svg');
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'Interactive map of the United States');
+
+  // Inset divider line (separates AK/HI from continental US)
+  const divider = document.createElementNS(svgNS, 'line');
+  divider.setAttribute('x1', '30'); divider.setAttribute('y1', '510');
+  divider.setAttribute('x2', '380'); divider.setAttribute('y2', '510');
+  divider.setAttribute('class', 'leg-map-divider');
+  svg.appendChild(divider);
+
+  // State paths group
+  const pathsGroup = document.createElementNS(svgNS, 'g');
+  pathsGroup.setAttribute('class', 'leg-map-paths');
+
+  // Labels group (rendered on top of paths)
+  const labelsGroup = document.createElementNS(svgNS, 'g');
+  labelsGroup.setAttribute('class', 'leg-map-labels');
+
+  US_STATES.forEach((state, index) => {
+    // State path
+    const path = document.createElementNS(svgNS, 'path');
+    path.setAttribute('d', state.path);
+    path.setAttribute('class', 'leg-state-path');
+    path.setAttribute('data-state', state.id);
+    path.setAttribute('data-state-name', state.name);
+    path.setAttribute('aria-label', state.name);
+    path.setAttribute('role', 'button');
+    path.setAttribute('tabindex', '0');
+    path.style.animationDelay = `${index * 8}ms`;
+    pathsGroup.appendChild(path);
+
+    // Label
+    const [cx, cy] = getPathCentroid(state.path);
+    const isSmall = SMALL_STATES.has(state.id);
+    const offset = SMALL_STATE_OFFSETS[state.id] || [0, 0];
+    const labelX = cx + offset[0];
+    const labelY = cy + offset[1];
+
+    // Leader line for small states
+    if (isSmall && (offset[0] !== 0 || offset[1] !== 0)) {
+      const line = document.createElementNS(svgNS, 'line');
+      line.setAttribute('x1', cx); line.setAttribute('y1', cy);
+      line.setAttribute('x2', labelX); line.setAttribute('y2', labelY);
+      line.setAttribute('class', 'leg-state-leader');
+      labelsGroup.appendChild(line);
+    }
+
+    const text = document.createElementNS(svgNS, 'text');
+    text.setAttribute('x', labelX);
+    text.setAttribute('y', labelY);
+    text.setAttribute('class', `leg-state-label${isSmall ? ' leg-state-label--small' : ''}`);
+    text.setAttribute('data-state', state.id);
+    text.textContent = state.id;
+    text.style.animationDelay = `${index * 8 + 200}ms`;
+    labelsGroup.appendChild(text);
+  });
+
+  svg.appendChild(pathsGroup);
+  svg.appendChild(labelsGroup);
+  container.appendChild(svg);
+
+  // ── Event handlers ──
+
+  // Hover: tooltip + highlight
+  svg.addEventListener('mousemove', (e) => {
+    const path = e.target.closest('.leg-state-path');
+    if (!path) { legMapTooltip.style.display = 'none'; return; }
+    const name = path.dataset.stateName;
+    const abbr = path.dataset.state;
+    legMapTooltip.innerHTML = `<span class="leg-tooltip-name">${name}</span><span class="leg-tooltip-stat">${Math.floor(Math.random() * 20 + 3)} active bills this session</span>`;
+    legMapTooltip.style.display = '';
+    // Position near cursor, viewport-aware
+    const tx = e.clientX + 16;
+    const ty = e.clientY - 10;
+    const tw = legMapTooltip.offsetWidth;
+    const th = legMapTooltip.offsetHeight;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    legMapTooltip.style.left = (tx + tw > vw - 12 ? e.clientX - tw - 12 : tx) + 'px';
+    legMapTooltip.style.top = (ty + th > vh - 12 ? e.clientY - th - 12 : ty) + 'px';
+  });
+
+  svg.addEventListener('mouseleave', () => {
+    legMapTooltip.style.display = 'none';
+  });
+
+  // Click: select state
+  svg.addEventListener('click', (e) => {
+    const path = e.target.closest('.leg-state-path');
+    if (!path) return;
+    selectState(path.dataset.state, svg);
+  });
+
+  // Keyboard: Enter/Space to select
+  svg.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const path = e.target.closest('.leg-state-path');
+      if (path) {
+        e.preventDefault();
+        selectState(path.dataset.state, svg);
+      }
+    }
+  });
+}
+
+function selectState(stateId, svg) {
+  // Clear previous selection
+  svg.querySelectorAll('.leg-state-path.selected').forEach((p) => p.classList.remove('selected'));
+  // Select new state
+  const path = svg.querySelector(`.leg-state-path[data-state="${stateId}"]`);
+  if (path) {
+    path.classList.add('selected');
+    legMapSelectedState = stateId;
+    // Dispatch custom event for Stage 3 integration
+    const stateName = path.dataset.stateName;
+    document.dispatchEvent(new CustomEvent('leg-state-selected', {
+      detail: { id: stateId, name: stateName }
+    }));
+  }
+}
+
+export function clearMapSelection() {
+  const svg = document.querySelector('.leg-map-svg');
+  if (svg) {
+    svg.querySelectorAll('.leg-state-path.selected').forEach((p) => p.classList.remove('selected'));
+  }
+  legMapSelectedState = null;
+  // Hide any state panel (Stage 3)
+  const panel = document.getElementById('legStatePanel');
+  if (panel) panel.classList.remove('active');
 }

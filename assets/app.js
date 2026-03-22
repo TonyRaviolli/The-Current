@@ -25,7 +25,7 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
 import { fetchFeed, runRefresh, fetchResources, fetchSearch, fetchStory, fetchDigest, trackEvent, fetchSources, toggleSource, addSource, deleteSource, fetchScoring, saveScoring, invalidateFeedCache, adminQuerySuffix, setAdminToken } from './api.js';
-import { renderHero, renderTopStories, renderDailyFeed, renderHighImportance, renderTopics, renderDailyInsight, renderResources, renderWeeklyDigest, renderMetaRibbon, renderTodayBrief, renderDeveloping, renderTopicBlocks, renderGlobalSearchResults, renderStoryPage, renderDigestPage, renderOps, renderSinceLastVisit, renderArchiveDays, renderSourceManager, renderScoringPanel, renderMarketIntel, renderCartoons, renderMarketHeatmap, renderTopicBreakdownStrip, renderSourceSpectrum, computeTopicDegrees } from './render.js';
+import { renderHero, renderTopStories, renderDailyFeed, renderHighImportance, renderTopics, renderDailyInsight, renderResources, renderWeeklyDigest, renderMetaRibbon, renderTodayBrief, renderDeveloping, renderTopicBlocks, renderGlobalSearchResults, renderStoryPage, renderDigestPage, renderOps, renderSinceLastVisit, renderArchiveDays, renderSourceManager, renderScoringPanel, renderMarketIntel, renderCartoons, renderMarketHeatmap, renderTopicBreakdownStrip, renderSourceSpectrum, computeTopicDegrees, renderUSMap, clearMapSelection } from './render.js';
 import { initNavigation, initRunSelector, initTierTabs, initTopicFilters, initSearchFilter, initForms, initCtas, initSaveFollow, getSavedStories, getFollowedTopics, initReaderMode, initShortcuts, initGlobalSearch, applySaveFollowState, initArchiveWeekToggles, recordVisitAndGetLastTime, exportBriefing, exportBriefingText, copyStoryLink, initMyTopicsFilter, getWatches, initKeywordWatches, markAsRead, applyReadState, initUnreadFilter, initNavMore, initAlertStrip, renderTrendingBar, renderEditorsPicks, initTopicBreakdownStrip } from './ui.js';
 
 const refreshButton = document.getElementById('refreshButton');
@@ -1222,7 +1222,22 @@ document.body.addEventListener('click', (e) => {
           desc.style.opacity = '1';
         }, 200);
       }
+      // Render map when switching to State view
+      if (view === 'state') {
+        const mapContainer = document.getElementById('legMapContainer');
+        if (mapContainer && !mapContainer.querySelector('.leg-map-svg')) {
+          renderUSMap(mapContainer);
+        }
+      }
     }
+    return;
+  }
+
+  /* ── Legislation: Back to Map ── */
+  if (e.target.closest('#legBackToMap')) {
+    clearMapSelection();
+    const bar = document.getElementById('legSelectedBar');
+    if (bar) bar.classList.remove('active');
     return;
   }
 
@@ -1230,6 +1245,17 @@ document.body.addEventListener('click', (e) => {
   if (navLink) {
     e.preventDefault();
     window.navigateTo(navLink.dataset.nav);
+  }
+});
+
+// ── Legislation: state selection listener ──
+document.addEventListener('leg-state-selected', (e) => {
+  const { id, name } = e.detail;
+  const bar = document.getElementById('legSelectedBar');
+  const nameEl = document.getElementById('legSelectedName');
+  if (bar && nameEl) {
+    nameEl.textContent = name;
+    bar.classList.add('active');
   }
 });
 

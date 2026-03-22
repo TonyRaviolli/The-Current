@@ -2979,14 +2979,173 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   }
 }
 
+/* ── US Map — container & SVG ─────────────────────────────────────── */
+.leg-map-container {
+  display: flex;
+  justify-content: center;
+  padding: var(--sp-4) 0 var(--sp-8);
+  position: relative;
+}
+.leg-map-svg {
+  width: 100%;
+  max-width: 960px;
+  height: auto;
+  will-change: transform;
+}
+.leg-map-divider {
+  stroke: var(--leg-border);
+  stroke-width: 0.5;
+  stroke-dasharray: 4 3;
+}
+
+/* ── State paths ─────────────────────────────────────────────────────── */
+.leg-state-path {
+  fill: var(--leg-surface);
+  stroke: var(--leg-border);
+  stroke-width: 0.8;
+  cursor: pointer;
+  transition: fill 180ms ease, filter 180ms ease;
+  animation: legStateEnter 400ms ease both;
+  outline: none;
+}
+.leg-state-path:hover,
+.leg-state-path:focus-visible {
+  fill: var(--leg-accent-alt);
+  filter: drop-shadow(0 0 8px rgba(74, 158, 255, 0.6));
+  stroke: rgba(74, 158, 255, 0.5);
+}
+.leg-state-path:focus-visible {
+  stroke-width: 2;
+}
+.leg-state-path.selected {
+  fill: var(--leg-accent);
+  filter: drop-shadow(0 0 10px rgba(200, 169, 110, 0.5));
+  stroke: rgba(200, 169, 110, 0.6);
+}
+
+@keyframes legStateEnter {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── State labels ────────────────────────────────────────────────────── */
+.leg-state-label {
+  font-family: var(--leg-font-mono);
+  font-size: 8px;
+  font-weight: 500;
+  fill: var(--leg-text-secondary);
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+  opacity: 0;
+  animation: legLabelEnter 300ms ease forwards;
+}
+.leg-state-label--small {
+  font-size: 7px;
+  fill: var(--leg-text-primary);
+}
+.leg-state-leader {
+  stroke: var(--leg-text-secondary);
+  stroke-width: 0.5;
+  opacity: 0.4;
+}
+
+@keyframes legLabelEnter {
+  from { opacity: 0; }
+  to   { opacity: 0.8; }
+}
+
+/* ── Tooltip ─────────────────────────────────────────────────────────── */
+.leg-map-tooltip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  background: var(--leg-surface, #161921);
+  border: 1px solid var(--leg-border, #252932);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  max-width: 220px;
+}
+.leg-tooltip-name {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: var(--leg-text-primary, #e8eaf0);
+  line-height: 1.3;
+}
+.leg-tooltip-stat {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--leg-text-secondary, #7a8190);
+  letter-spacing: 0.03em;
+}
+
+/* ── Selected state info bar ─────────────────────────────────────────── */
+.leg-selected-bar {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5);
+  margin-top: var(--sp-4);
+  background: var(--leg-surface);
+  border: 1px solid var(--leg-accent);
+  border-radius: var(--radius-md, 8px);
+  font-family: var(--leg-font-display);
+  font-size: var(--text-lg, 1.25rem);
+  color: var(--leg-accent);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+.leg-selected-bar.active {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+}
+.leg-back-btn {
+  padding: 6px 16px;
+  border: 1px solid var(--leg-border);
+  border-radius: 999px;
+  background: none;
+  color: var(--leg-text-secondary);
+  font-family: var(--leg-font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 200ms ease, color 200ms ease;
+}
+.leg-back-btn:hover {
+  border-color: var(--leg-accent);
+  color: var(--leg-accent);
+}
+
+/* ── Map responsive ──────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .leg-state-label { font-size: 6px; }
+  .leg-state-label--small { font-size: 5.5px; }
+  .leg-map-container { padding: var(--sp-2) 0 var(--sp-4); }
+}
+
 /* ── Reduced motion ──────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .leg-toggle-indicator,
   .leg-toggle-btn,
   .leg-view,
-  .leg-context-desc {
+  .leg-context-desc,
+  .leg-state-path,
+  .leg-state-label,
+  .leg-selected-bar {
     transition-duration: 0ms !important;
     transition-delay: 0ms !important;
+    animation: none !important;
+    opacity: 1 !important;
   }
 }
 
