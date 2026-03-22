@@ -2773,6 +2773,223 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 .text-view .story-card{border-left:3px solid var(--accent-gold);border-radius:0 var(--radius-md) var(--radius-md) 0}
 .text-view .story-card-excerpt{display:block;-webkit-line-clamp:unset;line-clamp:unset}
 #textViewToggle.active{background:var(--accent-gold-glow);border-color:var(--accent-gold);color:var(--accent-gold-dim);font-weight:600}
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  §L  LEGISLATION & POLICY TAB                                         ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+/* ── Design tokens (scoped to .leg-page) ─────────────────────────────── */
+.leg-page {
+  --leg-bg: #0d0f14;
+  --leg-surface: #161921;
+  --leg-border: #252932;
+  --leg-accent: #c8a96e;
+  --leg-accent-alt: #4a9eff;
+  --leg-text-primary: #e8eaf0;
+  --leg-text-secondary: #7a8190;
+  --leg-passed: #3dba7e;
+  --leg-proposed: #e09c3a;
+  --leg-font-display: 'Playfair Display', serif;
+  --leg-font-body: 'DM Sans', sans-serif;
+  --leg-font-mono: 'JetBrains Mono', monospace;
+
+  background: var(--leg-bg);
+  color: var(--leg-text-primary);
+  font-family: var(--leg-font-body);
+  min-height: 100vh;
+  position: relative;
+}
+
+/* ── SVG noise texture overlay ───────────────────────────────────────── */
+.leg-noise-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* ── Page container ──────────────────────────────────────────────────── */
+.leg-container {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 clamp(16px, 3vw, 36px);
+}
+
+/* ── Sticky sub-header ───────────────────────────────────────────────── */
+.leg-subheader {
+  position: sticky;
+  top: calc(var(--nav-height) + env(safe-area-inset-top));
+  z-index: var(--z-sticky, 10);
+  padding: var(--sp-6) 0 var(--sp-5);
+  background: linear-gradient(180deg, var(--leg-bg) 60%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.leg-subheader-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+/* ── Jurisdiction label ──────────────────────────────────────────────── */
+.leg-jurisdiction-label {
+  font-family: var(--leg-font-mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--leg-text-secondary);
+  font-variant: small-caps;
+}
+
+/* ── Toggle pill ─────────────────────────────────────────────────────── */
+.leg-toggle {
+  position: relative;
+  display: inline-flex;
+  background: var(--leg-surface);
+  border: 1px solid var(--leg-border);
+  border-radius: 999px;
+  padding: 4px;
+  gap: 0;
+}
+.leg-toggle-btn {
+  position: relative;
+  z-index: 2;
+  padding: 10px 32px;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  font-family: var(--leg-font-display);
+  font-size: var(--text-base, 1rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--leg-text-secondary);
+  cursor: pointer;
+  transition: color 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+.leg-toggle-btn.active {
+  color: var(--leg-bg);
+}
+.leg-toggle-indicator {
+  position: absolute;
+  z-index: 1;
+  top: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  height: calc(100% - 8px);
+  background: var(--leg-accent);
+  border-radius: 999px;
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 12px rgba(200, 169, 110, 0.3);
+}
+.leg-toggle[data-active="state"] .leg-toggle-indicator {
+  transform: translateX(100%);
+}
+
+/* ── Context description ─────────────────────────────────────────────── */
+.leg-context-desc {
+  font-family: var(--leg-font-body);
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--leg-text-secondary);
+  text-align: center;
+  max-width: 520px;
+  line-height: 1.6;
+  margin: 0;
+  transition: opacity 200ms ease;
+}
+
+/* ── View containers — cross-fade transitions ────────────────────────── */
+.leg-views {
+  position: relative;
+  padding-top: var(--sp-6);
+  min-height: 60vh;
+}
+.leg-view {
+  position: absolute;
+  inset: 0;
+  padding-top: var(--sp-6);
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity 300ms ease, transform 300ms ease;
+  transition-delay: 0ms;
+}
+.leg-view.active {
+  position: relative;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  transition-delay: 150ms;
+}
+
+/* ── View content ────────────────────────────────────────────────────── */
+.leg-view-inner {
+  text-align: center;
+  padding: var(--sp-12) 0 var(--sp-20, 80px);
+}
+.leg-view-title {
+  font-family: var(--leg-font-display);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  color: var(--leg-text-primary);
+  margin-bottom: var(--sp-3);
+  letter-spacing: -0.01em;
+}
+.leg-view-subtitle {
+  font-family: var(--leg-font-body);
+  font-size: var(--text-md, 1.125rem);
+  color: var(--leg-text-secondary);
+  max-width: 480px;
+  margin: 0 auto var(--sp-10, 40px);
+  line-height: 1.6;
+}
+.leg-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-12) var(--sp-6);
+  border: 1px dashed var(--leg-border);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--leg-surface);
+  color: var(--leg-text-secondary);
+  font-family: var(--leg-font-mono);
+  font-size: var(--text-sm, 0.875rem);
+}
+.leg-placeholder-icon {
+  font-size: 2.5rem;
+  opacity: 0.4;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .leg-toggle-btn {
+    padding: 8px 20px;
+    font-size: var(--text-sm, 0.875rem);
+  }
+  .leg-subheader {
+    padding: var(--sp-4) 0 var(--sp-3);
+  }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .leg-toggle-indicator,
+  .leg-toggle-btn,
+  .leg-view,
+  .leg-context-desc {
+    transition-duration: 0ms !important;
+    transition-delay: 0ms !important;
+  }
+}
+
 } /* end @layer components */
 
 @layer utilities {

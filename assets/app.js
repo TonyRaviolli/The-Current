@@ -1189,6 +1189,43 @@ document.body.addEventListener('click', (e) => {
     breakdownToggle.setAttribute('aria-expanded', body?.classList.contains('open') ?? false);
     return;
   }
+  /* ── Legislation toggle: Federal / State ── */
+  const legToggleBtn = e.target.closest('[data-leg-view]');
+  if (legToggleBtn) {
+    const toggle = legToggleBtn.closest('.leg-toggle');
+    const view = legToggleBtn.dataset.legView;
+    if (toggle && !legToggleBtn.classList.contains('active')) {
+      // Update toggle buttons
+      toggle.querySelectorAll('.leg-toggle-btn').forEach((btn) => {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-checked', 'false');
+      });
+      legToggleBtn.classList.add('active');
+      legToggleBtn.setAttribute('aria-checked', 'true');
+      // Slide indicator
+      toggle.dataset.active = view;
+      // Cross-fade views
+      const federal = document.getElementById('legFederalView');
+      const state = document.getElementById('legStateView');
+      if (federal && state) {
+        federal.classList.toggle('active', view === 'federal');
+        state.classList.toggle('active', view === 'state');
+      }
+      // Update context description
+      const desc = document.getElementById('legContextDesc');
+      if (desc) {
+        desc.style.opacity = '0';
+        setTimeout(() => {
+          desc.textContent = view === 'federal'
+            ? 'Browse enacted and proposed federal legislation, executive orders, and Supreme Court decisions.'
+            : 'Select a state to explore its legislative activity and policy landscape.';
+          desc.style.opacity = '1';
+        }, 200);
+      }
+    }
+    return;
+  }
+
   const navLink = e.target.closest('[data-nav]');
   if (navLink) {
     e.preventDefault();

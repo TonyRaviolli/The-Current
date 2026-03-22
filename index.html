@@ -25,7 +25,7 @@
 <script id="jsonLdArticle" type="application/ld+json">{}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,800;1,400;1,700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <meta name="theme-color" content="#F2EDE3">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self'; frame-ancestors 'none'">
 <link rel="stylesheet" href="/assets/styles.css">
@@ -66,6 +66,7 @@ body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-dee
   <button class="mobile-nav-link" type="button" data-nav-target="home">Daily Briefings</button>
   <button class="mobile-nav-link" type="button" data-nav-target="archive">Archive</button>
   <button class="mobile-nav-link" type="button" data-nav-target="topics">Topics</button>
+  <button class="mobile-nav-link" type="button" data-nav-target="legislation">Legislation</button>
   <button class="mobile-nav-link" type="button" data-nav-target="about">About</button>
   <button class="mobile-nav-link" type="button" data-nav-target="resources">Resources</button>
   <button class="mobile-nav-link" type="button" data-nav-target="contact">Contact</button>
@@ -82,6 +83,7 @@ body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-dee
         <li><button class="nav-link active" type="button" data-page="home">Daily Briefings</button></li>
         <li><button class="nav-link" type="button" data-page="archive">Archive</button></li>
         <li><button class="nav-link" type="button" data-page="topics">Topics</button></li>
+        <li><button class="nav-link" type="button" data-page="legislation">Legislation</button></li>
         <li><button class="nav-link" type="button" data-page="about">About</button></li>
         <li><button class="nav-link" type="button" data-page="resources">Resources</button></li>
         <li><button class="nav-link" type="button" data-page="contact">Contact</button></li>
@@ -375,6 +377,49 @@ body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-dee
   <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
   <div class="footer-right"><a href="#home" data-nav="home">Briefings</a><a href="#" onclick="window.navigateTo('about');return false">About</a></div>
 </div></div></footer></div>
+
+<!-- ===== LEGISLATION ===== -->
+<div class="page leg-page" id="page-legislation">
+<div class="leg-noise-overlay"></div>
+<div class="leg-container">
+  <!-- Sticky sub-header -->
+  <div class="leg-subheader">
+    <div class="leg-subheader-inner">
+      <div class="leg-jurisdiction-label">Select Jurisdiction</div>
+      <div class="leg-toggle" role="radiogroup" aria-label="Jurisdiction toggle">
+        <button class="leg-toggle-btn active" type="button" data-leg-view="federal" role="radio" aria-checked="true">Federal</button>
+        <button class="leg-toggle-btn" type="button" data-leg-view="state" role="radio" aria-checked="false">State</button>
+        <span class="leg-toggle-indicator" aria-hidden="true"></span>
+      </div>
+      <p class="leg-context-desc" id="legContextDesc">Browse enacted and proposed federal legislation, executive orders, and Supreme Court decisions.</p>
+    </div>
+  </div>
+
+  <!-- View containers -->
+  <div class="leg-views">
+    <div class="leg-view active" id="legFederalView">
+      <div class="leg-view-inner">
+        <h1 class="leg-view-title">Federal Legislation</h1>
+        <p class="leg-view-subtitle">Congressional bills, executive orders, and SCOTUS decisions — updated daily.</p>
+        <div class="leg-placeholder">
+          <div class="leg-placeholder-icon">&#9878;</div>
+          <p>Federal legislation dashboard — Stage 4</p>
+        </div>
+      </div>
+    </div>
+    <div class="leg-view" id="legStateView">
+      <div class="leg-view-inner">
+        <h1 class="leg-view-title">State Legislation</h1>
+        <p class="leg-view-subtitle">Select a state to explore its legislative activity and policy landscape.</p>
+        <div class="leg-placeholder">
+          <div class="leg-placeholder-icon">&#9873;</div>
+          <p>Interactive U.S. map — Stage 2</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
 
 <!-- ===== ABOUT ===== -->
 <div class="page" id="page-about"><div class="container">
