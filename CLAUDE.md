@@ -17,7 +17,7 @@ Apply those standards to any new or modified code without being asked.
 | 1 | T02, T08 | `b5d3c93` | `@layer` cascade (7 layers: reset/tokens/base/layout/components/utilities/overrides), OKLCH color tokens (33 values), dark mode purge (all CSS/HTML/JS), hardcoded hex→token replacement |
 | 2 | T03, T07 | `415d444` | Playfair Display + Source Serif 4 + Inter font system, fluid clamp() audit (13 hardcoded→token), drop caps, letter-spacing/line-height tokens, article-measure constraint |
 | 3 | T07, T10 | `45572a8` | 22 OKLCH topic tokens + tint variants, `[data-category]` badge coloring system, TOPIC_PASTEL/TOPIC_VISUAL→OKLCH, shadow tokens→OKLCH, score/market/spectrum colors→OKLCH, 5 editorial components (`.dateline`, `.breaking-ticker`, `.pull-quote`, `.section-break`, `.author-card`), `<meta theme-color>` updated |
-| 4 | T04, T05, T06 | *pending commit* | All transitions→design tokens (easing+duration), card hover spring physics (`--ease-spring`), `will-change` on scroll-progress/reveal/depth-tilt, view-transition durations→tokens, shimmer/loader→tokens, shadow-lift hover on story-card/top3/market-tile |
+| 4 | T04, T05, T06 | `39a0999` | All transitions→design tokens (easing+duration), card hover spring physics (`--ease-spring`), `will-change` on scroll-progress/reveal/depth-tilt, view-transition durations→tokens, shimmer/loader→tokens, shadow-lift hover on story-card/top3/market-tile |
 
 #### Current state
 - **Next stage:** 5 — Responsive QA
