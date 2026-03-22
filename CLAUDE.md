@@ -18,11 +18,11 @@ Apply those standards to any new or modified code without being asked.
 | 2 | T03, T07 | `415d444` | Playfair Display + Source Serif 4 + Inter font system, fluid clamp() audit (13 hardcoded→token), drop caps, letter-spacing/line-height tokens, article-measure constraint |
 | 3 | T07, T10 | `45572a8` | 22 OKLCH topic tokens + tint variants, `[data-category]` badge coloring system, TOPIC_PASTEL/TOPIC_VISUAL→OKLCH, shadow tokens→OKLCH, score/market/spectrum colors→OKLCH, 5 editorial components (`.dateline`, `.breaking-ticker`, `.pull-quote`, `.section-break`, `.author-card`), `<meta theme-color>` updated |
 | 4 | T04, T05, T06 | `39a0999` | All transitions→design tokens (easing+duration), card hover spring physics (`--ease-spring`), `will-change` on scroll-progress/reveal/depth-tilt, view-transition durations→tokens, shimmer/loader→tokens, shadow-lift hover on story-card/top3/market-tile |
-| 5 | T09 | (pending) | 10 container contexts (`container-type:inline-size`) + 16 `@container` rules, `env(safe-area-inset-*)` on nav/footer/mobile-nav (14 refs), `viewport-fit=cover`, `touch-action` on 7 scroll areas, `overscroll-behavior` on html+body+scroll containers (9 refs), `100dvh` body, 44px touch targets verified, hamburger nav verified |
-| 6 | T01 | (pending) | `--golden-major:7fr/--golden-minor:5fr` tokens (φ ratio), hero-inner 7fr/5fr grid, story-list `auto-fill minmax(300px,1fr)`, top3-grid `subgrid` card alignment (6-row span + fallback), `.section-title::before` gold accent rule, 4 `.section-break` dividers in homepage HTML, all main/sidebar grids→golden ratio tokens |
+| 5 | T09 | `1206315` | 10 container contexts (`container-type:inline-size`) + 16 `@container` rules, `env(safe-area-inset-*)` on nav/footer/mobile-nav (14 refs), `viewport-fit=cover`, `touch-action` on 7 scroll areas, `overscroll-behavior` on html+body+scroll containers (9 refs), `100dvh` body, 44px touch targets verified, hamburger nav verified |
+| 6 | T01 | `1206315` | `--golden-major:7fr/--golden-minor:5fr` tokens (φ ratio), hero-inner 7fr/5fr grid, story-list `auto-fill minmax(300px,1fr)`, top3-grid `subgrid` card alignment (6-row span + fallback), `.section-title::before` gold accent rule, 4 `.section-break` dividers in homepage HTML, all main/sidebar grids→golden ratio tokens |
 
 #### Current state
-- **Next stage:** 7 — Article deep polish
+- **Next stage:** All 8 stages complete
 - **CSS architecture:** `@layer reset, tokens, base, layout, components, utilities, overrides;` (first line of styles.css)
 - **Layout system:** Golden ratio `--golden-major:7fr / --golden-minor:5fr` tokens used for hero, stories-grid, story-grid, contact-layout, hero-brief-grid. Story-list uses `repeat(auto-fill, minmax(300px, 1fr))` auto-flowing grid.
 - **Container queries:** 10 container contexts (feed, sidebar, archive, top3, legis, market, hero, topics, contact, about) with 16 `@container` rules.
@@ -35,14 +35,13 @@ Apply those standards to any new or modified code without being asked.
 - **Typography:** Fluid `clamp()` tokens for all sizes. `--leading-*` (4), `--tracking-*` (5), `--article-measure: 68ch`. Drop cap on `.story-section > p:first-of-type::first-letter`.
 - **Easing:** `--ease-out-expo`, `--ease-in-out-circ`, `--ease-spring`, `--ease-snap` + duration tokens.
 - **Editorial:** `.dateline`, `.breaking-ticker`, `.pull-quote`, `.section-break` (rule with center icon, also `--plain` variant), `.author-card`. Section-break dividers between hero/top3/market/feed.
-- **Section headers:** `.section-title::before` gold accent rule, mono font, uppercase tracking.
+- **Section headers:** `.section-title::before` gold accent rule, mono font, uppercase tracking. `.story-section-title` has gold accent bar prefix.
 - **Motion:** All transitions use design tokens (easing + duration). Card hovers use `--ease-spring` with `--dur-base`. `will-change` on scroll-progress, reveal, depth-tilt. Scroll-driven animation + IntersectionObserver fallback for `.reveal`.
+- **Story detail:** Reading progress bar (fixed top, gold, rAF-throttled), byline with sources/date/reading time, pull quote between why/what's next, author card at bottom, enhanced typography (font-body, lead paragraph), entity chips + confidence breakdown in dedicated containers, figcaption styling, lazy image fade-in.
+- **Accessibility:** Skip link, landmark roles (`<main>`, `<nav>`), focus management on page navigation (h1 focus), `aria-label` on byline, `aria-expanded` on breakdown toggles, `prefers-reduced-motion` and `prefers-contrast:more` support.
 
-#### Remaining stages (7-8)
-| Stage | Focus | Key deliverables |
-|-------|-------|-----------------|
-| 7 | Article deep polish | Article typography, bylines, reading progress, pull quotes, author card, figcaptions, lazy images |
-| 8 | Final audit & deploy | Lighthouse audit (Perf≥88, A11y≥95), accessibility fixes, `<meta description>`, `<link canonical>`, real device testing, push to Render |
+| 7 | Article polish | (pending) | Reading progress bar (fixed, gold, rAF-throttled), story byline (source + date + reading time), pull quote between sections, author card at story bottom, section title gold accent rules, enhanced story typography (font-body, lead paragraph, figcaption), story source/doc hover states, responsive story detail, lazy image fade-in CSS |
+| 8 | Final audit | (pending) | Focus management on page navigation (h1 focus), `<meta description>` + `<link canonical>` SSR verified, skip-link + landmarks verified, entity section + confidence breakdown in dedicated HTML containers, all 87 tests passing, CSS braces balanced, JS syntax clean |
 
 ### Remaining polish items
 - A few mobile-specific media query font-sizes remain hardcoded (0.6rem, 0.65rem, 1.6rem) — intentionally below clamp() floor values

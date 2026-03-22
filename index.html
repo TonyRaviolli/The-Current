@@ -284,7 +284,9 @@ body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-dee
 </div></div></footer></div>
 
 <!-- ===== STORY ===== -->
-<div class="page" id="page-story"><div class="container">
+<div class="page" id="page-story">
+<div class="reading-progress" id="readingProgress" aria-hidden="true"></div>
+<div class="container">
 <section class="story-hero">
   <div class="story-hero-meta">
     <span class="story-hero-tag" id="storyVerification">Verification</span>
@@ -293,6 +295,7 @@ body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-dee
   </div>
   <h1 class="story-hero-title" id="storyTitle">Story headline</h1>
   <p class="story-hero-dek" id="storyDek">Story dek goes here.</p>
+  <div class="story-byline" id="storyByline" aria-label="Article attribution"></div>
   <div class="story-hero-tags" id="storyTags"></div>
   <div class="story-hero-actions">
     <button class="cta-btn ghost" id="storySaveBtn" type="button" data-save>Save story</button>
@@ -302,13 +305,17 @@ body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-dee
 <section class="story-grid">
   <div class="story-main">
     <div class="story-section"><h2 class="story-section-title">Why it matters</h2><p id="storyWhy"></p></div>
+    <div id="storyPullQuote"></div>
     <div class="story-section"><h2 class="story-section-title">What&rsquo;s next</h2><p id="storyNext"></p></div>
     <div class="story-section"><h2 class="story-section-title">Timeline</h2><div class="story-timeline" id="storyTimeline"></div></div>
+    <div class="story-section" id="storyEntitiesSection"><h2 class="story-section-title">Key Entities</h2><div id="storyEntities"></div></div>
     <div class="story-section"><h2 class="story-section-title">Sources</h2><div class="story-sources" id="storySources"></div></div>
     <div class="story-section" id="storyCorrectionsSection" style="display:none"><h2 class="story-section-title">Corrections &amp; Updates</h2><div class="story-corrections" id="storyCorrections"></div></div>
+    <div class="story-author-card" id="storyAuthorCard"></div>
   </div>
   <aside class="story-sidebar">
     <div class="sidebar-card"><h4 class="sidebar-card-title">Source Spectrum</h4><div class="source-spectrum" id="storySpectrum"></div></div>
+    <div class="sidebar-card" id="storyConfidenceBreakdownCard"><h4 class="sidebar-card-title">Score Breakdown</h4><div id="storyConfidenceBreakdown"></div></div>
     <div class="sidebar-card"><h4 class="sidebar-card-title">Primary Documents</h4><div class="story-docs" id="storyDocs"></div></div>
     <div class="sidebar-card"><h4 class="sidebar-card-title">Related Coverage</h4><div class="story-related" id="storyRelated"></div></div>
   </aside>

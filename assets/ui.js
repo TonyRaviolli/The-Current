@@ -971,6 +971,12 @@ function navigateTo(page) {
     if (target) {
       target.classList.add('active');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Stage 8: Focus management for accessibility
+      const heading = target.querySelector('h1');
+      if (heading) {
+        heading.setAttribute('tabindex', '-1');
+        heading.focus({ preventScroll: true });
+      }
     }
     document.querySelectorAll('.nav-link').forEach((l) => {
       if (l.dataset.page === page) l.classList.add('active');

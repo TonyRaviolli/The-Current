@@ -1089,6 +1089,32 @@ window.openStory = async (slug) => {
   }
 };
 
+// ── Stage 7: Reading progress bar ──
+let _readingProgressActive = false;
+function updateReadingProgress() {
+  const bar = document.getElementById('readingProgress');
+  const storyPage = document.getElementById('page-story');
+  if (!bar || !storyPage || !storyPage.classList.contains('active')) {
+    if (bar) bar.style.width = '0%';
+    return;
+  }
+  const scrollTop = window.scrollY || document.documentElement.scrollTop;
+  const docHeight = storyPage.scrollHeight - window.innerHeight;
+  if (docHeight <= 0) { bar.style.width = '100%'; return; }
+  const pct = Math.min(100, Math.max(0, (scrollTop / docHeight) * 100));
+  bar.style.width = `${pct.toFixed(1)}%`;
+}
+
+window.addEventListener('scroll', () => {
+  if (!_readingProgressActive) {
+    _readingProgressActive = true;
+    requestAnimationFrame(() => {
+      updateReadingProgress();
+      _readingProgressActive = false;
+    });
+  }
+}, { passive: true });
+
 window.openDigest = async (key = 'latest') => {
   const digest = await fetchDigest(key);
   if (digest?.digest) {

@@ -402,12 +402,23 @@ html{font-size:16px;-webkit-font-smoothing:antialiased;scroll-behavior:smooth;co
 .spectrum-mini{display:flex;height:4px;border-radius:999px;overflow:hidden;margin:var(--sp-2) 0;background:var(--border-subtle)}
 .spectrum-mini span{display:block;height:100%}
 
+/* ── Stage 7: Reading progress bar ── */
+.reading-progress{position:fixed;top:0;left:0;width:0%;height:3px;background:var(--accent-gold);z-index:var(--z-progress);transition:width 60ms linear;pointer-events:none;will-change:width}
+.reading-progress::after{content:'';position:absolute;right:0;top:0;width:80px;height:100%;background:linear-gradient(90deg,transparent,oklch(0.58 0.14 75 / 0.4));opacity:0.6}
+
+/* ── Stage 7: Story byline / dateline ── */
+.story-byline{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;padding:var(--sp-4) 0;margin-bottom:var(--sp-6);border-top:1px solid var(--border-rule);border-bottom:1px solid var(--border-rule)}
+.story-byline-source{font-family:var(--font-mono);font-size:var(--text-xs);font-weight:700;color:var(--text-primary);letter-spacing:0.04em}
+.story-byline-separator{width:3px;height:3px;border-radius:50%;background:var(--text-muted);flex-shrink:0}
+.story-byline-date{font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--text-muted);letter-spacing:0.04em}
+.story-byline-reading{font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--text-tertiary);letter-spacing:0.04em}
+
 .story-hero{padding:var(--sp-12) 0 var(--sp-6)}
 .story-hero-meta{display:flex;gap:var(--sp-3);flex-wrap:wrap;margin-bottom:var(--sp-4)}
 .story-hero-tag{padding:4px 10px;border-radius:999px;background:var(--bg-elevated);border:1px solid var(--border-subtle);font-family:var(--font-mono);font-size:var(--text-2xs);letter-spacing:0.08em;text-transform:uppercase;color:var(--text-secondary);transition:background var(--dur-fast),border-color var(--dur-fast),color var(--dur-fast)}
 .story-hero-updated{font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--text-muted)}
 .story-hero-title{font-family:var(--font-display);font-size:clamp(2rem,4vw,3rem);line-height:var(--leading-display);letter-spacing:var(--tracking-tight);margin-bottom:var(--sp-4)}
-.story-hero-dek{font-size:var(--text-md);color:var(--text-secondary);max-width:720px}
+.story-hero-dek{font-family:var(--font-body);font-size:var(--text-lg);color:var(--text-secondary);max-width:720px;line-height:var(--leading-heading)}
 .story-hero-tags{display:flex;gap:var(--sp-2);flex-wrap:wrap;margin:var(--sp-4) 0}
 .story-hero-actions{display:flex;gap:var(--sp-3);flex-wrap:wrap}
 .story-tag{padding:4px 10px;border-radius:999px;border:1px solid var(--border-subtle);font-family:var(--font-mono);font-size:var(--text-2xs);text-transform:uppercase;color:var(--text-muted);transition:background var(--dur-fast),border-color var(--dur-fast),color var(--dur-fast)}
@@ -440,9 +451,24 @@ html{font-size:16px;-webkit-font-smoothing:antialiased;scroll-behavior:smooth;co
 [data-category="macroeconomics"]{--_cat-color:var(--color-macroeconomics);--_cat-tint:var(--tint-macroeconomics)}
 
 .story-grid{display:grid;grid-template-columns:var(--golden-major) var(--golden-minor);gap:var(--sp-8);padding-bottom:var(--sp-10)}
-.story-section{margin-bottom:var(--sp-6)}
-.story-section p{max-width:var(--article-measure);line-height:var(--leading-body)}
-.story-section-title{font-family:var(--font-mono);font-size:var(--text-xs);letter-spacing:var(--tracking-wider);text-transform:uppercase;color:var(--text-tertiary);margin-bottom:var(--sp-3)}
+.story-section{margin-bottom:var(--sp-8)}
+.story-section p{max-width:var(--article-measure);line-height:var(--leading-body);font-family:var(--font-body);font-size:var(--text-base);color:var(--text-secondary)}
+.story-section p + p{margin-top:var(--sp-4)}
+.story-section-title{font-family:var(--font-mono);font-size:var(--text-xs);letter-spacing:var(--tracking-wider);text-transform:uppercase;color:var(--text-tertiary);margin-bottom:var(--sp-4);padding-bottom:var(--sp-2);border-bottom:1px solid var(--border-rule);display:flex;align-items:center;gap:var(--sp-2)}
+.story-section-title::before{content:'';display:inline-block;width:12px;height:2px;background:var(--accent-gold);flex-shrink:0}
+
+/* ── Stage 7: Lead paragraph (first section) ── */
+.story-section:first-child p:first-of-type{font-size:var(--text-md);color:var(--text-primary);line-height:var(--leading-heading)}
+
+/* ── Stage 7: Story figure / figcaption ── */
+.story-figure{margin:var(--sp-6) 0;max-width:var(--article-measure)}
+.story-figure img{width:100%;height:auto;border-radius:var(--radius-md);display:block}
+.story-figure img[loading="lazy"]{opacity:0;transition:opacity var(--dur-slow) var(--ease-out)}
+.story-figure img.loaded{opacity:1}
+.story-figcaption{font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--text-muted);letter-spacing:0.04em;padding:var(--sp-2) 0;border-bottom:1px solid var(--border-rule);line-height:var(--leading-ui)}
+
+/* ── Stage 7: Author card in story context ── */
+.story-author-card{margin-top:var(--sp-10);padding-top:var(--sp-6);border-top:2px solid var(--border-rule)}
 
 /* ── Editorial: Drop cap on first paragraph ── */
 .story-section > p:first-of-type::first-letter,
@@ -488,7 +514,16 @@ html{font-size:16px;-webkit-font-smoothing:antialiased;scroll-behavior:smooth;co
 .story-timeline{display:flex;flex-direction:column;gap:var(--sp-3)}
 .story-timeline-item{padding:var(--sp-3);border-left:2px solid var(--border-strong);background:var(--bg-surface);border-radius:var(--radius-sm)}
 .story-sources,.story-docs,.story-related,.story-corrections{display:flex;flex-direction:column;gap:var(--sp-2)}
-.story-source-item,.story-doc-item,.story-related-item,.story-correction-item{padding:var(--sp-3);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);background:var(--bg-surface)}
+.story-source-item,.story-doc-item,.story-related-item,.story-correction-item{padding:var(--sp-3) var(--sp-4);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);background:var(--bg-surface);transition:border-color var(--dur-fast),background var(--dur-fast)}
+.story-source-item:hover,.story-doc-item:hover,.story-related-item:hover{border-color:var(--border-default);background:var(--bg-elevated)}
+.story-doc-item a,.story-related-item a{color:var(--text-primary);text-decoration:none;font-family:var(--font-body);font-size:var(--text-sm);font-weight:500;transition:color var(--dur-fast)}
+.story-doc-item a:hover,.story-related-item a:hover{color:var(--accent-gold);text-decoration:underline;text-underline-offset:3px}
+
+/* ── Stage 7: Inline pull quote between story sections ── */
+.story-pull-quote{position:relative;margin:var(--sp-8) 0;padding:var(--sp-6) var(--sp-8);border-left:3px solid var(--accent-gold);background:var(--bg-elevated);border-radius:0 var(--radius-md) var(--radius-md) 0;max-width:var(--article-measure)}
+.story-pull-quote p{font-family:var(--font-body);font-size:var(--text-lg);font-style:italic;line-height:var(--leading-heading);color:var(--text-primary);margin:0}
+.story-pull-quote cite{display:block;margin-top:var(--sp-3);font-family:var(--font-mono);font-size:var(--text-2xs);font-style:normal;letter-spacing:var(--tracking-wider);text-transform:uppercase;color:var(--text-tertiary)}
+.story-pull-quote cite::before{content:'\2014\00a0'}
 
 .correction-banner{padding:var(--sp-3) var(--sp-4);border:1px solid rgba(191,75,75,0.3);background:rgba(191,75,75,0.08);border-radius:var(--radius-md);color:var(--accent-red);font-size:var(--text-sm)}
 
@@ -2615,6 +2650,8 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   .depth-particle{display:none}
   .badge-developing{animation:none}
   /* T8: No shimmer or fade on images */
+  .reading-progress{transition:none}
+  .reading-progress::after{display:none}
   .story-card-thumb::before,.top3-thumb::before,.archive-grid-thumb::before{animation:none!important;display:none}
   .story-card-thumb img,.top3-thumb img,.archive-grid-thumb img,
   .topic-story-thumb img,.cartoon-thumb img,.hero-thumb img{opacity:1!important;transition:none!important}
@@ -2903,6 +2940,12 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 
   /* Hide particles for performance */
   .depth-particle{display:none}
+
+  /* Stage 7: Story detail responsive */
+  .story-byline{flex-direction:column;align-items:flex-start;gap:var(--sp-2)}
+  .story-byline-separator{display:none}
+  .story-pull-quote{padding:var(--sp-4) var(--sp-5);margin:var(--sp-6) 0}
+  .story-hero-title{font-size:clamp(1.75rem,5vw,2.5rem)}
 
   /* Story cards with thumbs — single column */
   .story-card--has-thumb{grid-template-columns:1fr}

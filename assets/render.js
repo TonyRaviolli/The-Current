@@ -1312,6 +1312,80 @@ function buildConfidenceBreakdownHtml(scoreBreakdown) {
     </div>`;
 }
 
+/**
+ * Estimate reading time from text content.
+ * @param {string} text
+ * @returns {number} minutes
+ */
+function estimateReadingTime(text) {
+  if (!text) return 1;
+  const words = text.trim().split(/\s+/).length;
+  return Math.max(1, Math.ceil(words / 220));
+}
+
+/**
+ * Build a byline HTML string from story metadata.
+ */
+function buildBylineHtml(story) {
+  const parts = [];
+  // Source names
+  const sourceNames = (story.sources || []).slice(0, 3).map((s) => s.name || s).filter(Boolean);
+  if (sourceNames.length) {
+    parts.push(`<span class="story-byline-source">${sourceNames.map(escapeHtml).join(', ')}</span>`);
+  }
+  // Published date
+  if (story.updatedAt || story.publishedAt) {
+    const dateStr = formatDate(story.updatedAt || story.publishedAt);
+    const timeStr = formatTime(story.updatedAt || story.publishedAt);
+    if (parts.length) parts.push('<span class="story-byline-separator" aria-hidden="true"></span>');
+    parts.push(`<time class="story-byline-date" datetime="${escapeHtml(story.updatedAt || story.publishedAt)}">${escapeHtml(dateStr)} ${escapeHtml(timeStr)}</time>`);
+  }
+  // Reading time estimate
+  const allText = [story.whyItMatters, story.whatsNext, story.dek].filter(Boolean).join(' ');
+  const readMin = estimateReadingTime(allText);
+  if (parts.length) parts.push('<span class="story-byline-separator" aria-hidden="true"></span>');
+  parts.push(`<span class="story-byline-reading">${readMin} min read</span>`);
+  return parts.join('');
+}
+
+/**
+ * Build author card HTML for the bottom of the story.
+ */
+function buildAuthorCardHtml(story) {
+  const sources = (story.sources || []).slice(0, 3);
+  if (!sources.length) return '';
+  const primarySource = sources[0];
+  const name = primarySource.name || primarySource;
+  const initial = (typeof name === 'string' ? name : '').charAt(0).toUpperCase() || 'S';
+  const tierLabel = primarySource.tierLabel || '';
+  const sourceCount = sources.length;
+  return `
+    <div class="author-card">
+      <div class="author-card-avatar" aria-hidden="true">${escapeHtml(initial)}</div>
+      <div class="author-card-body">
+        <div class="author-card-name">${escapeHtml(typeof name === 'string' ? name : '')}</div>
+        ${tierLabel ? `<div class="author-card-role">${escapeHtml(tierLabel)}</div>` : ''}
+        <div class="author-card-bio">${sourceCount > 1 ? `Aggregated from ${sourceCount} sources including ${sources.slice(1).map((s) => escapeHtml(s.name || s)).join(', ')}.` : 'Primary reporting source for this story.'}</div>
+      </div>
+    </div>`;
+}
+
+/**
+ * Build a pull quote from the story's dek or whyItMatters text.
+ */
+function buildPullQuoteHtml(story) {
+  // Use the dek as a pull quote if it's substantial enough
+  const text = story.dek || '';
+  if (text.length < 60) return '';
+  const primarySource = (story.sources || [])[0];
+  const citation = primarySource ? (primarySource.name || primarySource) : '';
+  return `
+    <div class="story-pull-quote">
+      <p>${escapeHtml(text)}</p>
+      ${citation ? `<cite>${escapeHtml(typeof citation === 'string' ? citation : '')}</cite>` : ''}
+    </div>`;
+}
+
 export function renderStoryPage(story) {
   if (!story) return;
   const title = document.getElementById('storyTitle');
@@ -1320,6 +1394,8 @@ export function renderStoryPage(story) {
   const verification = document.getElementById('storyVerification');
   const confidence = document.getElementById('storyConfidence');
   const tags = document.getElementById('storyTags');
+  const byline = document.getElementById('storyByline');
+  const pullQuote = document.getElementById('storyPullQuote');
   const why = document.getElementById('storyWhy');
   const next = document.getElementById('storyNext');
   const timeline = document.getElementById('storyTimeline');
@@ -1331,6 +1407,7 @@ export function renderStoryPage(story) {
   const spectrum = document.getElementById('storySpectrum');
   const saveBtn = document.getElementById('storySaveBtn');
   const followBtn = document.getElementById('storyFollowBtn');
+  const authorCard = document.getElementById('storyAuthorCard');
 
   if (title) title.textContent = story.headline;
   if (dek) dek.textContent = story.dek || '';
@@ -1340,6 +1417,13 @@ export function renderStoryPage(story) {
   if (tags) tags.innerHTML = (story.topics || []).map((topic) => `<span class="story-tag" data-category="${escapeHtml(topic)}">${escapeHtml(topic)}</span>`).join('');
   if (saveBtn) saveBtn.dataset.save = story.id;
   if (followBtn) followBtn.dataset.follow = story.topics?.[0] || '';
+
+  // Byline
+  if (byline) byline.innerHTML = buildBylineHtml(story);
+
+  // Pull quote (between why and what's next)
+  if (pullQuote) pullQuote.innerHTML = buildPullQuoteHtml(story);
+
   if (why) why.textContent = story.whyItMatters || '';
   if (next) next.textContent = story.whatsNext || '';
   if (timeline) {
@@ -1352,7 +1436,7 @@ export function renderStoryPage(story) {
     docs.innerHTML = (story.primaryDocs || []).map((doc) => `<div class="story-doc-item"><a href="${safeUrl(doc.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(doc.title)}</a>${doc.label ? `<div class="story-card-footer">${escapeHtml(doc.label)}</div>` : ''}</div>`).join('') || '<div class="story-doc-item">Primary filings listed when available.</div>';
   }
   if (related) {
-    related.innerHTML = (story.related || []).map((item) => `<div class="story-related-item"><a href="/story/${escapeHtml(item.slug)}">${escapeHtml(item.headline)}</a></div>`).join('') || '<div class="story-related-item">No related clusters yet.</div>';
+    related.innerHTML = (story.related || []).map((item) => `<div class="story-related-item"><a href="/story/${escapeHtml(item.slug)}" data-open-story="${escapeHtml(item.slug)}">${escapeHtml(item.headline)}</a></div>`).join('') || '<div class="story-related-item">No related clusters yet.</div>';
   }
   if (corrections && correctionsSection) {
     if (story.corrections && story.corrections.length) {
@@ -1368,31 +1452,28 @@ export function renderStoryPage(story) {
 
   // Entity chips
   const entitiesContainer = document.getElementById('storyEntities');
+  const entitiesSection = document.getElementById('storyEntitiesSection');
   if (entitiesContainer) {
-    entitiesContainer.innerHTML = buildEntitiesHtml(story.entities);
-  } else if (story.entities) {
-    // Create entities section dynamically if container doesn't exist
-    const storyGrid = document.querySelector('.story-grid > div:first-child');
-    if (storyGrid) {
-      const entSection = document.createElement('div');
-      entSection.className = 'story-section';
-      entSection.innerHTML = `<h3 class="story-section-title">Key Entities</h3>${buildEntitiesHtml(story.entities)}`;
-      storyGrid.appendChild(entSection);
-    }
+    const html = buildEntitiesHtml(story.entities);
+    entitiesContainer.innerHTML = html;
+    if (entitiesSection) entitiesSection.style.display = html ? '' : 'none';
   }
 
   // Confidence breakdown
   const confidenceContainer = document.getElementById('storyConfidenceBreakdown');
+  const confidenceCard = document.getElementById('storyConfidenceBreakdownCard');
   if (confidenceContainer) {
-    confidenceContainer.innerHTML = buildConfidenceBreakdownHtml(story.scoreBreakdown);
-  } else if (story.scoreBreakdown) {
-    const storySidebar = document.querySelector('.story-sidebar');
-    if (storySidebar) {
-      const breakdownDiv = document.createElement('div');
-      breakdownDiv.innerHTML = buildConfidenceBreakdownHtml(story.scoreBreakdown);
-      storySidebar.appendChild(breakdownDiv);
-    }
+    const html = buildConfidenceBreakdownHtml(story.scoreBreakdown);
+    confidenceContainer.innerHTML = html;
+    if (confidenceCard) confidenceCard.style.display = html ? '' : 'none';
   }
+
+  // Author card at bottom of story-main
+  if (authorCard) authorCard.innerHTML = buildAuthorCardHtml(story);
+
+  // Reset reading progress
+  const progressBar = document.getElementById('readingProgress');
+  if (progressBar) progressBar.style.width = '0%';
 
   renderArticleJsonLd(story);
 }
