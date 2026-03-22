@@ -1857,12 +1857,14 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 
 /* ── Hero container ── */
 @container hero (max-width: 600px){
-  .hero-inner{grid-template-columns:1fr}
+  .hero-inner{grid-template-columns:1fr;align-items:start}
   .hero-headline{font-size:clamp(1.6rem, 5cqi, 2.2rem)}
   .hero-visual{order:-1;max-height:240px;grid-column:1}
+  .hero-thumb{min-height:unset;flex:unset;aspect-ratio:16/9}
   .hero-text{grid-column:1}
   .hero-actions{flex-direction:column}
   .hero-actions .cta-btn{width:100%;justify-content:center;display:flex}
+  .hero-inner .citation{padding:var(--sp-2) var(--sp-4);gap:var(--sp-1)}
 }
 @container hero (min-width: 900px){
   .hero-headline{font-size:clamp(2.2rem, 4cqi, 3.2rem)}
@@ -2000,6 +2002,7 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   .tilt-shine{display:none}
   .sidebar-card,.archive-briefing-card,.principle-card,.topic-story,
   .developing-card,.heatmap-tile{transform:none!important}
+  .hero-visual,.hero-inner .citation{transition:none!important;transform:none!important}
   /* T8: Disable image shimmer and fade-in */
   .story-card-thumb::before,.top3-thumb::before,.archive-grid-thumb::before{animation:none;display:none}
   .story-card-thumb img,.top3-thumb img,.archive-grid-thumb img,
@@ -2491,26 +2494,34 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 .topic-pill--all { opacity: 0.6; }
 .topic-pill--all.active { opacity: 1; font-weight: 600; }
 
-/* ── Hero image — large, dominant, editorial ─────────────────────────── */
+/* ── Hero image — full-height grid lock, editorial ─────────────────────── */
 .hero-inner {
   display: grid;
-  grid-template-columns: 1fr minmax(0, 50%);
-  gap: 0 var(--sp-8);
-  align-items: center;
+  grid-template-columns: 1fr minmax(0, 48%);
+  gap: 0 clamp(20px, 3vw, 40px);
+  align-items: stretch;
 }
 .hero-text {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
+  min-height: 0;
 }
 .hero-visual {
+  display: flex;
+  flex-direction: column;
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: 0 8px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+  transition: box-shadow var(--dur-base) var(--ease-out);
+}
+.hero-visual:hover {
+  box-shadow: 0 12px 48px rgba(0,0,0,0.16), 0 4px 12px rgba(0,0,0,0.08);
 }
 .hero-thumb {
+  flex: 1;
   width: 100%;
-  aspect-ratio: 4/3;
+  min-height: 280px;
   overflow: hidden;
   margin: 0;
   background: var(--bg-elevated);
@@ -2521,28 +2532,89 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   object-fit: cover;
   object-position: center 20%;
   display: block;
-  transition: transform var(--dur-enter) var(--ease-out);
+  transition: transform var(--dur-enter) var(--ease-out),
+              filter var(--dur-base) var(--ease-out);
 }
 .hero-visual:hover .hero-thumb img {
   transform: scale(1.03);
 }
 .lead-priority-bar { width: 100%; }
+
+/* ── Hero citation — rounded source badge with hover ──────────────────── */
+.hero-inner .citation {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-4);
+  padding: var(--sp-3) var(--sp-5);
+  margin-top: auto;
+  background: rgba(180,138,58,0.06);
+  border: 1px solid rgba(180,138,58,0.15);
+  border-left: 3px solid rgba(180,138,58,0.40);
+  border-radius: var(--radius-md);
+  transition: background var(--dur-base) var(--ease-out),
+              border-color var(--dur-base) var(--ease-out),
+              box-shadow var(--dur-base) var(--ease-out),
+              transform var(--dur-base) var(--ease-out);
+}
+.hero-inner .citation:hover {
+  background: rgba(180,138,58,0.11);
+  border-color: rgba(180,138,58,0.32);
+  box-shadow: 0 4px 18px rgba(180,138,58,0.13);
+  transform: translateY(-1px);
+}
+.hero-inner .citation-author {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  font-style: normal;
+  letter-spacing: 0.01em;
+}
+.hero-inner .citation-date {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-secondary);
+  letter-spacing: 0.03em;
+}
+.hero-inner .citation-link {
+  font-size: var(--text-2xs);
+  flex-basis: 100%;
+}
+
 @media (max-width: 900px) {
   .hero-inner {
     grid-template-columns: 1fr;
   }
   .hero-visual {
     margin-bottom: var(--sp-5);
-    max-height: 360px;
+    order: -1;
   }
   .hero-thumb {
+    min-height: unset;
+    flex: unset;
     aspect-ratio: 16/9;
+    max-height: 360px;
   }
 }
 @media (max-width: 640px) {
   .hero-visual {
     max-height: 260px;
     border-radius: var(--radius-md);
+  }
+  .hero-inner .citation {
+    padding: var(--sp-2) var(--sp-4);
+    gap: var(--sp-1) var(--sp-3);
+  }
+  .hero-inner .citation-author {
+    font-size: var(--text-xs);
+  }
+}
+@media (max-width: 480px) {
+  .hero-inner .citation {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-1);
   }
 }
 
@@ -2666,6 +2738,8 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   .topic-pill,.archive-date-chip,.topic-date-pill,.topic-count-chip{border-width:2px}
   a{text-decoration:underline}
   .story-card-title a{text-decoration-thickness:2px;text-underline-offset:3px}
+  .hero-inner .citation{border-width:2px;border-left-width:4px;border-color:rgba(0,0,0,0.35)}
+  .hero-inner .citation-author{color:#111}
 }
 } /* end @layer utilities */
 
@@ -2827,9 +2901,9 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 
   /* Hero: single column, image on top */
   .hero{padding:var(--sp-8) 0 var(--sp-6)}
-  .hero-inner{grid-template-columns:1fr}
+  .hero-inner{grid-template-columns:1fr;align-items:start}
   .hero-visual{margin-bottom:var(--sp-5);max-height:360px;order:-1}
-  .hero-thumb{aspect-ratio:16/9}
+  .hero-thumb{aspect-ratio:16/9;min-height:unset;flex:unset}
   .hero-headline{max-width:none}
 
   /* Story cards: single column thumb layout */
@@ -2902,6 +2976,9 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   /* Hero: compact */
   .hero-visual{max-height:260px;border-radius:var(--radius-md)}
   .hero-headline{font-size:clamp(1.75rem,6vw,2.4rem)}
+  .hero-subhead{font-size:clamp(0.9rem,2.5vw,1.05rem)}
+  .hero-inner .citation{padding:var(--sp-2) var(--sp-4);gap:var(--sp-1) var(--sp-3)}
+  .hero-inner .citation-author{font-size:var(--text-xs)}
 
   /* Topics grid: single column */
   #topicsContent{grid-template-columns:1fr}
@@ -2989,10 +3066,12 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   .nav-inner{padding:0 var(--sp-3)}
   .container{padding:0 var(--sp-3)}
 
-  /* Hero: stacked buttons */
+  /* Hero: stacked buttons + compact citation */
   .hero-actions{flex-direction:column;gap:var(--sp-2)}
   .hero-actions .cta-btn{width:100%;text-align:center;justify-content:center;display:flex}
   .hero-headline{font-size:clamp(1.75rem,8vw,2.4rem)}
+  .hero-inner .citation{flex-direction:column;align-items:flex-start;gap:var(--sp-1);padding:var(--sp-2) var(--sp-3)}
+  .hero-inner .citation-link{flex-basis:auto}
 
   /* Topic stories: narrower score column */
   .topic-story{grid-template-columns:40px minmax(0,1fr)!important}
@@ -3037,6 +3116,8 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   .hero-headline{font-size:1.6rem}
   .hero-subhead{font-size:var(--text-sm)}
   .hero-kicker{font-size:0.65rem}
+  .hero-inner .citation{margin-top:var(--sp-3)}
+  .hero-inner .citation-author{font-size:var(--text-2xs)}
   .top3-title{font-size:var(--text-lg)}
   .top3-grid{grid-template-columns:1fr}
   .section-header{flex-direction:column;align-items:flex-start;gap:var(--sp-2)}
@@ -3066,8 +3147,9 @@ body.mobile-nav-open .nav{pointer-events:none}
 /* ── Landscape phone: constrain hero height ──────────────────────────────── */
 @media(max-height:500px) and (orientation:landscape){
   .hero-visual{max-height:200px}
-  .hero-thumb{aspect-ratio:21/9}
+  .hero-thumb{aspect-ratio:21/9;min-height:unset;flex:unset}
   .hero{padding:var(--sp-4) 0}
+  .hero-inner .citation{padding:var(--sp-2) var(--sp-3);gap:var(--sp-1)}
 }
 
 /* ── Tablet portrait: topics grid intermediate step ──────────────────────── */

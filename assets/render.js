@@ -443,7 +443,7 @@ export function renderHero(store, claimed) {
       const heroSrc = escapeHtml(upgradeImageUrl(lead.imageUrl));
       heroThumb.innerHTML = responsiveImg(heroSrc, escapeHtml(lead.headline || ''), {
         loading: 'eager', fetchpriority: 'high', width: 800, height: 600,
-        sizes: '(max-width:900px) 100vw, 50vw', fallbackSrc
+        sizes: '(max-width:640px) 100vw, (max-width:900px) 100vw, 48vw', fallbackSrc
       });
     } else {
       heroThumb.innerHTML = responsiveImg(fallbackSrc, '', { loading: 'eager', width: 800, height: 600 });
