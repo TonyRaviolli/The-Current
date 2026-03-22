@@ -1234,10 +1234,8 @@ document.body.addEventListener('click', (e) => {
   }
 
   /* ── Legislation: Back to Map ── */
-  if (e.target.closest('#legBackToMap')) {
+  if (e.target.closest('[data-leg-back]')) {
     clearMapSelection();
-    const bar = document.getElementById('legSelectedBar');
-    if (bar) bar.classList.remove('active');
     return;
   }
 
@@ -1250,13 +1248,8 @@ document.body.addEventListener('click', (e) => {
 
 // ── Legislation: state selection listener ──
 document.addEventListener('leg-state-selected', (e) => {
-  const { id, name } = e.detail;
-  const bar = document.getElementById('legSelectedBar');
-  const nameEl = document.getElementById('legSelectedName');
-  if (bar && nameEl) {
-    nameEl.textContent = name;
-    bar.classList.add('active');
-  }
+  // Panel rendering is handled in render.js via selectState()
+  // This listener is available for any additional app-level side effects
 });
 
 initNavigation();

@@ -1665,42 +1665,98 @@ function renderArticleJsonLd(article) {
 }
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  §L  LEGISLATION — Interactive US Map                                  ║
+// ║  §L  LEGISLATION — Interactive US Map + State Panel                    ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
+
+// ── Adjacency-safe 6-color assignment (graph-colored, no bordering states share a color) ──
+const STATE_COLOR_MAP = {
+  AL:1,AK:1,AZ:1,AR:1,CA:2,CO:2,CT:1,DE:1,DC:1,FL:2,GA:3,HI:1,
+  ID:1,IL:1,IN:2,IA:2,KS:1,KY:3,LA:2,ME:1,MD:2,MA:2,MI:1,MN:1,
+  MS:3,MO:4,MT:2,NE:3,NV:3,NH:3,NJ:2,NM:3,NY:3,NC:1,ND:3,OH:4,
+  OK:5,OR:4,PA:5,RI:3,SC:2,SD:4,TN:2,TX:4,UT:4,VT:1,VA:4,WA:2,
+  WV:1,WI:3,WY:5
+};
 
 const SMALL_STATES = new Set(['RI','DE','CT','NJ','MD','MA','VT','NH','DC']);
 
+// ── Improved centroid: weighted by path segment lengths ──
 function getPathCentroid(pathStr) {
   const nums = pathStr.match(/[\d.]+/g);
   if (!nums || nums.length < 4) return [480, 300];
-  let sumX = 0, sumY = 0, count = 0;
-  // Sample every Nth coordinate pair for performance
-  const step = Math.max(2, Math.floor(nums.length / 40)) * 2;
-  for (let i = 0; i < nums.length - 1; i += step) {
-    const x = parseFloat(nums[i]);
-    const y = parseFloat(nums[i + 1]);
-    if (!isNaN(x) && !isNaN(y) && x > 0 && x < 960 && y > 0 && y < 600) {
-      sumX += x; sumY += y; count++;
-    }
+  const pts = [];
+  for (let i = 0; i < nums.length - 1; i += 2) {
+    const x = parseFloat(nums[i]), y = parseFloat(nums[i + 1]);
+    if (!isNaN(x) && !isNaN(y) && x > 0 && x < 960 && y > 0 && y < 600) pts.push([x, y]);
   }
-  return count ? [sumX / count, sumY / count] : [480, 300];
+  if (!pts.length) return [480, 300];
+  // Use area-weighted centroid (shoelace / polygon centroid formula)
+  let cx = 0, cy = 0, area = 0;
+  for (let i = 0, n = pts.length; i < n; i++) {
+    const j = (i + 1) % n;
+    const cross = pts[i][0] * pts[j][1] - pts[j][0] * pts[i][1];
+    area += cross;
+    cx += (pts[i][0] + pts[j][0]) * cross;
+    cy += (pts[i][1] + pts[j][1]) * cross;
+  }
+  if (Math.abs(area) < 1e-6) {
+    // Fallback: simple average
+    let sx = 0, sy = 0;
+    for (const [x, y] of pts) { sx += x; sy += y; }
+    return [sx / pts.length, sy / pts.length];
+  }
+  area *= 0.5;
+  cx /= (6 * area);
+  cy /= (6 * area);
+  return [cx, cy];
 }
 
-// Leader-line offsets for small states (push label outside the path)
+// ── Manual centroid overrides for states where polygon centroid is off ──
+const STATE_CENTROID_OVERRIDES = {
+  MI: [690, 225], FL: [795, 430], LA: [635, 415], MD: [830, 270],
+  MA: [878, 200], HI: [310, 550], AK: [170, 550], CA: [155, 320],
+  ID: [258, 200], NY: [840, 200], VA: [800, 302]
+};
+
+// ── Leader-line offsets for small states (SVG coordinate deltas) ──
 const SMALL_STATE_OFFSETS = {
-  NH: [35, -10], VT: [-35, -10], MA: [40, 0], RI: [35, 10],
-  CT: [35, 20], NJ: [30, 10], DE: [30, 10], MD: [35, 20], DC: [35, 30]
+  NH: { dx: 38, dy: -8 },
+  VT: { dx: -38, dy: -8 },
+  MA: { dx: 42, dy: 2 },
+  RI: { dx: 38, dy: 12 },
+  CT: { dx: 38, dy: 22 },
+  NJ: { dx: 32, dy: 12 },
+  DE: { dx: 32, dy: 12 },
+  MD: { dx: 38, dy: 22 },
+  DC: { dx: 38, dy: 32 }
 };
 
 let legMapTooltip = null;
 let legMapSelectedState = null;
+let legPanelState = { filters: {}, page: 0 };
+
+// ── Full state name lookup ──
+const STATE_NAMES = {};
+const STATE_LIST_ORDER = [];
+
+// ── Category icons (Lucide-style inline SVG paths) ──
+const LEG_CATEGORY_ICONS = {
+  'Healthcare': '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19.5 12.572l-7.5 7.428-7.5-7.428A5 5 0 1 1 12 6.006a5 5 0 1 1 7.5 6.572"/></svg>',
+  'Education': '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+  'Environment': '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.9C15.5 4.9 17 3.5 17 3.5s1.5 2 2.1 5.5A7 7 0 0 1 11 20z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>',
+  'Criminal Justice': '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>',
+  'Economy & Taxes': '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  'Civil Rights': '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  'Infrastructure': '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>',
+  'Public Safety': '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>',
+  'Other': '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>'
+};
 
 export function renderUSMap(container) {
   if (!container) return;
   container.innerHTML = '';
   legMapSelectedState = null;
 
-  // Create tooltip
+  // Create tooltip (shared singleton)
   if (!legMapTooltip) {
     legMapTooltip = document.createElement('div');
     legMapTooltip.className = 'leg-map-tooltip';
@@ -1718,6 +1774,8 @@ export function renderUSMap(container) {
   svg.setAttribute('role', 'img');
   svg.setAttribute('aria-label', 'Interactive map of the United States');
 
+  // Radial gradient background glow (::before pseudo handled in CSS)
+
   // Inset divider line (separates AK/HI from continental US)
   const divider = document.createElementNS(svgNS, 'line');
   divider.setAttribute('x1', '30'); divider.setAttribute('y1', '510');
@@ -1733,11 +1791,19 @@ export function renderUSMap(container) {
   const labelsGroup = document.createElementNS(svgNS, 'g');
   labelsGroup.setAttribute('class', 'leg-map-labels');
 
+  // Build name lookup
+  US_STATES.forEach((s) => {
+    STATE_NAMES[s.id] = s.name;
+    if (!STATE_LIST_ORDER.includes(s.id)) STATE_LIST_ORDER.push(s.id);
+  });
+  STATE_LIST_ORDER.sort((a, b) => STATE_NAMES[a].localeCompare(STATE_NAMES[b]));
+
   US_STATES.forEach((state, index) => {
-    // State path
+    // State path with choropleth color
     const path = document.createElementNS(svgNS, 'path');
     path.setAttribute('d', state.path);
-    path.setAttribute('class', 'leg-state-path');
+    const colorIdx = STATE_COLOR_MAP[state.id] || 1;
+    path.setAttribute('class', `leg-state-path leg-state-c${colorIdx}`);
     path.setAttribute('data-state', state.id);
     path.setAttribute('data-state-name', state.name);
     path.setAttribute('aria-label', state.name);
@@ -1746,15 +1812,15 @@ export function renderUSMap(container) {
     path.style.animationDelay = `${index * 8}ms`;
     pathsGroup.appendChild(path);
 
-    // Label
-    const [cx, cy] = getPathCentroid(state.path);
+    // Compute centroid (override or calculate)
+    const [cx, cy] = STATE_CENTROID_OVERRIDES[state.id] || getPathCentroid(state.path);
     const isSmall = SMALL_STATES.has(state.id);
-    const offset = SMALL_STATE_OFFSETS[state.id] || [0, 0];
-    const labelX = cx + offset[0];
-    const labelY = cy + offset[1];
+    const offset = SMALL_STATE_OFFSETS[state.id];
+    const labelX = offset ? cx + offset.dx : cx;
+    const labelY = offset ? cy + offset.dy : cy;
 
     // Leader line for small states
-    if (isSmall && (offset[0] !== 0 || offset[1] !== 0)) {
+    if (isSmall && offset) {
       const line = document.createElementNS(svgNS, 'line');
       line.setAttribute('x1', cx); line.setAttribute('y1', cy);
       line.setAttribute('x2', labelX); line.setAttribute('y2', labelY);
@@ -1765,6 +1831,8 @@ export function renderUSMap(container) {
     const text = document.createElementNS(svgNS, 'text');
     text.setAttribute('x', labelX);
     text.setAttribute('y', labelY);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'central');
     text.setAttribute('class', `leg-state-label${isSmall ? ' leg-state-label--small' : ''}`);
     text.setAttribute('data-state', state.id);
     text.textContent = state.id;
@@ -1776,73 +1844,587 @@ export function renderUSMap(container) {
   svg.appendChild(labelsGroup);
   container.appendChild(svg);
 
-  // ── Event handlers ──
+  // ── Render sidebar ──
+  const sidebar = document.getElementById('legSidebar');
+  if (sidebar) renderMapSidebar(sidebar);
 
-  // Hover: tooltip + highlight
+  // ── SVG Event handlers ──
+
+  // Hover: tooltip + sidebar quick-stat update
   svg.addEventListener('mousemove', (e) => {
-    const path = e.target.closest('.leg-state-path');
-    if (!path) { legMapTooltip.style.display = 'none'; return; }
-    const name = path.dataset.stateName;
-    const abbr = path.dataset.state;
-    legMapTooltip.innerHTML = `<span class="leg-tooltip-name">${name}</span><span class="leg-tooltip-stat">${Math.floor(Math.random() * 20 + 3)} active bills this session</span>`;
+    const p = e.target.closest('.leg-state-path');
+    if (!p) { legMapTooltip.style.display = 'none'; return; }
+    const name = p.dataset.stateName;
+    const abbr = p.dataset.state;
+    const data = getLegData(abbr);
+    legMapTooltip.innerHTML = `<span class="leg-tooltip-name">${name}</span><span class="leg-tooltip-stat">${data ? data.totalBills : '—'} active bills this session</span>`;
     legMapTooltip.style.display = '';
-    // Position near cursor, viewport-aware
-    const tx = e.clientX + 16;
-    const ty = e.clientY - 10;
-    const tw = legMapTooltip.offsetWidth;
-    const th = legMapTooltip.offsetHeight;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
+    const tx = e.clientX + 16, ty = e.clientY - 10;
+    const tw = legMapTooltip.offsetWidth, th = legMapTooltip.offsetHeight;
+    const vw = window.innerWidth, vh = window.innerHeight;
     legMapTooltip.style.left = (tx + tw > vw - 12 ? e.clientX - tw - 12 : tx) + 'px';
     legMapTooltip.style.top = (ty + th > vh - 12 ? e.clientY - th - 12 : ty) + 'px';
+    updateQuickStat(abbr);
+    // Highlight sidebar list item
+    highlightSidebarItem(abbr);
   });
 
   svg.addEventListener('mouseleave', () => {
     legMapTooltip.style.display = 'none';
+    clearSidebarHighlight();
+    clearQuickStat();
   });
 
   // Click: select state
   svg.addEventListener('click', (e) => {
-    const path = e.target.closest('.leg-state-path');
-    if (!path) return;
-    selectState(path.dataset.state, svg);
+    const p = e.target.closest('.leg-state-path');
+    if (!p) return;
+    selectState(p.dataset.state);
   });
 
   // Keyboard: Enter/Space to select
   svg.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
-      const path = e.target.closest('.leg-state-path');
-      if (path) {
-        e.preventDefault();
-        selectState(path.dataset.state, svg);
+      const p = e.target.closest('.leg-state-path');
+      if (p) { e.preventDefault(); selectState(p.dataset.state); }
+    }
+  });
+}
+
+// ── Sidebar rendering ──
+function renderMapSidebar(sidebar) {
+  sidebar.innerHTML = `
+    <div class="leg-search-wrap">
+      <svg class="leg-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" class="leg-search-input" id="legStateSearch" placeholder="Search a state..." autocomplete="off" spellcheck="false">
+    </div>
+    <ul class="leg-state-list" id="legStateList"></ul>
+    <div class="leg-quick-stat" id="legQuickStat">
+      <div class="leg-quick-stat-empty">Hover a state to preview</div>
+    </div>
+  `;
+
+  const list = sidebar.querySelector('#legStateList');
+  STATE_LIST_ORDER.forEach((abbr) => {
+    const name = STATE_NAMES[abbr];
+    const li = document.createElement('li');
+    li.className = 'leg-state-item';
+    li.dataset.state = abbr;
+    li.innerHTML = `<span class="leg-state-item-name">${name}</span><span class="leg-state-item-abbr">${abbr}</span>`;
+    list.appendChild(li);
+  });
+
+  // Search filtering
+  const searchInput = sidebar.querySelector('#legStateSearch');
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.trim().toLowerCase();
+    list.querySelectorAll('.leg-state-item').forEach((li) => {
+      const name = STATE_NAMES[li.dataset.state].toLowerCase();
+      const abbr = li.dataset.state.toLowerCase();
+      const match = !q || name.includes(q) || abbr.includes(q);
+      li.classList.toggle('leg-state-item--hidden', !match);
+    });
+  });
+
+  // List item click → select state
+  list.addEventListener('click', (e) => {
+    const li = e.target.closest('.leg-state-item');
+    if (li) selectState(li.dataset.state);
+  });
+
+  // List item hover → quick stat + map highlight
+  list.addEventListener('mouseover', (e) => {
+    const li = e.target.closest('.leg-state-item');
+    if (li) {
+      updateQuickStat(li.dataset.state);
+      highlightMapState(li.dataset.state);
+    }
+  });
+  list.addEventListener('mouseleave', () => {
+    clearQuickStat();
+    clearMapHighlight();
+  });
+}
+
+function highlightSidebarItem(abbr) {
+  document.querySelectorAll('.leg-state-item').forEach((li) => {
+    li.classList.toggle('leg-state-item--hover', li.dataset.state === abbr);
+  });
+}
+function clearSidebarHighlight() {
+  document.querySelectorAll('.leg-state-item--hover').forEach((li) => li.classList.remove('leg-state-item--hover'));
+}
+function highlightMapState(abbr) {
+  document.querySelectorAll('.leg-state-path').forEach((p) => {
+    p.classList.toggle('map-hover', p.dataset.state === abbr);
+  });
+}
+function clearMapHighlight() {
+  document.querySelectorAll('.leg-state-path.map-hover').forEach((p) => p.classList.remove('map-hover'));
+}
+
+// ── Quick-stat panel ──
+function updateQuickStat(abbr) {
+  const el = document.getElementById('legQuickStat');
+  if (!el) return;
+  const data = getLegData(abbr);
+  const name = STATE_NAMES[abbr] || abbr;
+  if (!data) {
+    el.innerHTML = `<div class="leg-quick-stat-content"><strong>${name}</strong> (${abbr})<br><span class="leg-qs-dim">No data available</span></div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="leg-quick-stat-content">
+      <div class="leg-qs-name">${name} <span class="leg-qs-abbr">${abbr}</span></div>
+      <div class="leg-qs-row"><span class="leg-qs-label">Total Bills This Session:</span><span class="leg-qs-val">${data.totalBills}</span></div>
+      <div class="leg-qs-row"><span class="leg-qs-label">Passed:</span><span class="leg-qs-val leg-qs-passed">${data.passed}</span><span class="leg-qs-sep">|</span><span class="leg-qs-label">Proposed:</span><span class="leg-qs-val leg-qs-proposed">${data.proposed}</span></div>
+      <div class="leg-qs-row"><span class="leg-qs-label">Most Active Category:</span><span class="leg-qs-val">${data.topCategory}</span></div>
+    </div>`;
+}
+function clearQuickStat() {
+  const el = document.getElementById('legQuickStat');
+  if (el) el.innerHTML = '<div class="leg-quick-stat-empty">Hover a state to preview</div>';
+}
+
+// ── Lazy-load legislation data ──
+let _legDataModule = null;
+async function loadLegData() {
+  if (!_legDataModule) {
+    try { _legDataModule = await import('./legislation.js'); } catch { _legDataModule = { STATE_LEGISLATION: {} }; }
+  }
+  return _legDataModule.STATE_LEGISLATION;
+}
+function getLegData(abbr) {
+  if (!_legDataModule) return null;
+  return _legDataModule.STATE_LEGISLATION[abbr] || null;
+}
+
+// Eagerly start loading legislation data
+loadLegData();
+
+// ── State selection (shared by map click, sidebar click, search) ──
+function selectState(stateId) {
+  const svg = document.querySelector('.leg-map-svg');
+  if (svg) {
+    svg.querySelectorAll('.leg-state-path.selected').forEach((p) => p.classList.remove('selected'));
+    const path = svg.querySelector(`.leg-state-path[data-state="${stateId}"]`);
+    if (path) path.classList.add('selected');
+  }
+  // Update sidebar active
+  document.querySelectorAll('.leg-state-item').forEach((li) => {
+    li.classList.toggle('leg-state-item--active', li.dataset.state === stateId);
+  });
+  legMapSelectedState = stateId;
+  legMapTooltip && (legMapTooltip.style.display = 'none');
+  // Dispatch event (app.js listens)
+  const name = STATE_NAMES[stateId] || stateId;
+  document.dispatchEvent(new CustomEvent('leg-state-selected', { detail: { id: stateId, name } }));
+  // Render legislation panel
+  renderLegislationPanel(stateId);
+}
+
+export function clearMapSelection() {
+  const svg = document.querySelector('.leg-map-svg');
+  if (svg) svg.querySelectorAll('.leg-state-path.selected').forEach((p) => p.classList.remove('selected'));
+  document.querySelectorAll('.leg-state-item--active').forEach((li) => li.classList.remove('leg-state-item--active'));
+  legMapSelectedState = null;
+  const panel = document.getElementById('legStatePanel');
+  if (panel) { panel.classList.remove('leg-panel-active'); setTimeout(() => { panel.innerHTML = ''; }, 350); }
+}
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §L.3  STATE LEGISLATION PANEL                                         ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+const LEG_CATEGORIES = ['All','Healthcare','Education','Environment','Criminal Justice','Economy & Taxes','Civil Rights','Infrastructure','Public Safety','Other'];
+const LEG_STATUSES = ['All','Proposed','Passed'];
+const LEG_SORTS = [
+  { value: 'newest', label: 'Newest First' },
+  { value: 'oldest', label: 'Oldest First' },
+  { value: 'category', label: 'Category A–Z' },
+  { value: 'status', label: 'Status' }
+];
+const LEG_PAGE_SIZE = 20;
+
+async function renderLegislationPanel(stateId) {
+  const panel = document.getElementById('legStatePanel');
+  if (!panel) return;
+
+  const allData = await loadLegData();
+  const stateData = allData[stateId];
+  const name = STATE_NAMES[stateId] || stateId;
+
+  if (!stateData) {
+    panel.innerHTML = `<div class="leg-panel-empty"><div class="leg-panel-empty-icon">&#9878;</div><p class="leg-panel-empty-heading">No data available for ${name}</p></div>`;
+    panel.classList.add('leg-panel-active');
+    return;
+  }
+
+  // Reset filter state
+  legPanelState = {
+    stateId,
+    categories: new Set(),
+    status: 'All',
+    sort: 'newest',
+    search: '',
+    page: 1,
+    expanded: new Set()
+  };
+
+  const isNewPanel = !panel.classList.contains('leg-panel-active');
+  const stateCode = stateId.toLowerCase();
+  const flagUrl = `https://flagcdn.com/w40/us-${stateCode}.png`;
+
+  panel.innerHTML = `
+    <div class="leg-panel-header">
+      <div class="leg-panel-header-top">
+        <div class="leg-panel-state-info">
+          <img src="${flagUrl}" alt="${escapeHtml(name)} flag" width="40" height="30" loading="lazy" class="leg-panel-flag" data-hide-on-error>
+          <h2 class="leg-panel-state-name">${escapeHtml(name)}</h2>
+        </div>
+        <button class="leg-panel-back" type="button" data-leg-back>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+          Back to Map
+        </button>
+      </div>
+      <div class="leg-panel-stats">
+        <span class="leg-panel-stat">Total Bills: <strong>${stateData.totalBills}</strong></span>
+        <span class="leg-panel-stat">Passed: <strong class="leg-stat-passed">${stateData.passed}</strong></span>
+        <span class="leg-panel-stat">Proposed: <strong class="leg-stat-proposed">${stateData.proposed}</strong></span>
+        <span class="leg-panel-stat">Session: <strong>${stateData.session}</strong></span>
+      </div>
+    </div>
+    <div class="leg-panel-controls">
+      <div class="leg-panel-filters-row">
+        <div class="leg-category-pills" id="legCategoryPills"></div>
+        <div class="leg-filter-divider"></div>
+        <div class="leg-status-pills" id="legStatusPills"></div>
+      </div>
+      <div class="leg-panel-search-row">
+        <div class="leg-panel-sort-wrap">
+          <select class="leg-panel-sort" id="legPanelSort">${LEG_SORTS.map(s => `<option value="${s.value}">${s.label}</option>`).join('')}</select>
+        </div>
+        <div class="leg-panel-search-wrap">
+          <svg class="leg-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" class="leg-panel-search" id="legPanelSearch" placeholder="Search bills..." autocomplete="off" spellcheck="false">
+          <span class="leg-panel-search-count" id="legSearchCount"></span>
+        </div>
+      </div>
+      <div class="leg-active-filters" id="legActiveFilters"></div>
+    </div>
+    <div class="leg-cards-grid" id="legCardsGrid"></div>
+    <div class="leg-load-more-wrap" id="legLoadMoreWrap"></div>
+  `;
+
+  // Render category pills
+  const catContainer = panel.querySelector('#legCategoryPills');
+  LEG_CATEGORIES.forEach((cat) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'leg-pill' + (cat === 'All' ? ' leg-pill--active' : '');
+    btn.dataset.category = cat;
+    const icon = cat !== 'All' ? (LEG_CATEGORY_ICONS[cat] || '') : '';
+    btn.innerHTML = `${icon}<span>${cat}</span>`;
+    catContainer.appendChild(btn);
+  });
+
+  // Render status pills
+  const statusContainer = panel.querySelector('#legStatusPills');
+  LEG_STATUSES.forEach((st) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'leg-status-pill' + (st === 'All' ? ' leg-status-pill--active' : '');
+    btn.dataset.status = st;
+    const dotClass = st === 'Passed' ? 'leg-dot-passed' : st === 'Proposed' ? 'leg-dot-proposed' : 'leg-dot-all';
+    btn.innerHTML = `<span class="leg-status-dot ${dotClass}"></span>${st}`;
+    statusContainer.appendChild(btn);
+  });
+
+  // Wire up event handlers
+  wireUpPanelEvents(panel, stateData);
+
+  // Initial render
+  renderFilteredCards(stateData);
+
+  // Animate panel in
+  if (isNewPanel) {
+    panel.classList.add('leg-panel-active');
+  } else {
+    // Cross-fade: panel already visible, just fade content
+    panel.style.opacity = '0';
+    requestAnimationFrame(() => {
+      panel.style.transition = 'opacity 200ms ease';
+      panel.style.opacity = '1';
+      setTimeout(() => { panel.style.transition = ''; }, 250);
+    });
+  }
+
+  // Scroll panel into view
+  setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+}
+
+function wireUpPanelEvents(panel, stateData) {
+  // Category pills
+  panel.querySelector('#legCategoryPills').addEventListener('click', (e) => {
+    const btn = e.target.closest('.leg-pill');
+    if (!btn) return;
+    const cat = btn.dataset.category;
+    if (cat === 'All') {
+      legPanelState.categories.clear();
+      panel.querySelectorAll('.leg-pill').forEach((b) => b.classList.remove('leg-pill--active'));
+      btn.classList.add('leg-pill--active');
+    } else {
+      panel.querySelector('.leg-pill[data-category="All"]').classList.remove('leg-pill--active');
+      btn.classList.toggle('leg-pill--active');
+      if (btn.classList.contains('leg-pill--active')) {
+        legPanelState.categories.add(cat);
+      } else {
+        legPanelState.categories.delete(cat);
+      }
+      if (legPanelState.categories.size === 0) {
+        panel.querySelector('.leg-pill[data-category="All"]').classList.add('leg-pill--active');
+      }
+    }
+    legPanelState.page = 1;
+    renderFilteredCards(stateData);
+  });
+
+  // Status pills
+  panel.querySelector('#legStatusPills').addEventListener('click', (e) => {
+    const btn = e.target.closest('.leg-status-pill');
+    if (!btn) return;
+    panel.querySelectorAll('.leg-status-pill').forEach((b) => b.classList.remove('leg-status-pill--active'));
+    btn.classList.add('leg-status-pill--active');
+    legPanelState.status = btn.dataset.status;
+    legPanelState.page = 1;
+    renderFilteredCards(stateData);
+  });
+
+  // Sort
+  panel.querySelector('#legPanelSort').addEventListener('change', (e) => {
+    legPanelState.sort = e.target.value;
+    legPanelState.page = 1;
+    renderFilteredCards(stateData);
+  });
+
+  // Search (debounced)
+  let searchTimer;
+  panel.querySelector('#legPanelSearch').addEventListener('input', (e) => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      legPanelState.search = e.target.value.trim().toLowerCase();
+      legPanelState.page = 1;
+      renderFilteredCards(stateData);
+    }, 200);
+  });
+
+  // Back to map
+  panel.querySelector('[data-leg-back]').addEventListener('click', () => {
+    clearMapSelection();
+  });
+
+  // Active filters — clear all / individual
+  panel.querySelector('#legActiveFilters').addEventListener('click', (e) => {
+    if (e.target.closest('.leg-filter-clear-all')) {
+      legPanelState.categories.clear();
+      legPanelState.status = 'All';
+      legPanelState.search = '';
+      panel.querySelector('#legPanelSearch').value = '';
+      panel.querySelectorAll('.leg-pill').forEach((b) => b.classList.remove('leg-pill--active'));
+      panel.querySelector('.leg-pill[data-category="All"]').classList.add('leg-pill--active');
+      panel.querySelectorAll('.leg-status-pill').forEach((b) => b.classList.remove('leg-status-pill--active'));
+      panel.querySelector('.leg-status-pill[data-status="All"]').classList.add('leg-status-pill--active');
+      legPanelState.page = 1;
+      renderFilteredCards(stateData);
+      return;
+    }
+    const tag = e.target.closest('.leg-filter-tag');
+    if (!tag) return;
+    const type = tag.dataset.filterType;
+    const val = tag.dataset.filterValue;
+    if (type === 'category') {
+      legPanelState.categories.delete(val);
+      const pillBtn = panel.querySelector(`.leg-pill[data-category="${val}"]`);
+      if (pillBtn) pillBtn.classList.remove('leg-pill--active');
+      if (legPanelState.categories.size === 0) {
+        panel.querySelector('.leg-pill[data-category="All"]').classList.add('leg-pill--active');
+      }
+    } else if (type === 'status') {
+      legPanelState.status = 'All';
+      panel.querySelectorAll('.leg-status-pill').forEach((b) => b.classList.remove('leg-status-pill--active'));
+      panel.querySelector('.leg-status-pill[data-status="All"]').classList.add('leg-status-pill--active');
+    }
+    legPanelState.page = 1;
+    renderFilteredCards(stateData);
+  });
+
+  // Image error fallback (replaces inline onerror)
+  panel.addEventListener('error', (e) => {
+    if (e.target.hasAttribute('data-hide-on-error')) e.target.style.display = 'none';
+  }, true);
+
+  // Card expand/collapse + load more (delegated)
+  panel.addEventListener('click', (e) => {
+    // Load more button
+    if (e.target.closest('.leg-load-more-btn')) {
+      legPanelState.page++;
+      renderFilteredCards(stateData, true);
+      return;
+    }
+    // Card expand (skip links)
+    const card = e.target.closest('.leg-card');
+    if (card && !e.target.closest('a')) {
+      const id = card.dataset.billId;
+      if (legPanelState.expanded.has(id)) {
+        legPanelState.expanded.delete(id);
+        card.classList.remove('leg-card--expanded');
+      } else {
+        legPanelState.expanded.add(id);
+        card.classList.add('leg-card--expanded');
       }
     }
   });
 }
 
-function selectState(stateId, svg) {
-  // Clear previous selection
-  svg.querySelectorAll('.leg-state-path.selected').forEach((p) => p.classList.remove('selected'));
-  // Select new state
-  const path = svg.querySelector(`.leg-state-path[data-state="${stateId}"]`);
-  if (path) {
-    path.classList.add('selected');
-    legMapSelectedState = stateId;
-    // Dispatch custom event for Stage 3 integration
-    const stateName = path.dataset.stateName;
-    document.dispatchEvent(new CustomEvent('leg-state-selected', {
-      detail: { id: stateId, name: stateName }
-    }));
+function getFilteredBills(stateData) {
+  let bills = [...stateData.bills];
+  const { categories, status, search, sort } = legPanelState;
+
+  // Category filter
+  if (categories.size > 0) {
+    bills = bills.filter((b) => categories.has(b.category));
+  }
+  // Status filter
+  if (status !== 'All') {
+    bills = bills.filter((b) => b.status === status.toLowerCase());
+  }
+  // Search filter
+  if (search) {
+    bills = bills.filter((b) =>
+      b.title.toLowerCase().includes(search) ||
+      b.id.toLowerCase().includes(search) ||
+      b.sponsor.toLowerCase().includes(search) ||
+      b.summary.toLowerCase().includes(search)
+    );
+  }
+  // Sort
+  switch (sort) {
+    case 'newest': bills.sort((a, b) => new Date(b.introduced) - new Date(a.introduced)); break;
+    case 'oldest': bills.sort((a, b) => new Date(a.introduced) - new Date(b.introduced)); break;
+    case 'category': bills.sort((a, b) => a.category.localeCompare(b.category)); break;
+    case 'status': bills.sort((a, b) => a.status.localeCompare(b.status)); break;
+  }
+  return bills;
+}
+
+function renderFilteredCards(stateData, append = false) {
+  const grid = document.getElementById('legCardsGrid');
+  const loadMoreWrap = document.getElementById('legLoadMoreWrap');
+  const countEl = document.getElementById('legSearchCount');
+  const filtersEl = document.getElementById('legActiveFilters');
+  if (!grid) return;
+
+  const filtered = getFilteredBills(stateData);
+  const total = stateData.bills.length;
+  const visible = Math.min(filtered.length, legPanelState.page * LEG_PAGE_SIZE);
+
+  // Update search count
+  if (countEl) {
+    countEl.textContent = filtered.length !== total ? `Showing ${Math.min(visible, filtered.length)} of ${total} bills` : '';
+  }
+
+  // Update active filters strip
+  if (filtersEl) {
+    const tags = [];
+    for (const cat of legPanelState.categories) {
+      tags.push(`<button class="leg-filter-tag" data-filter-type="category" data-filter-value="${cat}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>${cat}</button>`);
+    }
+    if (legPanelState.status !== 'All') {
+      tags.push(`<button class="leg-filter-tag" data-filter-type="status" data-filter-value="${legPanelState.status}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>${legPanelState.status}</button>`);
+    }
+    if (tags.length) {
+      tags.push('<button class="leg-filter-clear-all">Clear All</button>');
+    }
+    filtersEl.innerHTML = tags.join('');
+  }
+
+  // Empty state
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div class="leg-panel-empty">
+        <svg class="leg-panel-empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3 10 4-6h10l4 6-4 6H7z"/><path d="M12 10v.01"/></svg>
+        <p class="leg-panel-empty-heading">No legislation found</p>
+        <p class="leg-panel-empty-sub">matching your current filters.</p>
+        <button class="leg-pill leg-pill--active leg-filter-clear-all" type="button">Clear All Filters</button>
+      </div>`;
+    if (loadMoreWrap) loadMoreWrap.innerHTML = '';
+    return;
+  }
+
+  // Render cards
+  const billsToShow = filtered.slice(0, visible);
+  const startIdx = append ? (legPanelState.page - 1) * LEG_PAGE_SIZE : 0;
+
+  if (!append) grid.innerHTML = '';
+
+  billsToShow.slice(append ? startIdx : 0).forEach((bill, i) => {
+    const card = document.createElement('div');
+    card.className = 'leg-card' + (legPanelState.expanded.has(bill.id) ? ' leg-card--expanded' : '');
+    card.dataset.billId = bill.id;
+    if (append) card.style.animationDelay = `${i * 30}ms`;
+
+    const isPassed = bill.status === 'passed';
+    const statusClass = isPassed ? 'leg-badge-passed' : 'leg-badge-proposed';
+    const statusLabel = isPassed ? 'PASSED' : 'PROPOSED';
+    const dateLabel = isPassed && bill.enacted ? `Enacted: ${fmtDate(bill.enacted)}` : `Introduced: ${fmtDate(bill.introduced)}`;
+    const summaryShort = bill.summary.length > 120 ? bill.summary.slice(0, 120) + '...' : bill.summary;
+    const icon = LEG_CATEGORY_ICONS[bill.category] || LEG_CATEGORY_ICONS['Other'];
+
+    const esc = escapeHtml;
+    card.innerHTML = `
+      <div class="leg-card-top">
+        <span class="leg-card-bill-num">${esc(bill.id)}</span>
+        <span class="leg-card-status ${statusClass}">${statusLabel}</span>
+      </div>
+      <h3 class="leg-card-title">${esc(bill.title)}</h3>
+      <div class="leg-card-meta">
+        <span class="leg-card-cat">${icon}<span>${esc(bill.category)}</span></span>
+        <span class="leg-card-date">${dateLabel}</span>
+      </div>
+      <p class="leg-card-summary">${esc(summaryShort)}</p>
+      <div class="leg-card-expanded-content">
+        <p class="leg-card-full-summary">${esc(bill.summary)}</p>
+        <div class="leg-card-detail-grid">
+          <div class="leg-card-detail"><span class="leg-card-detail-label">Sponsor</span><span>${esc(bill.sponsor)}</span></div>
+          <div class="leg-card-detail"><span class="leg-card-detail-label">Introduced</span><span>${fmtDate(bill.introduced)}</span></div>
+          <div class="leg-card-detail"><span class="leg-card-detail-label">Status</span><span>${isPassed && bill.enacted ? `Passed → Enacted ${fmtDate(bill.enacted)}` : 'Proposed'}</span></div>
+        </div>
+        ${bill.keyProvisions && bill.keyProvisions.length ? `
+          <div class="leg-card-provisions">
+            <div class="leg-card-provisions-title">Key Provisions</div>
+            <ul>${bill.keyProvisions.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>
+          </div>` : ''}
+        ${bill.fullTextUrl ? `<a href="${esc(bill.fullTextUrl)}" target="_blank" rel="noopener noreferrer" class="leg-card-link">Read Full Text <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></a>` : ''}
+      </div>
+      <div class="leg-card-chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+    `;
+    card.style.setProperty('--status-color', isPassed ? 'var(--leg-passed)' : 'var(--leg-proposed)');
+    grid.appendChild(card);
+  });
+
+  // Load more button
+  if (loadMoreWrap) {
+    const remaining = filtered.length - visible;
+    if (remaining > 0) {
+      loadMoreWrap.innerHTML = `<button class="leg-load-more-btn" type="button">Load ${Math.min(LEG_PAGE_SIZE, remaining)} More Bills (${remaining} remaining)</button>`;
+    } else {
+      loadMoreWrap.innerHTML = '';
+    }
   }
 }
 
-export function clearMapSelection() {
-  const svg = document.querySelector('.leg-map-svg');
-  if (svg) {
-    svg.querySelectorAll('.leg-state-path.selected').forEach((p) => p.classList.remove('selected'));
-  }
-  legMapSelectedState = null;
-  // Hide any state panel (Stage 3)
-  const panel = document.getElementById('legStatePanel');
-  if (panel) panel.classList.remove('active');
+function fmtDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
