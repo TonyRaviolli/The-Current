@@ -410,23 +410,23 @@ export function renderHero(store, claimed) {
   }
 
   // Priority bar for high-importance lead story
-  const heroText = headline.closest('.hero-text');
+  const heroSection = headline.closest('.hero');
+  const priorityBarSlot = document.getElementById('heroPriorityBar');
   const heroInner = headline.closest('.hero-inner');
-  const existingBar = heroInner?.querySelector('.lead-priority-bar');
-  if (existingBar) existingBar.remove();
+  if (priorityBarSlot) priorityBarSlot.innerHTML = '';
   const existingChip = heroInner?.querySelector('.lead-score-chip');
   if (existingChip) existingChip.remove();
   const sl0 = scoreLabel(lead.score);
-  if (lead.score >= 0.78 && heroText) {
+  if (lead.score >= 0.78 && heroSection) {
     const bar = document.createElement('div');
     bar.className = 'lead-priority-bar';
     bar.style.cssText = `background:linear-gradient(90deg,${sl0.color},transparent);`;
-    heroText.insertBefore(bar, heroText.firstChild);
+    if (priorityBarSlot) priorityBarSlot.appendChild(bar);
     const chip = document.createElement('div');
     chip.className = 'lead-score-chip';
     chip.innerHTML = `&#11014; ${escapeHtml(sl0.value)} \u00B7 ${escapeHtml(sl0.tier)}`;
     chip.style.cssText = `background:${sl0.color}22;color:${sl0.color};border-color:${sl0.color}44;`;
-    heroText.appendChild(chip);
+    heroInner.appendChild(chip);
   }
   headline.innerHTML = escapeHtml(lead.headline || lead.title);
   subhead.textContent = lead.dek || lead.summary || 'Briefing update ready.';
