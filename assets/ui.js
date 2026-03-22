@@ -890,7 +890,7 @@ export function renderTrendingBar(stories, precomputedDegrees) {
   bar.innerHTML = `<span class="trending-label">Trending:</span>` +
     `<button class="topic-pill topic-pill--all active" data-topic="__all__" type="button">All</button>` +
     top5.map(([id]) => {
-      const color = TOPIC_PASTEL[id] || '#94a3b8';
+      const color = TOPIC_PASTEL[id] || 'oklch(0.50 0.01 250)';
       return `<button class="topic-pill" data-topic="${escapeHtml(id)}" style="border-left:3px solid ${color}">${escapeHtml(TOPIC_LABELS[id] || id)}</button>`;
     }).join('');
   bar.querySelectorAll('.topic-pill').forEach((pill) => {

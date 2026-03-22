@@ -16,20 +16,21 @@ Apply those standards to any new or modified code without being asked.
 |-------|-----------|--------|---------|
 | 1 | T02, T08 | `b5d3c93` | `@layer` cascade (7 layers: reset/tokens/base/layout/components/utilities/overrides), OKLCH color tokens (33 values), dark mode purge (all CSS/HTML/JS), hardcoded hex→token replacement |
 | 2 | T03, T07 | `415d444` | Playfair Display + Source Serif 4 + Inter font system, fluid clamp() audit (13 hardcoded→token), drop caps, letter-spacing/line-height tokens, article-measure constraint |
+| 3 | T07, T10 | *pending commit* | 22 OKLCH topic tokens + tint variants, `[data-category]` badge coloring system, TOPIC_PASTEL/TOPIC_VISUAL→OKLCH, shadow tokens→OKLCH, score/market/spectrum colors→OKLCH, 5 editorial components (`.dateline`, `.breaking-ticker`, `.pull-quote`, `.section-break`, `.author-card`), `<meta theme-color>` updated |
 
 #### Current state
-- **Next stage:** 3 — OKLCH Color System & Light Mode Enhancement
+- **Next stage:** 4 — Motion & Scroll Effects
 - **CSS architecture:** `@layer reset, tokens, base, layout, components, utilities, overrides;` (first line of styles.css)
-- **Color system:** All `:root` tokens converted to OKLCH. Topic colors at L=0.58 for perceptual balance.
+- **Color system:** Full OKLCH everywhere. 22 topic color tokens + 22 tint tokens. `[data-category]` attribute system for category-colored badges. Shadow tokens OKLCH. Score/market/regime/spectrum colors OKLCH in render.js. Remaining component-level rgba values are opacity variants (deferred to Stage 8).
 - **Font system:** `--font-display` (Playfair Display), `--font-body` (Source Serif 4), `--font-ui` (Inter), `--font-mono` (JetBrains Mono). All `var(--font-sans)` and `var(--font-serif)` eliminated.
 - **Dark mode:** Completely removed. Zero references in any file. Light mode only.
 - **Typography:** Fluid `clamp()` tokens for all sizes. `--leading-*` (4 values), `--tracking-*` (5 values), `--article-measure: 68ch`. Drop cap on `.story-section > p:first-of-type::first-letter`.
 - **Easing:** `--ease-out-expo`, `--ease-in-out-circ`, `--ease-spring`, `--ease-snap` + duration tokens.
+- **Editorial components:** `.dateline` (mono with gold rule), `.breaking-ticker` (animated scroll with reduced-motion fallback), `.pull-quote` (gold top border, curly quote), `.section-break` (rule with center icon), `.author-card` (avatar + name/role/bio).
 
-#### Remaining stages (3-8)
+#### Remaining stages (4-8)
 | Stage | Focus | Key deliverables |
 |-------|-------|-----------------|
-| 3 | OKLCH palette & light mode | Category badge colors, `.dateline` styling, `.breaking-ticker` HTML, `.pull-quote` blockquotes, `.section-break` dividers, `.author-card`, `<meta theme-color>` |
 | 4 | Motion & scroll effects | Custom easing on all transitions, `will-change`/GPU compositing, `scroll-effects.js` (IntersectionObserver reveals + lazy images), reading progress bar CSS, card hover effects |
 | 5 | Responsive QA | `container-type: inline-size`, `@container` rules, hamburger nav (already exists — verify), 44px touch targets, `env(safe-area-inset-*)`, `aspect-ratio` on image wrappers, overflow/touch audits |
 | 6 | Homepage layout | 7fr/5fr golden ratio hero grid, `repeat(auto-fill, minmax(300px, 1fr))` story grid, subgrid card alignment, `.section-header` pattern, `.section-break` dividers |

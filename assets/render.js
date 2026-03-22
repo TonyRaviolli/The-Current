@@ -29,45 +29,45 @@
 const FEED_MAX_STORIES = 10; // total articles shown across Tier 1/2/3 on briefing tab
 const FEED_MAX_PER_TIER = 3;  // target per tier before overflow fills remaining slots
 
-// ── Topic-keyed visual palette for SVG placeholder images ────────────────────
+// ── Topic-keyed visual palette for SVG placeholder images (OKLCH) ────────────
 const TOPIC_VISUAL = {
-  economy:      { bg: '#1a3a2a', accent: '#22c55e', icon: '$', label: 'Economy' },
-  uspolitics:   { bg: '#1a1a3a', accent: '#6366f1', icon: '\u2696', label: 'U.S. Politics' },
-  geopolitics:  { bg: '#1a2a3a', accent: '#38bdf8', icon: '\u2316', label: 'Geopolitics' },
-  tech:         { bg: '#0f1a2a', accent: '#a78bfa', icon: '\u2B21', label: 'Technology' },
-  defense:      { bg: '#1a1a1a', accent: '#f59e0b', icon: '\u25C8', label: 'Defense' },
-  health:       { bg: '#1a2a1a', accent: '#34d399', icon: '+', label: 'Health' },
-  law:          { bg: '#2a1a0a', accent: '#f97316', icon: '\u2696', label: 'Law' },
-  finance:      { bg: '#0a1a2a', accent: '#0ea5e9', icon: '\u25C6', label: 'Finance' },
-  global_trade: { bg: '#1a0a2a', accent: '#e879f9', icon: '\u2295', label: 'Trade' },
-  elections:    { bg: '#2a1a1a', accent: '#ef4444', icon: '\u2B21', label: 'Elections' },
-  default:      { bg: '#1a1a2a', accent: '#94a3b8', icon: '\u25C9', label: 'Intelligence' },
+  economy:      { bg: 'oklch(0.22 0.03 150)', accent: 'oklch(0.58 0.16 150)', icon: '$', label: 'Economy' },
+  uspolitics:   { bg: 'oklch(0.22 0.03 280)', accent: 'oklch(0.58 0.18 280)', icon: '\u2696', label: 'U.S. Politics' },
+  geopolitics:  { bg: 'oklch(0.22 0.03 230)', accent: 'oklch(0.58 0.14 230)', icon: '\u2316', label: 'Geopolitics' },
+  tech:         { bg: 'oklch(0.22 0.03 290)', accent: 'oklch(0.58 0.14 290)', icon: '\u2B21', label: 'Technology' },
+  defense:      { bg: 'oklch(0.22 0.02 80)',  accent: 'oklch(0.58 0.16 80)',  icon: '\u25C8', label: 'Defense' },
+  health:       { bg: 'oklch(0.22 0.03 165)', accent: 'oklch(0.58 0.13 165)', icon: '+', label: 'Health' },
+  law:          { bg: 'oklch(0.22 0.03 50)',  accent: 'oklch(0.58 0.16 50)',  icon: '\u2696', label: 'Law' },
+  finance:      { bg: 'oklch(0.22 0.03 230)', accent: 'oklch(0.58 0.14 230)', icon: '\u25C6', label: 'Finance' },
+  global_trade: { bg: 'oklch(0.22 0.03 320)', accent: 'oklch(0.58 0.15 320)', icon: '\u2295', label: 'Trade' },
+  elections:    { bg: 'oklch(0.22 0.03 27)',  accent: 'oklch(0.58 0.20 27)',  icon: '\u2B21', label: 'Elections' },
+  default:      { bg: 'oklch(0.22 0.01 250)', accent: 'oklch(0.50 0.01 250)', icon: '\u25C9', label: 'Intelligence' },
 };
 
-// ── Pastel/matte color palette for topic accents ─────────────────────────────
+// ── OKLCH color palette for topic accents (L≈0.58, perceptually balanced) ────
 export const TOPIC_PASTEL = {
-  economy:      '#16a34a',
-  uspolitics:   '#4f46e5',
-  geopolitics:  '#0891b2',
-  tech:         '#6366f1',
-  defense:      '#b45309',
-  health:       '#14b8a6',
-  law:          '#ea580c',
-  finance:      '#0284c7',
-  global_trade: '#a21caf',
-  elections:    '#dc2626',
-  ai:           '#7c3aed',
-  biotech:      '#10b981',
-  housing:      '#d97706',
-  labor:        '#65a30d',
-  climate:      '#0d9488',
-  energy:       '#ca8a04',
-  science:      '#2563eb',
-  education:    '#db2777',
-  banking:      '#0369a1',
-  international:'#7c3aed',
-  cyber:        '#e11d48',
-  macroeconomics:'#059669',
+  economy:      'oklch(0.58 0.16 150)',
+  uspolitics:   'oklch(0.58 0.18 280)',
+  geopolitics:  'oklch(0.58 0.14 230)',
+  tech:         'oklch(0.58 0.14 290)',
+  defense:      'oklch(0.58 0.16 80)',
+  health:       'oklch(0.58 0.13 165)',
+  law:          'oklch(0.58 0.16 50)',
+  finance:      'oklch(0.58 0.14 230)',
+  global_trade: 'oklch(0.58 0.15 320)',
+  elections:    'oklch(0.58 0.20 27)',
+  ai:           'oklch(0.58 0.18 300)',
+  biotech:      'oklch(0.58 0.14 160)',
+  housing:      'oklch(0.58 0.14 65)',
+  labor:        'oklch(0.58 0.14 130)',
+  climate:      'oklch(0.58 0.12 175)',
+  energy:       'oklch(0.58 0.15 90)',
+  science:      'oklch(0.58 0.16 250)',
+  education:    'oklch(0.58 0.18 340)',
+  banking:      'oklch(0.58 0.12 240)',
+  international:'oklch(0.58 0.16 300)',
+  cyber:        'oklch(0.58 0.20 355)',
+  macroeconomics:'oklch(0.58 0.14 155)',
 };
 
 export const TOPIC_LABELS = { economy:'Economy',uspolitics:'U.S. Politics',geopolitics:'Geopolitics',tech:'Technology',defense:'Defense',health:'Health',law:'Law',finance:'Finance',global_trade:'Trade',elections:'Elections',ai:'AI',biotech:'Biotech',housing:'Housing',labor:'Labor',climate:'Climate',energy:'Energy',science:'Science',education:'Education',banking:'Banking',international:'International',cyber:'Cyber',macroeconomics:'Macroeconomics' };
@@ -291,13 +291,13 @@ function renderStoryActions(story, baseClass = 'topic-story-link') {
 }
 
 function scoreLabel(score) {
-  if (typeof score !== 'number') return { value: '--', tier: 'Low', color: '#374151' };
+  if (typeof score !== 'number') return { value: '--', tier: 'Low', color: 'oklch(0.30 0.02 250)' };
   const value = (score * 10).toFixed(1);
-  if (score >= 0.90) return { value, tier: 'Critical', color: '#ef4444' };
-  if (score >= 0.78) return { value, tier: 'High',     color: '#f97316' };
-  if (score >= 0.65) return { value, tier: 'Notable',  color: '#eab308' };
-  if (score >= 0.50) return { value, tier: 'Standard', color: '#6b7280' };
-  return { value, tier: 'Low', color: '#374151' };
+  if (score >= 0.90) return { value, tier: 'Critical', color: 'oklch(0.55 0.22 27)' };
+  if (score >= 0.78) return { value, tier: 'High',     color: 'oklch(0.60 0.18 50)' };
+  if (score >= 0.65) return { value, tier: 'Notable',  color: 'oklch(0.75 0.16 90)' };
+  if (score >= 0.50) return { value, tier: 'Standard', color: 'oklch(0.50 0.01 250)' };
+  return { value, tier: 'Low', color: 'oklch(0.30 0.02 250)' };
 }
 
 function confidenceDots(sourceCount) {
@@ -468,7 +468,7 @@ export function renderTopStories(store, claimed) {
     return `<div class="top3-card depth-tilt reveal ${index ? 'stagger-' + index : ''}">
       ${thumb}
       <span class="top3-rank">${String(index + 1).padStart(2, '0')}</span>
-      <div class="top3-category">${escapeHtml(story.topics?.[0] || 'Priority')}</div>
+      <div class="top3-category" data-category="${escapeHtml(story.topics?.[0] || '')}">${escapeHtml(story.topics?.[0] || 'Priority')}</div>
       <h3 class="top3-title"><a href="/story/${escapeHtml(story.slug)}">${escapeHtml(story.headline)}</a></h3>
       <p class="top3-excerpt">${escapeHtml(story.dek || '')}</p>
       <div class="top3-score"><div class="top3-score-bar"><div class="top3-score-fill" style="width:${Math.round((story.score || 0) * 100)}%"></div></div>${scoreBadgeHtml(story.score, story.sources?.length)}</div>
@@ -493,7 +493,7 @@ export function renderDeveloping(store, claimed) {
       <div class="developing-title"><a href="/story/${escapeHtml(story.slug)}">${escapeHtml(story.headline)}</a></div>
       <div class="story-card-excerpt">${escapeHtml(story.dek || '')}</div>
       <div class="developing-actions">
-        ${(story.topics || []).slice(0, 3).map((topic) => `<span class="developing-chip">${escapeHtml(topic)}</span>`).join('')}
+        ${(story.topics || []).slice(0, 3).map((topic) => `<span class="developing-chip" data-category="${escapeHtml(topic)}">${escapeHtml(topic)}</span>`).join('')}
         ${story.url ? `<a class="story-external-link" href="${safeUrl(story.url)}" target="_blank" rel="noopener noreferrer">External</a>` : ''}
       </div>
     </div>`;
@@ -679,7 +679,7 @@ export function renderTopicBreakdownStrip(store, precomputedDegrees) {
   const sorted = Object.entries(degrees).filter(([id, n]) => n > 0 && TOPIC_LABELS[id]).sort((a, b) => b[1] - a[1]);
   const maxCount = sorted.length ? sorted[0][1] : 1;
   const chips = sorted.map(([id, count]) => {
-    const color = TOPIC_PASTEL[id] || '#b0b8c4';
+    const color = TOPIC_PASTEL[id] || 'oklch(0.50 0.01 250)';
     const pct = Math.round((count / totalMentions) * 100);
     const barWidth = Math.round((count / maxCount) * 100);
     return `<button class="topic-count-chip" data-topic="${escapeHtml(id)}" style="border-left-color:${color};--bar-fill:${barWidth}%;--bar-color:${color}" type="button">${escapeHtml(TOPIC_LABELS[id] || id)} <span class="topic-breakdown-count">${count}</span><span class="topic-breakdown-pct">${pct}%</span></button>`;
@@ -726,10 +726,10 @@ function formatTimeAgo(date) {
 function signalSparkline(signals, regime) {
   if (!signals || !signals.length) return '';
   const regimeStrokeColors = {
-    'risk-on':  '#27ae60', 'risk-off': '#c0392b',
-    'volatile': '#f39c12', 'stable':   '#2980b9',
+    'risk-on':  'oklch(0.58 0.16 150)', 'risk-off': 'oklch(0.50 0.18 27)',
+    'volatile': 'oklch(0.72 0.16 75)',  'stable':   'oklch(0.50 0.12 240)',
   };
-  const color = regimeStrokeColors[(regime || 'stable').toLowerCase()] || '#2980b9';
+  const color = regimeStrokeColors[(regime || 'stable').toLowerCase()] || 'oklch(0.50 0.12 240)';
   const pts = signals.slice(0, 6).map((s, i) => {
     const v = s.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
     const y = 28 - ((v % 40) - 20) * 0.6;
@@ -756,16 +756,16 @@ export function renderMarketIntel(store) {
   if (!intel) { container.style.display = 'none'; return; }
   container.style.display = '';
 
-  const pulseColors = { Volatile: '#d96060', Active: '#c9a24a', Stable: '#3dab78', Subdued: '#7a96a8' };
-  const regimeColors = { 'risk-on': '#3dab78', 'risk-off': '#d96060', volatile: '#c9a24a', stable: '#7a96a8' };
+  const pulseColors = { Volatile: 'oklch(0.55 0.18 27)', Active: 'oklch(0.65 0.14 75)', Stable: 'oklch(0.58 0.16 150)', Subdued: 'oklch(0.55 0.03 230)' };
+  const regimeColors = { 'risk-on': 'oklch(0.58 0.16 150)', 'risk-off': 'oklch(0.55 0.18 27)', volatile: 'oklch(0.65 0.14 75)', stable: 'oklch(0.55 0.03 230)' };
   const regimeBgColors = {
-    'risk-on':  'rgba(39,174,96,0.08)',
-    'risk-off': 'rgba(192,57,43,0.08)',
-    'volatile': 'rgba(243,156,18,0.08)',
-    'stable':   'rgba(41,128,185,0.06)',
+    'risk-on':  'oklch(0.58 0.16 150 / 0.08)',
+    'risk-off': 'oklch(0.50 0.18 27 / 0.08)',
+    'volatile': 'oklch(0.72 0.16 75 / 0.08)',
+    'stable':   'oklch(0.50 0.12 240 / 0.06)',
   };
-  const pColor = pulseColors[intel.pulse] || '#7a96a8';
-  const rColor = regimeColors[intel.regime] || '#7a96a8';
+  const pColor = pulseColors[intel.pulse] || 'oklch(0.55 0.03 230)';
+  const rColor = regimeColors[intel.regime] || 'oklch(0.55 0.03 230)';
   const regime = (intel.regime || 'stable').toLowerCase();
   const tileBackground = regimeBgColors[regime] || regimeBgColors['stable'];
 
@@ -974,7 +974,7 @@ export function renderTopics(store) {
       ? `<div class="topic-date-nav" data-topic-nav="${escapeHtml(topic.topic)}"><button class="topic-date-nav-arrow" data-dir="left" type="button" aria-label="Scroll dates left">&#8249;</button><div class="topic-date-nav-strip">${datePills}</div><button class="topic-date-nav-arrow" data-dir="right" type="button" aria-label="Scroll dates right">&#8250;</button></div>`
       : '';
 
-    const sectionColor = TOPIC_PASTEL[topic.topic] || '#b0b8c4';
+    const sectionColor = TOPIC_PASTEL[topic.topic] || 'oklch(0.50 0.01 250)';
     return `<div class="topic-section topic-section--collapsed" data-topic-section="${escapeHtml(topic.topic)}" style="border-left: 4px solid ${sectionColor}">
       <div class="topic-section-header">
         <h2 class="topic-section-title" style="color: ${sectionColor}">${escapeHtml(topic.label || topic.topic)}</h2>
@@ -1093,11 +1093,11 @@ export function renderSourceSpectrum(stories) {
   if (!hasOrientationData) return;
   const total = Object.values(orientCounts).reduce((a, b) => a + b, 0) || 1;
   const rows = [
-    { key: 'left',         label: 'Left',         color: '#4a90d9', weight: -2 },
-    { key: 'center-left',  label: 'Center-Left',  color: '#6eb5ff', weight: -1 },
-    { key: 'center',       label: 'Center',       color: '#a0a0a0', weight:  0 },
-    { key: 'center-right', label: 'Center-Right', color: '#e8923a', weight:  1 },
-    { key: 'right',        label: 'Right',        color: '#d45454', weight:  2 },
+    { key: 'left',         label: 'Left',         color: 'oklch(0.58 0.14 240)', weight: -2 },
+    { key: 'center-left',  label: 'Center-Left',  color: 'oklch(0.68 0.12 240)', weight: -1 },
+    { key: 'center',       label: 'Center',       color: 'oklch(0.65 0.01 250)', weight:  0 },
+    { key: 'center-right', label: 'Center-Right', color: 'oklch(0.65 0.14 60)',  weight:  1 },
+    { key: 'right',        label: 'Right',        color: 'oklch(0.58 0.18 27)',  weight:  2 },
   ];
   // Compute lean score: weighted average of orientation counts
   let weightedSum = 0;
@@ -1337,7 +1337,7 @@ export function renderStoryPage(story) {
   if (updated) updated.textContent = `Updated ${formatDate(story.updatedAt)} ${formatTime(story.updatedAt)}`;
   if (verification) verification.textContent = story.verificationTier || 'Verification';
   if (confidence) confidence.textContent = `Confidence ${story.confidenceLabel || ''}`;
-  if (tags) tags.innerHTML = (story.topics || []).map((topic) => `<span class="story-tag">${escapeHtml(topic)}</span>`).join('');
+  if (tags) tags.innerHTML = (story.topics || []).map((topic) => `<span class="story-tag" data-category="${escapeHtml(topic)}">${escapeHtml(topic)}</span>`).join('');
   if (saveBtn) saveBtn.dataset.save = story.id;
   if (followBtn) followBtn.dataset.follow = story.topics?.[0] || '';
   if (why) why.textContent = story.whyItMatters || '';
