@@ -433,11 +433,25 @@ export function renderHero(store, claimed) {
   meta.innerHTML = `<span class="hero-meta-dot"></span><span>${formatDate(lead.updatedAt || lead.publishedAt)}</span><span class="hero-meta-sep">&middot;</span>${scoreBadgeHtml(lead.score, lead.sources?.length)}`;
   let citationParts = '';
   if (lead.source) {
-    citationParts += `<div class="citation-author">${escapeHtml(lead.source)}</div>`;
+    let faviconHtml = '';
+    if (lead.url) {
+      try {
+        const domain = new URL(lead.url).hostname;
+        faviconHtml = `<img class="citation-favicon" src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=32" alt="" width="14" height="14" onerror="this.style.display='none'">`;
+      } catch (_) { /* invalid URL — skip favicon */ }
+    }
+    citationParts += `<div class="citation-author">${faviconHtml}${escapeHtml(lead.source)}</div>`;
     citationParts += `<div class="citation-date">${formatDate(lead.updatedAt || lead.publishedAt)}</div>`;
   }
   if (lead.url) {
-    citationParts += `<div class="citation-link"><a href="${safeUrl(lead.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(lead.url)}</a> <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1h7v7M11 1L5 7"/></svg></div>`;
+    let urlDisplay = escapeHtml(lead.url);
+    try {
+      const parsed = new URL(lead.url);
+      const domain = escapeHtml(parsed.hostname);
+      const pathPart = escapeHtml(parsed.pathname + parsed.search);
+      urlDisplay = `<span class="citation-link-domain">${domain}</span><span class="citation-link-path">${pathPart}</span>`;
+    } catch (_) { /* invalid URL — show raw */ }
+    citationParts += `<div class="citation-link"><a href="${safeUrl(lead.url)}" target="_blank" rel="noopener noreferrer">${urlDisplay} <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1h7v7M11 1L5 7"/></svg></a></div>`;
   }
   citation.innerHTML = citationParts;
   const heroThumb = document.getElementById('heroThumb');
