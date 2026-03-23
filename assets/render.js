@@ -1678,42 +1678,27 @@ const STATE_COLOR_MAP = {
   WI:1,WV:4,WY:4
 };
 
-const SMALL_STATES = new Set(['RI','DE','CT','NJ','MD','MA','VT','NH','DC']);
+const SMALL_STATES = new Set(['RI','DE','CT','MD','MA','VT','NH','DC']);
 
-// ── Hardcoded visual centers for all 50 states + DC ──
-// Pre-computed via polylabel (pole of inaccessibility) with manual visual adjustments.
-// Coordinates in Albers USA projection SVG space (960×600 viewBox).
-// Eliminates runtime polylabel computation and nudge hacks.
-const STATE_CENTERS = {
-  AK: [115, 492],  AL: [667, 436],   AR: [554, 384],   AZ: [205, 390],
-  CA: [95, 330],    CO: [309, 283],   CT: [881, 184],   DC: [821, 263],
-  DE: [849, 262],   FL: [748, 498],   GA: [736, 434],   HI: [310, 568],
-  IA: [523, 223],   ID: [190, 165],   IL: [604, 262],   IN: [661, 271],
-  KS: [450, 304],   KY: [688, 312],   LA: [570, 445],   MA: [871, 169],
-  MD: [808, 258],   ME: [913, 86],    MI: [680, 220],   MN: [514, 110],
-  MO: [552, 312],   MS: [609, 417],   MT: [251, 95],    NC: [795, 348],
-  ND: [439, 99],    NE: [426, 235],   NH: [886, 146],   NJ: [853, 240],
-  NM: [304, 388],   NV: [137, 240],   NY: [842, 175],   OH: [713, 252],
-  OK: [475, 370],   OR: [112, 137],   PA: [813, 218],   RI: [896, 176],
-  SC: [779, 390],   SD: [400, 166],   TN: [658, 358],   TX: [445, 465],
-  UT: [222, 278],   VA: [785, 298],   VT: [864, 121],   WA: [130, 60],
-  WI: [588, 156],   WV: [748, 288],   WY: [291, 189],
-};
-
-// ── State areas for font scaling (pre-computed) ──
-const STATE_AREAS = {
-  AK: 7358, AL: 5579, AR: 5734, AZ: 12298, CA: 17023, CO: 11215, CT: 538,
-  DC: 7, DE: 219, FL: 6275, GA: 6357, HI: 435, IA: 6059, ID: 8994,
-  IL: 6068, IN: 3899, KS: 8867, KY: 4352, LA: 5102, MA: 868, MD: 1118,
-  ME: 3549, MI: 4448, MN: 9079, MO: 7512, MS: 5145, MT: 15813, NC: 5371,
-  ND: 7603, NE: 8330, NH: 999, NJ: 838, NM: 13114, NV: 11911, NY: 5276,
-  OH: 4450, OK: 7537, OR: 10444, PA: 4880, RI: 106, SC: 3359, SD: 8297,
-  TN: 4544, TX: 28677, UT: 9146, VA: 4270, VT: 1035, WA: 7243, WI: 6029,
-  WV: 2608, WY: 10531,
+// ── Manual label overrides for states where getBBox center falls outside the polygon ──
+// Only needed for ~8 oddly-shaped states; all others use getBBox center automatically.
+const LABEL_OVERRIDES = {
+  FL: [738, 490],   // Peninsula center, not panhandle
+  MI: [680, 225],   // Lower peninsula, not upper
+  LA: [568, 442],   // Main body, not delta
+  OK: [470, 368],   // Body, not panhandle
+  MD: [808, 256],   // Thin state — nudge into center
+  VA: [782, 296],   // Long state — shift west
+  NY: [840, 178],   // Upstate body, not NYC
+  CA: [92, 325],    // Central Valley center
+  HI: [305, 565],   // Big Island cluster
+  AK: [110, 490],   // Mainland mass center
+  ID: [188, 162],   // Shift south into wider portion
+  NJ: [853, 238],   // Small but not in leader-line group
 };
 
 // ── Small states: leader-line layout ──
-const SMALL_STATE_IDS = ['VT','NH','MA','RI','CT','NJ','DE','MD','DC'];
+const SMALL_STATE_IDS = ['VT','NH','MA','RI','CT','DE','MD','DC'];
 const SMALL_STATE_LABEL_X = 920;
 const SMALL_STATE_MIN_GAP = 20;
 
@@ -1795,7 +1780,7 @@ export function renderUSMap(container) {
       <feDropShadow dx="2" dy="5" stdDeviation="3" flood-color="#1a1a1a" flood-opacity="0.28"/>
     </filter>
     <marker id="leaderDot" viewBox="0 0 4 4" refX="2" refY="2" markerWidth="4" markerHeight="4">
-      <circle cx="2" cy="2" r="1.2" fill="rgba(180,170,150,0.5)"/>
+      <circle cx="2" cy="2" r="1.2" fill="rgba(122,129,144,0.5)"/>
     </marker>
     <pattern id="mapGrid" width="48" height="48" patternUnits="userSpaceOnUse">
       <path d="M 48 0 L 0 0 0 48" fill="none" stroke="rgba(255,255,255,0.018)" stroke-width="0.5"/>
@@ -1809,29 +1794,14 @@ export function renderUSMap(container) {
   grid.style.pointerEvents = 'none';
   svg.appendChild(grid);
 
-  // ── Use hardcoded visual centers + areas ──
-  const visualCenters = STATE_CENTERS;
-
-  // Compute font sizes: scale with sqrt(area), min 8px max 12px
-  const areas = Object.values(STATE_AREAS).filter(a => a > 0);
-  const maxArea = Math.max(...areas), minArea = Math.min(...areas);
-  const fontSizeForState = (id) => {
-    const a = STATE_AREAS[id] || 0;
-    if (a <= 0) return 8;
-    const t = Math.sqrt((a - minArea) / (maxArea - minArea || 1));
-    return Math.max(8, Math.min(12, 8 + t * 4));
-  };
-
   // ── Create per-state <g> groups ──
-  const statesByX = [...US_STATES].sort((a, b) => visualCenters[a.id][0] - visualCenters[b.id][0]);
-  statesByX.forEach((state, index) => {
+  const stateGroups = {};
+  US_STATES.forEach((state, index) => {
     const g = document.createElementNS(svgNS, 'g');
     g.setAttribute('class', 'leg-state-group');
     g.setAttribute('data-state', state.id);
     g.setAttribute('data-state-name', state.name);
     g.setAttribute('filter', 'url(#stateShadow)');
-    const [vcx, vcy] = visualCenters[state.id];
-    g.style.transformOrigin = `${vcx}px ${vcy}px`;
     g.style.transition = 'transform 0.15s ease-out, filter 0.15s ease-out';
 
     const path = document.createElementNS(svgNS, 'path');
@@ -1846,12 +1816,53 @@ export function renderUSMap(container) {
     g.appendChild(path);
 
     pathsGroup.appendChild(g);
+    stateGroups[state.id] = { g, path };
   });
 
   svg.appendChild(pathsGroup);
   container.appendChild(svg);
 
-  // ── Create labels using hardcoded visual centers ──
+  // ── Compute label centers via getBBox (paths are now in DOM) ──
+  // getBBox gives pixel-accurate bounding box for each state path.
+  // Manual overrides only for ~8 states where bbox center falls outside the polygon.
+  const visualCenters = {};
+  const stateAreas = {};
+  US_STATES.forEach((state) => {
+    if (LABEL_OVERRIDES[state.id]) {
+      visualCenters[state.id] = LABEL_OVERRIDES[state.id];
+    } else {
+      try {
+        const bbox = stateGroups[state.id].path.getBBox();
+        visualCenters[state.id] = [bbox.x + bbox.width / 2, bbox.y + bbox.height / 2];
+      } catch (_) {
+        visualCenters[state.id] = [480, 300]; // fallback
+      }
+    }
+    try {
+      const bbox = stateGroups[state.id].path.getBBox();
+      stateAreas[state.id] = bbox.width * bbox.height;
+    } catch (_) {
+      stateAreas[state.id] = 0;
+    }
+  });
+
+  // Set transform-origin on each group now that we have centers
+  US_STATES.forEach((state) => {
+    const [vcx, vcy] = visualCenters[state.id];
+    stateGroups[state.id].g.style.transformOrigin = `${vcx}px ${vcy}px`;
+  });
+
+  // Compute font sizes: scale with sqrt(area), min 10px max 12px
+  const areas = Object.values(stateAreas).filter(a => a > 0);
+  const maxArea = Math.max(...areas), minArea = Math.min(...areas);
+  const fontSizeForState = (id) => {
+    const a = stateAreas[id] || 0;
+    if (a <= 0) return 10;
+    const t = Math.sqrt((a - minArea) / (maxArea - minArea || 1));
+    return Math.max(10, Math.min(12, 10 + t * 2));
+  };
+
+  // ── Create labels using getBBox centers ──
 
   // Small states: compute non-overlapping label column layout
   const smallStatesData = SMALL_STATE_IDS
@@ -1866,7 +1877,7 @@ export function renderUSMap(container) {
     nextY = labelY + SMALL_STATE_MIN_GAP;
   }
 
-  // Render all labels (static — light cream, pointer-events: none)
+  // Render all labels
   US_STATES.forEach((state, index) => {
     const [cx, cy] = visualCenters[state.id];
     const isSmall = SMALL_STATES.has(state.id);
@@ -1876,25 +1887,16 @@ export function renderUSMap(container) {
       labelX = smallLabelPositions[state.id].labelX;
       labelY = smallLabelPositions[state.id].labelY;
 
-      // Leader line from state centroid to label column
+      // Leader line from state center to label column
       const line = document.createElementNS(svgNS, 'line');
       line.setAttribute('x1', cx); line.setAttribute('y1', cy);
       line.setAttribute('x2', labelX - 8); line.setAttribute('y2', labelY);
       line.setAttribute('class', 'leg-state-leader');
       line.setAttribute('marker-start', 'url(#leaderDot)');
       labelsGroup.appendChild(line);
-
-      // Semi-transparent background pill behind small state label
-      const bg = document.createElementNS(svgNS, 'rect');
-      bg.setAttribute('x', labelX - 20);
-      bg.setAttribute('y', labelY - 7);
-      bg.setAttribute('width', '24');
-      bg.setAttribute('height', '14');
-      bg.setAttribute('class', 'leg-state-label--small-bg');
-      labelsGroup.appendChild(bg);
     }
 
-    const fontSize = isSmall ? 9 : fontSizeForState(state.id);
+    const fontSize = isSmall ? 10 : fontSizeForState(state.id);
     const text = document.createElementNS(svgNS, 'text');
     text.setAttribute('x', labelX);
     text.setAttribute('y', labelY);
