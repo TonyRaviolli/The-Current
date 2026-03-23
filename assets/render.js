@@ -1680,156 +1680,42 @@ const STATE_COLOR_MAP = {
 
 const SMALL_STATES = new Set(['RI','DE','CT','NJ','MD','MA','VT','NH','DC']);
 
-// ── Polylabel: find the visual center (pole of inaccessibility) of a polygon ──
-// Returns the point inside the polygon farthest from any edge.
-// Adapted from Mapbox's polylabel algorithm (ISC license).
-function polylabel(rings, precision = 1.0) {
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  const outerRing = rings[0];
-  for (const [x, y] of outerRing) {
-    if (x < minX) minX = x; if (y < minY) minY = y;
-    if (x > maxX) maxX = x; if (y > maxY) maxY = y;
-  }
-  const width = maxX - minX, height = maxY - minY;
-  const cellSize = Math.max(width, height);
-  if (cellSize === 0) return [minX, minY];
-  let h = cellSize / 2;
-  const distFn = (px, py) => pointToPolygonDist(px, py, rings);
-  // Cover bbox with initial cells
-  let best = getCentroidCell(rings);
-  const bboxCell = { x: minX + width / 2, y: minY + height / 2, h, d: distFn(minX + width / 2, minY + height / 2) };
-  if (bboxCell.d > best.d) best = bboxCell;
-  const queue = [];
-  const pushCell = (cx, cy, ch) => {
-    const d = distFn(cx, cy);
-    const max = d + ch * Math.SQRT2;
-    if (max > best.d) queue.push({ x: cx, y: cy, h: ch, d, max });
-  };
-  for (let x = minX; x < maxX; x += cellSize) {
-    for (let y = minY; y < maxY; y += cellSize) {
-      pushCell(x + h, y + h, h);
-    }
-  }
-  queue.sort((a, b) => a.max - b.max);
-  while (queue.length) {
-    const cell = queue.pop();
-    if (cell.d > best.d) best = cell;
-    if (cell.max - best.d <= precision) continue;
-    h = cell.h / 2;
-    pushCell(cell.x - h, cell.y - h, h);
-    pushCell(cell.x + h, cell.y - h, h);
-    pushCell(cell.x - h, cell.y + h, h);
-    pushCell(cell.x + h, cell.y + h, h);
-    queue.sort((a, b) => a.max - b.max);
-  }
-  return [best.x, best.y];
-}
-function pointToPolygonDist(px, py, rings) {
-  let inside = false, minDist = Infinity;
-  for (const ring of rings) {
-    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-      const [ax, ay] = ring[i], [bx, by] = ring[j];
-      if ((ay > py) !== (by > py) && px < (bx - ax) * (py - ay) / (by - ay) + ax) inside = !inside;
-      minDist = Math.min(minDist, segDistSq(px, py, ax, ay, bx, by));
-    }
-  }
-  return (inside ? 1 : -1) * Math.sqrt(minDist);
-}
-function segDistSq(px, py, ax, ay, bx, by) {
-  let dx = bx - ax, dy = by - ay;
-  if (dx !== 0 || dy !== 0) {
-    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
-    ax += t * dx; ay += t * dy;
-  }
-  dx = px - ax; dy = py - ay;
-  return dx * dx + dy * dy;
-}
-function getCentroidCell(rings) {
-  let area = 0, cx = 0, cy = 0;
-  const ring = rings[0];
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const [ax, ay] = ring[i], [bx, by] = ring[j];
-    const f = ax * by - bx * ay;
-    cx += (ax + bx) * f; cy += (ay + by) * f; area += f;
-  }
-  if (area === 0) return { x: ring[0][0], y: ring[0][1], h: 0, d: 0 };
-  area *= 0.5; cx /= (6 * area); cy /= (6 * area);
-  return { x: cx, y: cy, h: 0, d: pointToPolygonDist(cx, cy, rings) };
-}
-
-// ── Parse SVG path (M/L/Z) into polygon rings ──
-function pathToRings(d) {
-  const rings = [];
-  let current = [];
-  const parts = d.match(/[MLZ][^MLZ]*/g) || [];
-  for (const part of parts) {
-    const cmd = part[0];
-    if (cmd === 'Z') {
-      if (current.length > 2) rings.push(current);
-      current = [];
-    } else {
-      const nums = part.slice(1).match(/-?[\d.]+/g);
-      if (nums) {
-        for (let i = 0; i < nums.length - 1; i += 2) {
-          current.push([parseFloat(nums[i]), parseFloat(nums[i + 1])]);
-        }
-      }
-    }
-  }
-  if (current.length > 2) rings.push(current);
-  return rings;
-}
-
-// ── Get visual center for a state (uses largest ring for multi-polygon states) ──
-function getStateVisualCenter(pathData) {
-  const allRings = pathToRings(pathData);
-  if (!allRings.length) return [480, 300];
-  // Find the largest ring by area (handles AK, MI, HI multi-polygon)
-  let largestRing = allRings[0], largestArea = 0;
-  for (const ring of allRings) {
-    let area = 0;
-    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-      area += ring[i][0] * ring[j][1] - ring[j][0] * ring[i][1];
-    }
-    area = Math.abs(area);
-    if (area > largestArea) { largestArea = area; largestRing = ring; }
-  }
-  return polylabel([largestRing], 0.1);
-}
-
-// ── Compute area of a state's largest ring (for font scaling) ──
-function getStateArea(pathData) {
-  const allRings = pathToRings(pathData);
-  if (!allRings.length) return 0;
-  let largest = 0;
-  for (const ring of allRings) {
-    let area = 0;
-    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-      area += ring[i][0] * ring[j][1] - ring[j][0] * ring[i][1];
-    }
-    largest = Math.max(largest, Math.abs(area));
-  }
-  return largest * 0.5;
-}
-
-// ── Small states: computed leader-line layout (sorted by y, minimum spacing) ──
-const SMALL_STATE_IDS = ['VT','NH','MA','RI','CT','NJ','DE','MD','DC'];
-const SMALL_STATE_LABEL_X = 915; // Label column x-position (right of NE coast)
-const SMALL_STATE_MIN_GAP = 16;  // Minimum vertical spacing between labels
-
-// ── Manual nudges for states where polylabel is geometrically correct but visually off ──
-const LABEL_NUDGES = {
-  FL: { dx: -40, dy: -20 },
-  OK: { dx: -25, dy: 0 },
-  MI: { dx: 0, dy: -10 },
-  LA: { dx: 10, dy: 10 },
-  ID: { dx: 0, dy: -15 },
-  CA: { dx: 5, dy: 0 },
-  NY: { dx: 5, dy: 5 },
-  VA: { dx: -10, dy: -5 },
-  MD: { dx: 0, dy: 0 },
-  HI: { dx: 0, dy: -5 },
+// ── Hardcoded visual centers for all 50 states + DC ──
+// Pre-computed via polylabel (pole of inaccessibility) with manual visual adjustments.
+// Coordinates in Albers USA projection SVG space (960×600 viewBox).
+// Eliminates runtime polylabel computation and nudge hacks.
+const STATE_CENTERS = {
+  AK: [114, 500], AL: [666.6, 436], AR: [553.9, 384.1], AZ: [202.3, 392],
+  CA: [86.6, 318], CO: [309, 283.3], CT: [880.8, 184.1], DC: [820.8, 262.5],
+  DE: [848.7, 261.7], FL: [768.6, 519.9], GA: [736.2, 433.7], HI: [319.3, 576.3],
+  IA: [523.2, 223.4], ID: [187.5, 153.3], IL: [604.2, 261.9], IN: [660.5, 270.9],
+  KS: [450, 304.1], KY: [694.9, 310.6], LA: [564.9, 457.3], MA: [871.3, 169.1],
+  MD: [813.1, 252.1], ME: [913.3, 86.4], MI: [691.1, 204.9], MN: [513.9, 110.1],
+  MO: [552.2, 312], MS: [609.4, 416.5], MT: [251.4, 94.7], NC: [810.6, 345.8],
+  ND: [438.5, 99.4], NE: [425.9, 234.7], NH: [886.1, 145.6], NJ: [853.4, 239.6],
+  NM: [304.4, 390.5], NV: [134.9, 234.7], NY: [836.8, 166.8], OH: [712.7, 252.4],
+  OK: [468.2, 377.5], OR: [109.8, 136.6], PA: [812.8, 218.1], RI: [895.7, 175.7],
+  SC: [779, 390], SD: [399.7, 165.5], TN: [658.1, 357.9], TX: [448.3, 480.5],
+  UT: [219.9, 275.7], VA: [798.1, 292.5], VT: [863.7, 120.6], WA: [128.3, 59.2],
+  WI: [587.7, 155.9], WV: [751.5, 290.3], WY: [290.6, 189],
 };
+
+// ── State areas for font scaling (pre-computed) ──
+const STATE_AREAS = {
+  AK: 7358, AL: 5579, AR: 5734, AZ: 12298, CA: 17023, CO: 11215, CT: 538,
+  DC: 7, DE: 219, FL: 6275, GA: 6357, HI: 435, IA: 6059, ID: 8994,
+  IL: 6068, IN: 3899, KS: 8867, KY: 4352, LA: 5102, MA: 868, MD: 1118,
+  ME: 3549, MI: 4448, MN: 9079, MO: 7512, MS: 5145, MT: 15813, NC: 5371,
+  ND: 7603, NE: 8330, NH: 999, NJ: 838, NM: 13114, NV: 11911, NY: 5276,
+  OH: 4450, OK: 7537, OR: 10444, PA: 4880, RI: 106, SC: 3359, SD: 8297,
+  TN: 4544, TX: 28677, UT: 9146, VA: 4270, VT: 1035, WA: 7243, WI: 6029,
+  WV: 2608, WY: 10531,
+};
+
+// ── Small states: leader-line layout ──
+const SMALL_STATE_IDS = ['VT','NH','MA','RI','CT','NJ','DE','MD','DC'];
+const SMALL_STATE_LABEL_X = 920;
+const SMALL_STATE_MIN_GAP = 20;
 
 let legMapTooltip = null;
 let legMapSelectedState = null;
@@ -1908,12 +1794,11 @@ export function renderUSMap(container) {
     <filter id="stateShadowHover" x="-10%" y="-10%" width="125%" height="135%">
       <feDropShadow dx="2" dy="5" stdDeviation="3" flood-color="#1a1a1a" flood-opacity="0.28"/>
     </filter>
-    <filter id="mapNoise" x="0" y="0" width="100%" height="100%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch"/>
-      <feColorMatrix type="saturate" values="0"/>
+    <filter id="insetGlow" x="-10%" y="-10%" width="125%" height="135%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="oklch(0.40 0.04 220)" flood-opacity="0.4"/>
     </filter>
     <marker id="leaderDot" viewBox="0 0 4 4" refX="2" refY="2" markerWidth="4" markerHeight="4">
-      <circle cx="2" cy="2" r="1.2" fill="rgba(100,80,60,0.5)"/>
+      <circle cx="2" cy="2" r="1.2" fill="rgba(180,170,150,0.5)"/>
     </marker>
     <pattern id="mapGrid" width="48" height="48" patternUnits="userSpaceOnUse">
       <path d="M 48 0 L 0 0 0 48" fill="none" stroke="rgba(255,255,255,0.018)" stroke-width="0.5"/>
@@ -1927,38 +1812,33 @@ export function renderUSMap(container) {
   grid.style.pointerEvents = 'none';
   svg.appendChild(grid);
 
-  // ── Compute visual centers + areas for ALL states ──
-  const visualCenters = {};
-  const stateAreas = {};
-  US_STATES.forEach((state) => {
-    const [cx, cy] = getStateVisualCenter(state.path);
-    const nudge = LABEL_NUDGES[state.id];
-    visualCenters[state.id] = nudge ? [cx + nudge.dx, cy + nudge.dy] : [cx, cy];
-    stateAreas[state.id] = getStateArea(state.path);
-  });
+  // ── Use hardcoded visual centers + areas ──
+  const visualCenters = STATE_CENTERS;
 
   // Compute font sizes: scale with sqrt(area), min 8px max 12px
-  const areas = Object.values(stateAreas).filter(a => a > 0);
+  const areas = Object.values(STATE_AREAS).filter(a => a > 0);
   const maxArea = Math.max(...areas), minArea = Math.min(...areas);
   const fontSizeForState = (id) => {
-    const a = stateAreas[id] || 0;
+    const a = STATE_AREAS[id] || 0;
     if (a <= 0) return 8;
     const t = Math.sqrt((a - minArea) / (maxArea - minArea || 1));
     return Math.max(8, Math.min(12, 8 + t * 4));
   };
 
-  // ── Create per-state <g> groups (path + noise overlay) ──
+  // ── Create per-state <g> groups ──
+  const isInsetState = (id) => id === 'AK' || id === 'HI';
   const statesByX = [...US_STATES].sort((a, b) => visualCenters[a.id][0] - visualCenters[b.id][0]);
   statesByX.forEach((state, index) => {
     const g = document.createElementNS(svgNS, 'g');
     g.setAttribute('class', 'leg-state-group');
     g.setAttribute('data-state', state.id);
     g.setAttribute('data-state-name', state.name);
-    g.setAttribute('filter', 'url(#stateShadow)');
+    // AK/HI get a dedicated glow filter to lift off the dark background
+    g.setAttribute('filter', isInsetState(state.id) ? 'url(#insetGlow)' : 'url(#stateShadow)');
     // Transform-origin at visual center for hover lift
     const [vcx, vcy] = visualCenters[state.id];
     g.style.transformOrigin = `${vcx}px ${vcy}px`;
-    g.style.transition = 'transform 0.18s ease, filter 0.18s ease';
+    g.style.transition = 'transform 0.15s ease-out, filter 0.15s ease-out';
 
     // State fill path
     const path = document.createElementNS(svgNS, 'path');
@@ -1970,18 +1850,9 @@ export function renderUSMap(container) {
     path.setAttribute('role', 'button');
     path.setAttribute('tabindex', '0');
     path.style.animationDelay = `${index * 12}ms`;
+    // AK/HI: ensure full opacity, no dimming
+    if (isInsetState(state.id)) path.style.fillOpacity = '1.0';
     g.appendChild(path);
-
-    // Noise texture overlay (same shape, only covers fill, not borders/labels)
-    const noise = document.createElementNS(svgNS, 'path');
-    noise.setAttribute('d', state.path);
-    noise.setAttribute('fill', 'white');
-    noise.setAttribute('stroke', 'none');
-    noise.setAttribute('filter', 'url(#mapNoise)');
-    noise.setAttribute('opacity', '0.035');
-    noise.setAttribute('class', 'leg-state-noise');
-    noise.style.pointerEvents = 'none';
-    g.appendChild(noise);
 
     pathsGroup.appendChild(g);
   });
@@ -1989,7 +1860,7 @@ export function renderUSMap(container) {
   svg.appendChild(pathsGroup);
   container.appendChild(svg);
 
-  // ── Create labels using polylabel visual centers ──
+  // ── Create labels using hardcoded visual centers ──
 
   // Small states: compute non-overlapping label column layout
   const smallStatesData = SMALL_STATE_IDS
@@ -2004,7 +1875,7 @@ export function renderUSMap(container) {
     nextY = labelY + SMALL_STATE_MIN_GAP;
   }
 
-  // Render all labels (static — no hover/select color shift)
+  // Render all labels (static — light cream, pointer-events: none)
   US_STATES.forEach((state, index) => {
     const [cx, cy] = visualCenters[state.id];
     const isSmall = SMALL_STATES.has(state.id);
@@ -2014,15 +1885,25 @@ export function renderUSMap(container) {
       labelX = smallLabelPositions[state.id].labelX;
       labelY = smallLabelPositions[state.id].labelY;
 
+      // Leader line from state centroid to label column
       const line = document.createElementNS(svgNS, 'line');
       line.setAttribute('x1', cx); line.setAttribute('y1', cy);
       line.setAttribute('x2', labelX - 8); line.setAttribute('y2', labelY);
       line.setAttribute('class', 'leg-state-leader');
       line.setAttribute('marker-start', 'url(#leaderDot)');
       labelsGroup.appendChild(line);
+
+      // Semi-transparent background pill behind small state label
+      const bg = document.createElementNS(svgNS, 'rect');
+      bg.setAttribute('x', labelX - 20);
+      bg.setAttribute('y', labelY - 7);
+      bg.setAttribute('width', '24');
+      bg.setAttribute('height', '14');
+      bg.setAttribute('class', 'leg-state-label--small-bg');
+      labelsGroup.appendChild(bg);
     }
 
-    const fontSize = isSmall ? 8 : fontSizeForState(state.id);
+    const fontSize = isSmall ? 9 : fontSizeForState(state.id);
     const text = document.createElementNS(svgNS, 'text');
     text.setAttribute('x', labelX);
     text.setAttribute('y', labelY);
@@ -2045,7 +1926,7 @@ export function renderUSMap(container) {
     <span class="leg-map-legend-item"><span class="leg-map-legend-swatch" style="background:oklch(0.76 0.04 75)"></span>Introduced</span>
     <span class="leg-map-legend-item"><span class="leg-map-legend-swatch" style="background:oklch(0.70 0.03 55)"></span>In Committee</span>
     <span class="leg-map-legend-item"><span class="leg-map-legend-swatch" style="background:oklch(0.72 0.04 140)"></span>Passed</span>
-    <span class="leg-map-legend-item"><span class="leg-map-legend-pulse"></span>Active legislation</span>
+    <span class="leg-map-legend-item"><span class="leg-map-legend-pulse"></span>Active data</span>
   `;
   container.appendChild(legend);
 
@@ -2062,7 +1943,7 @@ export function renderUSMap(container) {
     if (!g) {
       legMapTooltip.style.display = 'none';
       if (lastHoveredGroup) {
-        lastHoveredGroup.setAttribute('filter', 'url(#stateShadow)');
+        lastHoveredGroup.setAttribute('filter', isInsetState(lastHoveredGroup.dataset.state) ? 'url(#insetGlow)' : 'url(#stateShadow)');
         lastHoveredGroup.style.transform = '';
         const prevPath = lastHoveredGroup.querySelector('.leg-state-path');
         if (prevPath) prevPath.classList.remove('map-hover');
@@ -2091,16 +1972,16 @@ export function renderUSMap(container) {
     updateQuickStat(abbr);
     highlightSidebarItem(abbr);
 
-    // 3D lift: swap filter + transform on hover group
+    // Hover: brightness lift + steel blue glow via CSS class
     if (g !== lastHoveredGroup) {
       if (lastHoveredGroup) {
-        lastHoveredGroup.setAttribute('filter', 'url(#stateShadow)');
+        lastHoveredGroup.setAttribute('filter', isInsetState(lastHoveredGroup.dataset.state) ? 'url(#insetGlow)' : 'url(#stateShadow)');
         lastHoveredGroup.style.transform = '';
         const prevPath = lastHoveredGroup.querySelector('.leg-state-path');
         if (prevPath) prevPath.classList.remove('map-hover');
       }
       g.setAttribute('filter', 'url(#stateShadowHover)');
-      g.style.transform = 'translateY(-4px) scale(1.03)';
+      g.style.transform = 'translateY(-2px) scale(1.02)';
       const hovPath = g.querySelector('.leg-state-path');
       if (hovPath) hovPath.classList.add('map-hover');
       lastHoveredGroup = g;
@@ -2112,7 +1993,7 @@ export function renderUSMap(container) {
     clearSidebarHighlight();
     clearQuickStat();
     if (lastHoveredGroup) {
-      lastHoveredGroup.setAttribute('filter', 'url(#stateShadow)');
+      lastHoveredGroup.setAttribute('filter', isInsetState(lastHoveredGroup.dataset.state) ? 'url(#insetGlow)' : 'url(#stateShadow)');
       lastHoveredGroup.style.transform = '';
       const prevPath = lastHoveredGroup.querySelector('.leg-state-path');
       if (prevPath) prevPath.classList.remove('map-hover');
@@ -2120,7 +2001,7 @@ export function renderUSMap(container) {
     }
   });
 
-  // Click: select state (target may be path or noise overlay)
+  // Click: select state
   svg.addEventListener('click', (e) => {
     const g = e.target.closest('.leg-state-group');
     if (!g) return;
@@ -2200,19 +2081,22 @@ function clearSidebarHighlight() {
   document.querySelectorAll('.leg-state-item--hover').forEach((li) => li.classList.remove('leg-state-item--hover'));
 }
 function highlightMapState(abbr) {
+  const isInset = (id) => id === 'AK' || id === 'HI';
   document.querySelectorAll('.leg-state-group').forEach((g) => {
     const isTarget = g.dataset.state === abbr;
     const path = g.querySelector('.leg-state-path');
     if (path) path.classList.toggle('map-hover', isTarget);
-    g.setAttribute('filter', isTarget ? 'url(#stateShadowHover)' : 'url(#stateShadow)');
-    g.style.transform = isTarget ? 'translateY(-4px) scale(1.03)' : '';
+    const defaultFilter = isInset(g.dataset.state) ? 'url(#insetGlow)' : 'url(#stateShadow)';
+    g.setAttribute('filter', isTarget ? 'url(#stateShadowHover)' : defaultFilter);
+    g.style.transform = isTarget ? 'translateY(-2px) scale(1.02)' : '';
   });
 }
 function clearMapHighlight() {
+  const isInset = (id) => id === 'AK' || id === 'HI';
   document.querySelectorAll('.leg-state-group').forEach((g) => {
     const path = g.querySelector('.leg-state-path');
     if (path) path.classList.remove('map-hover');
-    g.setAttribute('filter', 'url(#stateShadow)');
+    g.setAttribute('filter', isInset(g.dataset.state) ? 'url(#insetGlow)' : 'url(#stateShadow)');
     g.style.transform = '';
   });
 }

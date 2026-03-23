@@ -2997,20 +2997,9 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   padding: var(--sp-4);
   border: 1px solid rgba(60,50,40,0.4);
   border-radius: 12px;
-  background: #0f0d0b;
-  box-shadow: inset 0 0 80px rgba(40,30,20,0.4), 0 4px 24px rgba(0,0,0,0.4);
+  background: linear-gradient(170deg, oklch(0.22 0.02 50) 0%, oklch(0.18 0.015 60) 100%);
+  box-shadow: inset 0 0 40px oklch(0.35 0.04 70 / 0.12), 0 4px 24px rgba(0,0,0,0.4);
   overflow: hidden;
-}
-.leg-map-container::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 12px;
-  background:
-    radial-gradient(ellipse at 50% 45%, rgba(60,50,40,0.35) 0%, transparent 65%),
-    linear-gradient(170deg, #151210 0%, #1a1612 40%, #12100e 100%);
-  pointer-events: none;
-  z-index: 0;
 }
 .leg-map-svg {
   position: relative;
@@ -3032,25 +3021,24 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   --map-state-3: oklch(0.72 0.04 140);   /* dusty sage */
   --map-state-4: oklch(0.73 0.05 45);    /* warm clay */
   --map-hover: oklch(0.75 0.10 25 / 0.5); /* transparent coral-red glow */
-  --map-selected: #C9963A;               /* gold accent */
+  --map-accent: oklch(0.72 0.08 220);    /* steel blue accent */
+  --map-selected: oklch(0.72 0.08 220);  /* steel blue accent (selected state) */
   --map-border: oklch(0.20 0.03 50);     /* dark espresso */
-  --map-label: oklch(0.22 0.02 50);      /* deep brown-black */
+  --map-label: oklch(0.88 0.02 70);      /* light cream */
 }
 
 /* ── State groups (3D shadow via filter on <g>) ──────────────────────── */
 .leg-state-group {
   cursor: pointer;
 }
-.leg-state-noise {
-  pointer-events: none;
-}
+/* noise overlay removed — clean state fills */
 
-/* ── State paths — static borders, no dynamic border effects ─────── */
+/* ── State paths — static borders, steel blue active accent ─────── */
 .leg-state-path {
   stroke: var(--map-border);
   stroke-width: 1.2;
   cursor: pointer;
-  transition: fill 180ms ease, opacity 220ms ease;
+  transition: fill 150ms ease-out, filter 150ms ease-out, opacity 220ms ease;
   animation: legStateEnter 400ms ease both;
   outline: none;
 }
@@ -3059,27 +3047,25 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 .leg-state-c3 { fill: var(--map-state-3); }
 .leg-state-c4 { fill: var(--map-state-4); }
 
-/* Hover: coral-red transparent glow (fill only, no border change) */
+/* Hover: brightness lift + steel blue drop-shadow glow */
 .leg-state-path.map-hover {
-  fill: var(--map-hover);
+  filter: brightness(1.15) drop-shadow(0 0 8px oklch(0.65 0.10 220 / 0.35));
 }
 .leg-state-path:focus-visible {
-  outline: 2px solid var(--map-selected);
+  outline: 2px solid var(--map-accent);
   outline-offset: 1px;
 }
 
-/* Selected: gold accent fill (static border) */
+/* Selected: steel blue accent fill (static border) */
 .leg-state-path.selected {
   fill: var(--map-selected);
 }
 
-/* Active/live-data: pulsing gold border ring */
+/* Active/live-data: static steel blue stroke, no animation */
 .leg-state-path.leg-state-active {
-  animation: legStateEnter 400ms ease both, legPulseRing 2.2s ease-in-out infinite;
-}
-@keyframes legPulseRing {
-  0%, 100% { stroke: var(--map-border); stroke-width: 1.2; }
-  50% { stroke: var(--map-selected); stroke-width: 2.4; }
+  animation: legStateEnter 400ms ease both;
+  stroke: var(--map-accent);
+  stroke-width: 1.5;
 }
 
 @keyframes legStateEnter {
@@ -3087,7 +3073,7 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   to   { opacity: 1; }
 }
 
-/* ── State labels — static, no color shift on hover/select ─────────── */
+/* ── State labels — light cream, static ─────────────────────────────── */
 .leg-state-label {
   font-family: 'Inter', var(--leg-font-mono);
   font-weight: 500;
@@ -3100,10 +3086,17 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   animation: legLabelEnter 300ms ease forwards;
 }
 .leg-state-label--small {
-  fill: var(--leg-text-primary);
+  fill: var(--map-label);
+  font-size: 9px;
+}
+.leg-state-label--small-bg {
+  fill: oklch(0.18 0.01 60 / 0.75);
+  rx: 3;
+  ry: 3;
+  pointer-events: none;
 }
 .leg-state-leader {
-  stroke: rgba(100,80,60,0.35);
+  stroke: rgba(180,170,150,0.35);
   stroke-width: 0.6;
   stroke-dasharray: 2 2;
   marker-end: url(#leaderDot);
@@ -3165,35 +3158,12 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #1a1a1a;
-  opacity: 0.4;
-  animation: legLegendPulse 2.2s ease-in-out infinite;
+  background: oklch(0.72 0.08 220);
+  opacity: 0.7;
   flex-shrink: 0;
 }
-@keyframes legLegendPulse {
-  0%, 100% { opacity: 0.2; transform: scale(0.9); }
-  50% { opacity: 0.5; transform: scale(1.1); }
-}
 
-/* ── Scan-line overlay on map container ──────────────────────────────── */
-.leg-map-container::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 12px;
-  background:
-    repeating-linear-gradient(
-      180deg,
-      transparent 0px,
-      transparent 3px,
-      rgba(0,0,0,0.03) 3px,
-      rgba(0,0,0,0.03) 4px
-    ),
-    radial-gradient(ellipse at 50% 45%, rgba(60,50,40,0.35) 0%, transparent 65%),
-    linear-gradient(170deg, #151210 0%, #1a1612 40%, #12100e 100%);
-  pointer-events: none;
-  z-index: 0;
-}
+/* ── Scan-line overlay removed — clean gradient background ──────────── */
 
 /* ── Tooltip — Intelligence Dossier card style ───────────────────────── */
 .leg-map-tooltip {
@@ -3206,7 +3176,7 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   padding: 12px 16px 12px 18px;
   background: var(--leg-surface, #161921);
   border: 1px solid var(--leg-border, #252932);
-  border-left: 3px solid var(--map-selected, #C9963A);
+  border-left: 3px solid var(--map-accent, oklch(0.72 0.08 220));
   border-radius: 6px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
   max-width: 280px;
@@ -3221,7 +3191,7 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: var(--map-selected, #C9963A);
+  color: var(--map-accent, oklch(0.72 0.08 220));
   opacity: 0.7;
 }
 .leg-tooltip-name {
@@ -3804,7 +3774,7 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   }
   .leg-state-group { transition: none !important; }
   .leg-state-path.leg-state-active { animation: legStateEnter 400ms ease both !important; }
-  .leg-map-legend-pulse { animation: none !important; opacity: 0.4 !important; }
+  .leg-map-legend-pulse { opacity: 0.7 !important; }
 }
 
 } /* end @layer components */
