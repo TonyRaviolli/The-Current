@@ -1679,53 +1679,21 @@ const STATE_COLOR_MAP = {
 
 const SMALL_STATES = new Set(['RI','DE','CT','NJ','MD','MA','VT','NH','DC']);
 
-// ── Improved centroid: weighted by path segment lengths ──
-function getPathCentroid(pathStr) {
-  const nums = pathStr.match(/[\d.]+/g);
-  if (!nums || nums.length < 4) return [480, 300];
-  const pts = [];
-  for (let i = 0; i < nums.length - 1; i += 2) {
-    const x = parseFloat(nums[i]), y = parseFloat(nums[i + 1]);
-    if (!isNaN(x) && !isNaN(y) && x > 0 && x < 960 && y > 0 && y < 600) pts.push([x, y]);
-  }
-  if (!pts.length) return [480, 300];
-  // Use area-weighted centroid (shoelace / polygon centroid formula)
-  let cx = 0, cy = 0, area = 0;
-  for (let i = 0, n = pts.length; i < n; i++) {
-    const j = (i + 1) % n;
-    const cross = pts[i][0] * pts[j][1] - pts[j][0] * pts[i][1];
-    area += cross;
-    cx += (pts[i][0] + pts[j][0]) * cross;
-    cy += (pts[i][1] + pts[j][1]) * cross;
-  }
-  if (Math.abs(area) < 1e-6) {
-    // Fallback: simple average
-    let sx = 0, sy = 0;
-    for (const [x, y] of pts) { sx += x; sy += y; }
-    return [sx / pts.length, sy / pts.length];
-  }
-  area *= 0.5;
-  cx /= (6 * area);
-  cy /= (6 * area);
-  return [cx, cy];
-}
-
-// ── Pre-computed visual centroids for all states (SVG coords, 960×600 viewBox) ──
-// Derived from bounding-box centers with manual adjustments for irregular shapes.
-const STATE_CENTROID_OVERRIDES = {
-  AK: [155, 550],  AL: [669, 425],  AR: [561, 385],  AZ: [200, 375],
-  CA: [85, 305],   CO: [322, 284],  CT: [879, 188],  DC: [820, 263],
-  DE: [847, 252],  FL: [730, 490],  GA: [728, 412],  HI: [270, 555],
-  IA: [534, 224],  ID: [195, 130],  IL: [603, 272],  IN: [658, 267],
-  KS: [449, 303],  KY: [673, 310],  LA: [570, 465],  MA: [890, 167],
-  MD: [810, 258],  ME: [916, 100],  MI: [665, 190],  MN: [531, 130],
-  MO: [554, 308],  MS: [607, 430],  MT: [278, 92],   NC: [775, 348],
-  ND: [423, 98],   NE: [428, 235],  NH: [888, 130],  NJ: [854, 227],
-  NM: [302, 385],  NV: [133, 270],  NY: [815, 170],  OH: [716, 248],
-  OK: [450, 370],  OR: [100, 125],  PA: [801, 224],  RI: [898, 181],
-  SC: [760, 390],  SD: [421, 171],  TN: [672, 355],  TX: [430, 425],
-  UT: [219, 260],  VA: [770, 300],  VT: [865, 134],  WA: [118, 55],
-  WI: [585, 158],  WV: [760, 278],  WY: [299, 189]
+// ── Visual center overrides for irregular states (where bbox center ≠ visual center) ──
+// These shift the label from getBBox center to a better visual position.
+const STATE_LABEL_NUDGE = {
+  FL: { dy: -25 },         // Peninsula: shift label up from bbox center (which is in the water)
+  MI: { dx: 15, dy: 30 },  // Place in Lower Peninsula (bbox center is between peninsulas)
+  LA: { dx: -10, dy: -10 },// Shift north-west from boot
+  CA: { dy: 15 },          // Shift down toward central valley
+  TX: { dx: 10, dy: -25 }, // Shift toward east-central TX
+  NY: { dx: -10 },         // Shift west away from Long Island pull
+  VA: { dx: -10 },         // Shift west from Eastern Shore pull
+  OK: { dx: 10 },          // Shift east from panhandle pull
+  AK: { dx: 45, dy: 10 },  // Shift right toward center of main body
+  HI: { dy: -5 },          // Minor nudge
+  MD: { dx: -5 },          // Shift west
+  ID: { dy: 8 },           // Shift south into wider portion
 };
 
 // ── Leader-line offsets for small states (SVG coordinate deltas) ──
@@ -1809,8 +1777,8 @@ export function renderUSMap(container) {
   });
   STATE_LIST_ORDER.sort((a, b) => STATE_NAMES[a].localeCompare(STATE_NAMES[b]));
 
+  // ── Pass 1: Create all state paths ──
   US_STATES.forEach((state, index) => {
-    // State path with choropleth color
     const path = document.createElementNS(svgNS, 'path');
     path.setAttribute('d', state.path);
     const colorIdx = STATE_COLOR_MAP[state.id] || 1;
@@ -1822,11 +1790,36 @@ export function renderUSMap(container) {
     path.setAttribute('tabindex', '0');
     path.style.animationDelay = `${index * 8}ms`;
     pathsGroup.appendChild(path);
+  });
 
-    // Compute centroid (override or calculate)
-    const [cx, cy] = STATE_CENTROID_OVERRIDES[state.id] || getPathCentroid(state.path);
-    const isSmall = SMALL_STATES.has(state.id);
-    const offset = SMALL_STATE_OFFSETS[state.id];
+  // Append SVG to DOM so getBBox() works on rendered paths
+  svg.appendChild(pathsGroup);
+  container.appendChild(svg);
+
+  // ── Pass 2: Compute labels using getBBox() (pixel-perfect from rendered geometry) ──
+  const paths = svg.querySelectorAll('.leg-state-path');
+  paths.forEach((path, index) => {
+    const stateId = path.dataset.state;
+
+    // getBBox gives the true bounding box in SVG coordinate space
+    let cx, cy;
+    try {
+      const bb = path.getBBox();
+      cx = bb.x + bb.width / 2;
+      cy = bb.y + bb.height / 2;
+    } catch {
+      cx = 480; cy = 300; // fallback
+    }
+
+    // Apply nudge for irregular states
+    const nudge = STATE_LABEL_NUDGE[stateId];
+    if (nudge) {
+      cx += (nudge.dx || 0);
+      cy += (nudge.dy || 0);
+    }
+
+    const isSmall = SMALL_STATES.has(stateId);
+    const offset = SMALL_STATE_OFFSETS[stateId];
     const labelX = offset ? cx + offset.dx : cx;
     const labelY = offset ? cy + offset.dy : cy;
 
@@ -1845,15 +1838,13 @@ export function renderUSMap(container) {
     text.setAttribute('text-anchor', 'middle');
     text.setAttribute('dominant-baseline', 'central');
     text.setAttribute('class', `leg-state-label${isSmall ? ' leg-state-label--small' : ''}`);
-    text.setAttribute('data-state', state.id);
-    text.textContent = state.id;
+    text.setAttribute('data-state', stateId);
+    text.textContent = stateId;
     text.style.animationDelay = `${index * 8 + 200}ms`;
     labelsGroup.appendChild(text);
   });
 
-  svg.appendChild(pathsGroup);
   svg.appendChild(labelsGroup);
-  container.appendChild(svg);
 
   // ── Render sidebar ──
   const sidebar = document.getElementById('legSidebar');

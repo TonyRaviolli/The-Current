@@ -2995,9 +2995,10 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 .leg-map-container {
   position: relative;
   padding: var(--sp-4);
-  border: 1px solid var(--leg-border);
+  border: 1px solid rgba(60,50,40,0.4);
   border-radius: 12px;
-  box-shadow: inset 0 0 60px rgba(0,0,0,0.5);
+  background: #0f0d0b;
+  box-shadow: inset 0 0 80px rgba(40,30,20,0.4), 0 4px 24px rgba(0,0,0,0.4);
   overflow: hidden;
 }
 .leg-map-container::before {
@@ -3005,7 +3006,9 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   position: absolute;
   inset: 0;
   border-radius: 12px;
-  background: radial-gradient(ellipse at 50% 40%, rgba(30,58,95,0.3) 0%, transparent 70%);
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(60,50,40,0.35) 0%, transparent 65%),
+    linear-gradient(170deg, #151210 0%, #1a1612 40%, #12100e 100%);
   pointer-events: none;
   z-index: 0;
 }
@@ -3022,20 +3025,20 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   stroke-dasharray: 4 3;
 }
 
-/* ── Choropleth fill colors (vibrant, visible on dark bg) ────────── */
+/* ── Choropleth fill colors (rich, vibrant on dark bg) ───────────── */
 .leg-page {
-  --map-state-1: #2a5a94;
-  --map-state-2: #3d7a5e;
-  --map-state-3: #7a4068;
-  --map-state-4: #6b6030;
-  --map-state-5: #2d6a84;
-  --map-state-6: #6b4a35;
+  --map-state-1: #2e6db5;
+  --map-state-2: #45936e;
+  --map-state-3: #9b4d80;
+  --map-state-4: #8a7d3a;
+  --map-state-5: #3585a8;
+  --map-state-6: #8a5e3e;
 }
 
 /* ── State paths ─────────────────────────────────────────────────────── */
 .leg-state-path {
-  stroke: #3a4050;
-  stroke-width: 1.5;
+  stroke: #0a0c12;
+  stroke-width: 1.8;
   cursor: pointer;
   transition: fill 180ms ease, filter 180ms ease;
   animation: legStateEnter 400ms ease both;
@@ -3069,11 +3072,15 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 
 /* ── State labels ────────────────────────────────────────────────────── */
 .leg-state-label {
-  font-family: var(--leg-font-mono);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  fill: rgba(232,234,240,0.85);
+  font-family: 'Inter', var(--leg-font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  fill: #ffffff;
+  paint-order: stroke fill;
+  stroke: rgba(0,0,0,0.6);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
   text-anchor: middle;
   dominant-baseline: central;
   pointer-events: none;
@@ -3081,8 +3088,8 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   animation: legLabelEnter 300ms ease forwards;
 }
 .leg-state-label--small {
-  font-size: 7px;
-  fill: var(--leg-text-primary);
+  font-size: 8px;
+  fill: #ffffff;
 }
 .leg-state-leader {
   stroke: rgba(232,234,240,0.3);
