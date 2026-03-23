@@ -1668,13 +1668,14 @@ function renderArticleJsonLd(article) {
 // ║  §L  LEGISLATION — Interactive US Map + State Panel                    ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
-// ── Adjacency-safe 6-color assignment (graph-colored, no bordering states share a color) ──
+// ── Adjacency-safe 4-color assignment (backtracking solver, no bordering states share a tone) ──
+// Tones: 1 = sandy beige, 2 = warm stone, 3 = dusty sage, 4 = warm clay
 const STATE_COLOR_MAP = {
-  AL:1,AK:1,AZ:1,AR:1,CA:2,CO:2,CT:1,DE:1,DC:1,FL:2,GA:3,HI:1,
-  ID:1,IL:1,IN:2,IA:2,KS:1,KY:3,LA:2,ME:1,MD:2,MA:2,MI:1,MN:1,
-  MS:3,MO:4,MT:2,NE:3,NV:3,NH:3,NJ:2,NM:3,NY:3,NC:1,ND:3,OH:4,
-  OK:5,OR:4,PA:5,RI:3,SC:2,SD:4,TN:2,TX:4,UT:4,VT:1,VA:4,WA:2,
-  WV:1,WI:3,WY:5
+  AK:1,AL:3,AR:3,AZ:3,CA:1,CO:1,CT:3,DC:3,DE:3,FL:2,GA:1,HI:1,
+  IA:2,ID:1,IL:4,IN:1,KS:4,KY:3,LA:2,MA:1,MD:2,ME:1,MI:3,MN:3,
+  MO:1,MS:1,MT:2,NC:3,ND:4,NE:3,NH:2,NJ:4,NM:4,NV:4,NY:2,OH:2,
+  OK:2,OR:2,PA:1,RI:2,SC:2,SD:1,TN:2,TX:1,UT:2,VA:1,VT:3,WA:3,
+  WI:1,WV:4,WY:4
 };
 
 const SMALL_STATES = new Set(['RI','DE','CT','NJ','MD','MA','VT','NH','DC']);
@@ -1709,7 +1710,7 @@ function polylabel(rings, precision = 1.0) {
       pushCell(x + h, y + h, h);
     }
   }
-  queue.sort((a, b) => b.max - a.max);
+  queue.sort((a, b) => a.max - b.max);
   while (queue.length) {
     const cell = queue.pop();
     if (cell.d > best.d) best = cell;
@@ -1719,7 +1720,7 @@ function polylabel(rings, precision = 1.0) {
     pushCell(cell.x + h, cell.y - h, h);
     pushCell(cell.x - h, cell.y + h, h);
     pushCell(cell.x + h, cell.y + h, h);
-    queue.sort((a, b) => b.max - a.max);
+    queue.sort((a, b) => a.max - b.max);
   }
   return [best.x, best.y];
 }
@@ -1788,8 +1789,9 @@ function getStateVisualCenter(pathData) {
   for (const ring of allRings) {
     let area = 0;
     for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-      area += Math.abs(ring[i][0] * ring[j][1] - ring[j][0] * ring[i][1]);
+      area += ring[i][0] * ring[j][1] - ring[j][0] * ring[i][1];
     }
+    area = Math.abs(area);
     if (area > largestArea) { largestArea = area; largestRing = ring; }
   }
   return polylabel([largestRing], 0.5);
@@ -1799,6 +1801,20 @@ function getStateVisualCenter(pathData) {
 const SMALL_STATE_IDS = ['VT','NH','MA','RI','CT','NJ','DE','MD','DC'];
 const SMALL_STATE_LABEL_X = 915; // Label column x-position (right of NE coast)
 const SMALL_STATE_MIN_GAP = 16;  // Minimum vertical spacing between labels
+
+// ── Manual nudges for states where polylabel is geometrically correct but visually off ──
+const LABEL_NUDGES = {
+  FL: { dx: -40, dy: -20 },
+  OK: { dx: -25, dy: 0 },
+  MI: { dx: 0, dy: -10 },
+  LA: { dx: 10, dy: 10 },
+  ID: { dx: 0, dy: -15 },
+  CA: { dx: 5, dy: 0 },
+  NY: { dx: 5, dy: 5 },
+  VA: { dx: -10, dy: -5 },
+  MD: { dx: 0, dy: 0 },
+  HI: { dx: 0, dy: -5 },
+};
 
 let legMapTooltip = null;
 let legMapSelectedState = null;
@@ -1853,9 +1869,10 @@ export function renderUSMap(container) {
   divider.setAttribute('class', 'leg-map-divider');
   svg.appendChild(divider);
 
-  // State paths group
+  // State paths group (with noise texture filter for printed-map feel)
   const pathsGroup = document.createElementNS(svgNS, 'g');
   pathsGroup.setAttribute('class', 'leg-map-paths');
+  pathsGroup.setAttribute('filter', 'url(#mapNoise)');
 
   // Labels group (rendered on top of paths)
   const labelsGroup = document.createElementNS(svgNS, 'g');
@@ -1873,17 +1890,22 @@ export function renderUSMap(container) {
   // Label halo filter
   defs.innerHTML = `
     <filter id="labelHalo" x="-30%" y="-30%" width="160%" height="160%">
-      <feMorphology operator="dilate" radius="1.5" in="SourceAlpha" result="thick"/>
-      <feGaussianBlur in="thick" stdDeviation="1" result="blur"/>
-      <feFlood flood-color="rgba(0,0,0,0.7)" result="color"/>
+      <feMorphology operator="dilate" radius="1.2" in="SourceAlpha" result="thick"/>
+      <feGaussianBlur in="thick" stdDeviation="0.8" result="blur"/>
+      <feFlood flood-color="rgba(255,255,255,0.65)" result="color"/>
       <feComposite in="color" in2="blur" operator="in" result="halo"/>
       <feMerge><feMergeNode in="halo"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
     <filter id="stateElevate" x="-10%" y="-10%" width="120%" height="130%">
-      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="rgba(0,0,0,0.5)"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="rgba(0,0,0,0.4)"/>
+    </filter>
+    <filter id="mapNoise" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" result="noise"/>
+      <feColorMatrix type="saturate" values="0" in="noise" result="mono"/>
+      <feBlend in="SourceGraphic" in2="mono" mode="multiply"/>
     </filter>
     <marker id="leaderDot" viewBox="0 0 4 4" refX="2" refY="2" markerWidth="4" markerHeight="4">
-      <circle cx="2" cy="2" r="1.2" fill="rgba(232,234,240,0.35)"/>
+      <circle cx="2" cy="2" r="1.2" fill="rgba(100,80,60,0.5)"/>
     </marker>
     <pattern id="mapGrid" width="48" height="48" patternUnits="userSpaceOnUse">
       <path d="M 48 0 L 0 0 0 48" fill="none" stroke="rgba(255,255,255,0.018)" stroke-width="0.5"/>
@@ -1900,7 +1922,9 @@ export function renderUSMap(container) {
   // ── Compute visual centers for ALL states using polylabel ──
   const visualCenters = {};
   US_STATES.forEach((state) => {
-    visualCenters[state.id] = getStateVisualCenter(state.path);
+    const [cx, cy] = getStateVisualCenter(state.path);
+    const nudge = LABEL_NUDGES[state.id];
+    visualCenters[state.id] = nudge ? [cx + nudge.dx, cy + nudge.dy] : [cx, cy];
   });
 
   // ── Create state paths (sorted by x for west-to-east entrance) ──
@@ -1909,7 +1933,8 @@ export function renderUSMap(container) {
     const path = document.createElementNS(svgNS, 'path');
     path.setAttribute('d', state.path);
     const colorIdx = STATE_COLOR_MAP[state.id] || 1;
-    path.setAttribute('class', `leg-state-path leg-state-c${colorIdx}`);
+    const hasData = !!getLegData(state.id);
+    path.setAttribute('class', `leg-state-path leg-state-c${colorIdx}${hasData ? ' leg-state-active' : ''}`);
     path.setAttribute('data-state', state.id);
     path.setAttribute('data-state-name', state.name);
     path.setAttribute('aria-label', state.name);
@@ -2005,7 +2030,15 @@ export function renderUSMap(container) {
     const name = p.dataset.stateName;
     const abbr = p.dataset.state;
     const data = getLegData(abbr);
-    legMapTooltip.innerHTML = `<span class="leg-tooltip-name">${name}</span><span class="leg-tooltip-stat">${data ? data.totalBills : '—'} active bills this session</span>`;
+    const billCount = data ? data.totalBills : 0;
+    const passedCount = data ? data.bills.filter(b => b.status === 'Passed').length : 0;
+    const proposedCount = billCount - passedCount;
+    legMapTooltip.innerHTML = `
+      <span class="leg-tooltip-badge">PRIMARY SOURCE</span>
+      <span class="leg-tooltip-name">${escapeHtml(name)}</span>
+      <span class="leg-tooltip-domain"><strong>${escapeHtml(abbr)}</strong> <span class="leg-tooltip-path">/ legislature / ${new Date().getFullYear()} session</span></span>
+      <span class="leg-tooltip-stat">${billCount} active bill${billCount !== 1 ? 's' : ''} · <span class="leg-tooltip-passed">${passedCount} passed</span> · <span class="leg-tooltip-proposed">${proposedCount} proposed</span></span>
+      <span class="leg-tooltip-date">${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>`;
     legMapTooltip.style.display = '';
     const tx = e.clientX + 16, ty = e.clientY - 10;
     const tw = legMapTooltip.offsetWidth, th = legMapTooltip.offsetHeight;
