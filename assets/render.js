@@ -1685,19 +1685,19 @@ const SMALL_STATES = new Set(['RI','DE','CT','NJ','MD','MA','VT','NH','DC']);
 // Coordinates in Albers USA projection SVG space (960×600 viewBox).
 // Eliminates runtime polylabel computation and nudge hacks.
 const STATE_CENTERS = {
-  AK: [114, 500], AL: [666.6, 436], AR: [553.9, 384.1], AZ: [202.3, 392],
-  CA: [86.6, 318], CO: [309, 283.3], CT: [880.8, 184.1], DC: [820.8, 262.5],
-  DE: [848.7, 261.7], FL: [768.6, 519.9], GA: [736.2, 433.7], HI: [319.3, 576.3],
-  IA: [523.2, 223.4], ID: [187.5, 153.3], IL: [604.2, 261.9], IN: [660.5, 270.9],
-  KS: [450, 304.1], KY: [694.9, 310.6], LA: [564.9, 457.3], MA: [871.3, 169.1],
-  MD: [813.1, 252.1], ME: [913.3, 86.4], MI: [691.1, 204.9], MN: [513.9, 110.1],
-  MO: [552.2, 312], MS: [609.4, 416.5], MT: [251.4, 94.7], NC: [810.6, 345.8],
-  ND: [438.5, 99.4], NE: [425.9, 234.7], NH: [886.1, 145.6], NJ: [853.4, 239.6],
-  NM: [304.4, 390.5], NV: [134.9, 234.7], NY: [836.8, 166.8], OH: [712.7, 252.4],
-  OK: [468.2, 377.5], OR: [109.8, 136.6], PA: [812.8, 218.1], RI: [895.7, 175.7],
-  SC: [779, 390], SD: [399.7, 165.5], TN: [658.1, 357.9], TX: [448.3, 480.5],
-  UT: [219.9, 275.7], VA: [798.1, 292.5], VT: [863.7, 120.6], WA: [128.3, 59.2],
-  WI: [587.7, 155.9], WV: [751.5, 290.3], WY: [290.6, 189],
+  AK: [115, 492],  AL: [667, 436],   AR: [554, 384],   AZ: [205, 390],
+  CA: [95, 330],    CO: [309, 283],   CT: [881, 184],   DC: [821, 263],
+  DE: [849, 262],   FL: [748, 498],   GA: [736, 434],   HI: [310, 568],
+  IA: [523, 223],   ID: [190, 165],   IL: [604, 262],   IN: [661, 271],
+  KS: [450, 304],   KY: [688, 312],   LA: [570, 445],   MA: [871, 169],
+  MD: [808, 258],   ME: [913, 86],    MI: [680, 220],   MN: [514, 110],
+  MO: [552, 312],   MS: [609, 417],   MT: [251, 95],    NC: [795, 348],
+  ND: [439, 99],    NE: [426, 235],   NH: [886, 146],   NJ: [853, 240],
+  NM: [304, 388],   NV: [137, 240],   NY: [842, 175],   OH: [713, 252],
+  OK: [475, 370],   OR: [112, 137],   PA: [813, 218],   RI: [896, 176],
+  SC: [779, 390],   SD: [400, 166],   TN: [658, 358],   TX: [445, 465],
+  UT: [222, 278],   VA: [785, 298],   VT: [864, 121],   WA: [130, 60],
+  WI: [588, 156],   WV: [748, 288],   WY: [291, 189],
 };
 
 // ── State areas for font scaling (pre-computed) ──
@@ -1794,9 +1794,6 @@ export function renderUSMap(container) {
     <filter id="stateShadowHover" x="-10%" y="-10%" width="125%" height="135%">
       <feDropShadow dx="2" dy="5" stdDeviation="3" flood-color="#1a1a1a" flood-opacity="0.28"/>
     </filter>
-    <filter id="insetGlow" x="-10%" y="-10%" width="125%" height="135%">
-      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="oklch(0.40 0.04 220)" flood-opacity="0.4"/>
-    </filter>
     <marker id="leaderDot" viewBox="0 0 4 4" refX="2" refY="2" markerWidth="4" markerHeight="4">
       <circle cx="2" cy="2" r="1.2" fill="rgba(180,170,150,0.5)"/>
     </marker>
@@ -1826,21 +1823,17 @@ export function renderUSMap(container) {
   };
 
   // ── Create per-state <g> groups ──
-  const isInsetState = (id) => id === 'AK' || id === 'HI';
   const statesByX = [...US_STATES].sort((a, b) => visualCenters[a.id][0] - visualCenters[b.id][0]);
   statesByX.forEach((state, index) => {
     const g = document.createElementNS(svgNS, 'g');
     g.setAttribute('class', 'leg-state-group');
     g.setAttribute('data-state', state.id);
     g.setAttribute('data-state-name', state.name);
-    // AK/HI get a dedicated glow filter to lift off the dark background
-    g.setAttribute('filter', isInsetState(state.id) ? 'url(#insetGlow)' : 'url(#stateShadow)');
-    // Transform-origin at visual center for hover lift
+    g.setAttribute('filter', 'url(#stateShadow)');
     const [vcx, vcy] = visualCenters[state.id];
     g.style.transformOrigin = `${vcx}px ${vcy}px`;
     g.style.transition = 'transform 0.15s ease-out, filter 0.15s ease-out';
 
-    // State fill path
     const path = document.createElementNS(svgNS, 'path');
     path.setAttribute('d', state.path);
     const colorIdx = STATE_COLOR_MAP[state.id] || 1;
@@ -1850,8 +1843,6 @@ export function renderUSMap(container) {
     path.setAttribute('role', 'button');
     path.setAttribute('tabindex', '0');
     path.style.animationDelay = `${index * 12}ms`;
-    // AK/HI: ensure full opacity, no dimming
-    if (isInsetState(state.id)) path.style.fillOpacity = '1.0';
     g.appendChild(path);
 
     pathsGroup.appendChild(g);
@@ -1919,17 +1910,6 @@ export function renderUSMap(container) {
 
   svg.appendChild(labelsGroup);
 
-  // ── Legend strip below the map ──
-  const legend = document.createElement('div');
-  legend.className = 'leg-map-legend';
-  legend.innerHTML = `
-    <span class="leg-map-legend-item"><span class="leg-map-legend-swatch" style="background:oklch(0.76 0.04 75)"></span>Introduced</span>
-    <span class="leg-map-legend-item"><span class="leg-map-legend-swatch" style="background:oklch(0.70 0.03 55)"></span>In Committee</span>
-    <span class="leg-map-legend-item"><span class="leg-map-legend-swatch" style="background:oklch(0.72 0.04 140)"></span>Passed</span>
-    <span class="leg-map-legend-item"><span class="leg-map-legend-pulse"></span>Active data</span>
-  `;
-  container.appendChild(legend);
-
   // ── Render sidebar ──
   const sidebar = document.getElementById('legSidebar');
   if (sidebar) renderMapSidebar(sidebar);
@@ -1943,7 +1923,7 @@ export function renderUSMap(container) {
     if (!g) {
       legMapTooltip.style.display = 'none';
       if (lastHoveredGroup) {
-        lastHoveredGroup.setAttribute('filter', isInsetState(lastHoveredGroup.dataset.state) ? 'url(#insetGlow)' : 'url(#stateShadow)');
+        lastHoveredGroup.setAttribute('filter', 'url(#stateShadow)');
         lastHoveredGroup.style.transform = '';
         const prevPath = lastHoveredGroup.querySelector('.leg-state-path');
         if (prevPath) prevPath.classList.remove('map-hover');
@@ -1972,10 +1952,10 @@ export function renderUSMap(container) {
     updateQuickStat(abbr);
     highlightSidebarItem(abbr);
 
-    // Hover: brightness lift + steel blue glow via CSS class
+    // Hover: brightness lift via CSS class
     if (g !== lastHoveredGroup) {
       if (lastHoveredGroup) {
-        lastHoveredGroup.setAttribute('filter', isInsetState(lastHoveredGroup.dataset.state) ? 'url(#insetGlow)' : 'url(#stateShadow)');
+        lastHoveredGroup.setAttribute('filter', 'url(#stateShadow)');
         lastHoveredGroup.style.transform = '';
         const prevPath = lastHoveredGroup.querySelector('.leg-state-path');
         if (prevPath) prevPath.classList.remove('map-hover');
@@ -1993,7 +1973,7 @@ export function renderUSMap(container) {
     clearSidebarHighlight();
     clearQuickStat();
     if (lastHoveredGroup) {
-      lastHoveredGroup.setAttribute('filter', isInsetState(lastHoveredGroup.dataset.state) ? 'url(#insetGlow)' : 'url(#stateShadow)');
+      lastHoveredGroup.setAttribute('filter', 'url(#stateShadow)');
       lastHoveredGroup.style.transform = '';
       const prevPath = lastHoveredGroup.querySelector('.leg-state-path');
       if (prevPath) prevPath.classList.remove('map-hover');
@@ -2081,22 +2061,19 @@ function clearSidebarHighlight() {
   document.querySelectorAll('.leg-state-item--hover').forEach((li) => li.classList.remove('leg-state-item--hover'));
 }
 function highlightMapState(abbr) {
-  const isInset = (id) => id === 'AK' || id === 'HI';
   document.querySelectorAll('.leg-state-group').forEach((g) => {
     const isTarget = g.dataset.state === abbr;
     const path = g.querySelector('.leg-state-path');
     if (path) path.classList.toggle('map-hover', isTarget);
-    const defaultFilter = isInset(g.dataset.state) ? 'url(#insetGlow)' : 'url(#stateShadow)';
-    g.setAttribute('filter', isTarget ? 'url(#stateShadowHover)' : defaultFilter);
+    g.setAttribute('filter', isTarget ? 'url(#stateShadowHover)' : 'url(#stateShadow)');
     g.style.transform = isTarget ? 'translateY(-2px) scale(1.02)' : '';
   });
 }
 function clearMapHighlight() {
-  const isInset = (id) => id === 'AK' || id === 'HI';
   document.querySelectorAll('.leg-state-group').forEach((g) => {
     const path = g.querySelector('.leg-state-path');
     if (path) path.classList.remove('map-hover');
-    g.setAttribute('filter', isInset(g.dataset.state) ? 'url(#insetGlow)' : 'url(#stateShadow)');
+    g.setAttribute('filter', 'url(#stateShadow)');
     g.style.transform = '';
   });
 }
