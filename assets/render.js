@@ -1679,35 +1679,126 @@ const STATE_COLOR_MAP = {
 
 const SMALL_STATES = new Set(['RI','DE','CT','NJ','MD','MA','VT','NH','DC']);
 
-// ── Visual center overrides for irregular states (where bbox center ≠ visual center) ──
-// These shift the label from getBBox center to a better visual position.
-const STATE_LABEL_NUDGE = {
-  FL: { dy: -25 },         // Peninsula: shift label up from bbox center (which is in the water)
-  MI: { dx: 15, dy: 30 },  // Place in Lower Peninsula (bbox center is between peninsulas)
-  LA: { dx: -10, dy: -10 },// Shift north-west from boot
-  CA: { dy: 15 },          // Shift down toward central valley
-  TX: { dx: 10, dy: -25 }, // Shift toward east-central TX
-  NY: { dx: -10 },         // Shift west away from Long Island pull
-  VA: { dx: -10 },         // Shift west from Eastern Shore pull
-  OK: { dx: 10 },          // Shift east from panhandle pull
-  AK: { dx: 45, dy: 10 },  // Shift right toward center of main body
-  HI: { dy: -5 },          // Minor nudge
-  MD: { dx: -5 },          // Shift west
-  ID: { dy: 8 },           // Shift south into wider portion
-};
+// ── Polylabel: find the visual center (pole of inaccessibility) of a polygon ──
+// Returns the point inside the polygon farthest from any edge.
+// Adapted from Mapbox's polylabel algorithm (ISC license).
+function polylabel(rings, precision = 1.0) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const outerRing = rings[0];
+  for (const [x, y] of outerRing) {
+    if (x < minX) minX = x; if (y < minY) minY = y;
+    if (x > maxX) maxX = x; if (y > maxY) maxY = y;
+  }
+  const width = maxX - minX, height = maxY - minY;
+  const cellSize = Math.max(width, height);
+  if (cellSize === 0) return [minX, minY];
+  let h = cellSize / 2;
+  const distFn = (px, py) => pointToPolygonDist(px, py, rings);
+  // Cover bbox with initial cells
+  let best = getCentroidCell(rings);
+  const bboxCell = { x: minX + width / 2, y: minY + height / 2, h, d: distFn(minX + width / 2, minY + height / 2) };
+  if (bboxCell.d > best.d) best = bboxCell;
+  const queue = [];
+  const pushCell = (cx, cy, ch) => {
+    const d = distFn(cx, cy);
+    const max = d + ch * Math.SQRT2;
+    if (max > best.d) queue.push({ x: cx, y: cy, h: ch, d, max });
+  };
+  for (let x = minX; x < maxX; x += cellSize) {
+    for (let y = minY; y < maxY; y += cellSize) {
+      pushCell(x + h, y + h, h);
+    }
+  }
+  queue.sort((a, b) => b.max - a.max);
+  while (queue.length) {
+    const cell = queue.pop();
+    if (cell.d > best.d) best = cell;
+    if (cell.max - best.d <= precision) continue;
+    h = cell.h / 2;
+    pushCell(cell.x - h, cell.y - h, h);
+    pushCell(cell.x + h, cell.y - h, h);
+    pushCell(cell.x - h, cell.y + h, h);
+    pushCell(cell.x + h, cell.y + h, h);
+    queue.sort((a, b) => b.max - a.max);
+  }
+  return [best.x, best.y];
+}
+function pointToPolygonDist(px, py, rings) {
+  let inside = false, minDist = Infinity;
+  for (const ring of rings) {
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [ax, ay] = ring[i], [bx, by] = ring[j];
+      if ((ay > py) !== (by > py) && px < (bx - ax) * (py - ay) / (by - ay) + ax) inside = !inside;
+      minDist = Math.min(minDist, segDistSq(px, py, ax, ay, bx, by));
+    }
+  }
+  return (inside ? 1 : -1) * Math.sqrt(minDist);
+}
+function segDistSq(px, py, ax, ay, bx, by) {
+  let dx = bx - ax, dy = by - ay;
+  if (dx !== 0 || dy !== 0) {
+    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
+    ax += t * dx; ay += t * dy;
+  }
+  dx = px - ax; dy = py - ay;
+  return dx * dx + dy * dy;
+}
+function getCentroidCell(rings) {
+  let area = 0, cx = 0, cy = 0;
+  const ring = rings[0];
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [ax, ay] = ring[i], [bx, by] = ring[j];
+    const f = ax * by - bx * ay;
+    cx += (ax + bx) * f; cy += (ay + by) * f; area += f;
+  }
+  if (area === 0) return { x: ring[0][0], y: ring[0][1], h: 0, d: 0 };
+  area *= 0.5; cx /= (6 * area); cy /= (6 * area);
+  return { x: cx, y: cy, h: 0, d: pointToPolygonDist(cx, cy, rings) };
+}
 
-// ── Leader-line offsets for small states (SVG coordinate deltas) ──
-const SMALL_STATE_OFFSETS = {
-  NH: { dx: 38, dy: -8 },
-  VT: { dx: -38, dy: -8 },
-  MA: { dx: 42, dy: 2 },
-  RI: { dx: 38, dy: 12 },
-  CT: { dx: 38, dy: 22 },
-  NJ: { dx: 32, dy: 12 },
-  DE: { dx: 32, dy: 12 },
-  MD: { dx: 38, dy: 22 },
-  DC: { dx: 38, dy: 32 }
-};
+// ── Parse SVG path (M/L/Z) into polygon rings ──
+function pathToRings(d) {
+  const rings = [];
+  let current = [];
+  const parts = d.match(/[MLZ][^MLZ]*/g) || [];
+  for (const part of parts) {
+    const cmd = part[0];
+    if (cmd === 'Z') {
+      if (current.length > 2) rings.push(current);
+      current = [];
+    } else {
+      const nums = part.slice(1).match(/-?[\d.]+/g);
+      if (nums) {
+        for (let i = 0; i < nums.length - 1; i += 2) {
+          current.push([parseFloat(nums[i]), parseFloat(nums[i + 1])]);
+        }
+      }
+    }
+  }
+  if (current.length > 2) rings.push(current);
+  return rings;
+}
+
+// ── Get visual center for a state (uses largest ring for multi-polygon states) ──
+function getStateVisualCenter(pathData) {
+  const allRings = pathToRings(pathData);
+  if (!allRings.length) return [480, 300];
+  // Find the largest ring by area (handles AK, MI, HI multi-polygon)
+  let largestRing = allRings[0], largestArea = 0;
+  for (const ring of allRings) {
+    let area = 0;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      area += Math.abs(ring[i][0] * ring[j][1] - ring[j][0] * ring[i][1]);
+    }
+    if (area > largestArea) { largestArea = area; largestRing = ring; }
+  }
+  return polylabel([largestRing], 0.5);
+}
+
+// ── Small states: computed leader-line layout (sorted by y, minimum spacing) ──
+const SMALL_STATE_IDS = ['VT','NH','MA','RI','CT','NJ','DE','MD','DC'];
+const SMALL_STATE_LABEL_X = 915; // Label column x-position (right of NE coast)
+const SMALL_STATE_MIN_GAP = 16;  // Minimum vertical spacing between labels
 
 let legMapTooltip = null;
 let legMapSelectedState = null;
@@ -1777,8 +1868,44 @@ export function renderUSMap(container) {
   });
   STATE_LIST_ORDER.sort((a, b) => STATE_NAMES[a].localeCompare(STATE_NAMES[b]));
 
-  // ── Pass 1: Create all state paths ──
-  US_STATES.forEach((state, index) => {
+  // ── SVG filter definitions for label halos and hover effects ──
+  const defs = document.createElementNS(svgNS, 'defs');
+  // Label halo filter
+  defs.innerHTML = `
+    <filter id="labelHalo" x="-30%" y="-30%" width="160%" height="160%">
+      <feMorphology operator="dilate" radius="1.5" in="SourceAlpha" result="thick"/>
+      <feGaussianBlur in="thick" stdDeviation="1" result="blur"/>
+      <feFlood flood-color="rgba(0,0,0,0.7)" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="halo"/>
+      <feMerge><feMergeNode in="halo"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="stateElevate" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="rgba(0,0,0,0.5)"/>
+    </filter>
+    <marker id="leaderDot" viewBox="0 0 4 4" refX="2" refY="2" markerWidth="4" markerHeight="4">
+      <circle cx="2" cy="2" r="1.2" fill="rgba(232,234,240,0.35)"/>
+    </marker>
+    <pattern id="mapGrid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M 48 0 L 0 0 0 48" fill="none" stroke="rgba(255,255,255,0.018)" stroke-width="0.5"/>
+    </pattern>`;
+  svg.appendChild(defs);
+
+  // Grid overlay (subtle intelligence/cartographic feel)
+  const grid = document.createElementNS(svgNS, 'rect');
+  grid.setAttribute('width', '960'); grid.setAttribute('height', '600');
+  grid.setAttribute('fill', 'url(#mapGrid)');
+  grid.style.pointerEvents = 'none';
+  svg.appendChild(grid);
+
+  // ── Compute visual centers for ALL states using polylabel ──
+  const visualCenters = {};
+  US_STATES.forEach((state) => {
+    visualCenters[state.id] = getStateVisualCenter(state.path);
+  });
+
+  // ── Create state paths (sorted by x for west-to-east entrance) ──
+  const statesByX = [...US_STATES].sort((a, b) => visualCenters[a.id][0] - visualCenters[b.id][0]);
+  statesByX.forEach((state, index) => {
     const path = document.createElementNS(svgNS, 'path');
     path.setAttribute('d', state.path);
     const colorIdx = STATE_COLOR_MAP[state.id] || 1;
@@ -1788,63 +1915,72 @@ export function renderUSMap(container) {
     path.setAttribute('aria-label', state.name);
     path.setAttribute('role', 'button');
     path.setAttribute('tabindex', '0');
-    path.style.animationDelay = `${index * 8}ms`;
+    path.style.animationDelay = `${index * 12}ms`;
+    // Set transform-origin to visual center for hover scale effect
+    const [vcx, vcy] = visualCenters[state.id];
+    path.style.transformOrigin = `${vcx}px ${vcy}px`;
     pathsGroup.appendChild(path);
   });
 
-  // Append SVG to DOM so getBBox() works on rendered paths
   svg.appendChild(pathsGroup);
   container.appendChild(svg);
 
-  // ── Pass 2: Compute labels using getBBox() (pixel-perfect from rendered geometry) ──
-  const paths = svg.querySelectorAll('.leg-state-path');
-  paths.forEach((path, index) => {
-    const stateId = path.dataset.state;
+  // ── Create labels using polylabel visual centers ──
 
-    // getBBox gives the true bounding box in SVG coordinate space
-    let cx, cy;
-    try {
-      const bb = path.getBBox();
-      cx = bb.x + bb.width / 2;
-      cy = bb.y + bb.height / 2;
-    } catch {
-      cx = 480; cy = 300; // fallback
-    }
+  // Small states: compute non-overlapping label column layout
+  const smallStatesData = SMALL_STATE_IDS
+    .map((id) => ({ id, cx: visualCenters[id][0], cy: visualCenters[id][1] }))
+    .sort((a, b) => a.cy - b.cy); // Sort north to south
 
-    // Apply nudge for irregular states
-    const nudge = STATE_LABEL_NUDGE[stateId];
-    if (nudge) {
-      cx += (nudge.dx || 0);
-      cy += (nudge.dy || 0);
-    }
+  // Space labels evenly with minimum gap
+  let nextY = smallStatesData[0] ? smallStatesData[0].cy - 20 : 100;
+  const smallLabelPositions = {};
+  for (const s of smallStatesData) {
+    const labelY = Math.max(nextY, s.cy);
+    smallLabelPositions[s.id] = { labelX: SMALL_STATE_LABEL_X, labelY };
+    nextY = labelY + SMALL_STATE_MIN_GAP;
+  }
 
-    const isSmall = SMALL_STATES.has(stateId);
-    const offset = SMALL_STATE_OFFSETS[stateId];
-    const labelX = offset ? cx + offset.dx : cx;
-    const labelY = offset ? cy + offset.dy : cy;
+  // Render all labels
+  US_STATES.forEach((state, index) => {
+    const [cx, cy] = visualCenters[state.id];
+    const isSmall = SMALL_STATES.has(state.id);
+    let labelX = cx, labelY = cy;
 
-    // Leader line for small states
-    if (isSmall && offset) {
+    if (isSmall && smallLabelPositions[state.id]) {
+      labelX = smallLabelPositions[state.id].labelX;
+      labelY = smallLabelPositions[state.id].labelY;
+
+      // Leader line with dot marker
       const line = document.createElementNS(svgNS, 'line');
       line.setAttribute('x1', cx); line.setAttribute('y1', cy);
-      line.setAttribute('x2', labelX); line.setAttribute('y2', labelY);
+      line.setAttribute('x2', labelX - 8); line.setAttribute('y2', labelY);
       line.setAttribute('class', 'leg-state-leader');
+      line.setAttribute('marker-start', 'url(#leaderDot)');
       labelsGroup.appendChild(line);
     }
 
     const text = document.createElementNS(svgNS, 'text');
     text.setAttribute('x', labelX);
     text.setAttribute('y', labelY);
-    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('text-anchor', isSmall ? 'end' : 'middle');
     text.setAttribute('dominant-baseline', 'central');
     text.setAttribute('class', `leg-state-label${isSmall ? ' leg-state-label--small' : ''}`);
-    text.setAttribute('data-state', stateId);
-    text.textContent = stateId;
+    text.setAttribute('data-state', state.id);
+    text.textContent = state.id;
     text.style.animationDelay = `${index * 8 + 200}ms`;
     labelsGroup.appendChild(text);
   });
 
   svg.appendChild(labelsGroup);
+
+  // Vignette overlay (darker edges for depth)
+  const vignette = document.createElementNS(svgNS, 'rect');
+  vignette.setAttribute('width', '960'); vignette.setAttribute('height', '600');
+  vignette.setAttribute('fill', 'none');
+  vignette.setAttribute('style', 'pointer-events:none');
+  vignette.setAttribute('class', 'leg-map-vignette');
+  svg.appendChild(vignette);
 
   // ── Render sidebar ──
   const sidebar = document.getElementById('legSidebar');
@@ -1852,10 +1988,20 @@ export function renderUSMap(container) {
 
   // ── SVG Event handlers ──
 
-  // Hover: tooltip + sidebar quick-stat update
+  // Hover: tooltip + sidebar quick-stat + label highlight
+  let lastHoveredAbbr = null;
   svg.addEventListener('mousemove', (e) => {
     const p = e.target.closest('.leg-state-path');
-    if (!p) { legMapTooltip.style.display = 'none'; return; }
+    if (!p) {
+      legMapTooltip.style.display = 'none';
+      if (lastHoveredAbbr) {
+        svg.classList.remove('has-hover');
+        const prev = svg.querySelector(`.leg-state-label[data-state="${lastHoveredAbbr}"]`);
+        if (prev) prev.classList.remove('label-active');
+        lastHoveredAbbr = null;
+      }
+      return;
+    }
     const name = p.dataset.stateName;
     const abbr = p.dataset.state;
     const data = getLegData(abbr);
@@ -1867,14 +2013,30 @@ export function renderUSMap(container) {
     legMapTooltip.style.left = (tx + tw > vw - 12 ? e.clientX - tw - 12 : tx) + 'px';
     legMapTooltip.style.top = (ty + th > vh - 12 ? e.clientY - th - 12 : ty) + 'px';
     updateQuickStat(abbr);
-    // Highlight sidebar list item
     highlightSidebarItem(abbr);
+    // Label highlight: dim all, brighten hovered
+    if (abbr !== lastHoveredAbbr) {
+      if (lastHoveredAbbr) {
+        const prev = svg.querySelector(`.leg-state-label[data-state="${lastHoveredAbbr}"]`);
+        if (prev) prev.classList.remove('label-active');
+      }
+      svg.classList.add('has-hover');
+      const lbl = svg.querySelector(`.leg-state-label[data-state="${abbr}"]`);
+      if (lbl) lbl.classList.add('label-active');
+      lastHoveredAbbr = abbr;
+    }
   });
 
   svg.addEventListener('mouseleave', () => {
     legMapTooltip.style.display = 'none';
     clearSidebarHighlight();
     clearQuickStat();
+    svg.classList.remove('has-hover');
+    if (lastHoveredAbbr) {
+      const prev = svg.querySelector(`.leg-state-label[data-state="${lastHoveredAbbr}"]`);
+      if (prev) prev.classList.remove('label-active');
+      lastHoveredAbbr = null;
+    }
   });
 
   // Click: select state
