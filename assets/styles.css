@@ -3037,13 +3037,20 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   --map-label: oklch(0.22 0.02 50);      /* deep brown-black */
 }
 
-/* ── State paths ─────────────────────────────────────────────────────── */
+/* ── State groups (3D shadow via filter on <g>) ──────────────────────── */
+.leg-state-group {
+  cursor: pointer;
+}
+.leg-state-noise {
+  pointer-events: none;
+}
+
+/* ── State paths — static borders, no dynamic border effects ─────── */
 .leg-state-path {
   stroke: var(--map-border);
   stroke-width: 1.2;
   cursor: pointer;
-  transition: fill 180ms ease, filter 180ms ease, opacity 220ms ease, stroke 180ms ease,
-              transform 200ms var(--ease-spring, cubic-bezier(0.34,1.56,0.64,1));
+  transition: fill 180ms ease, opacity 220ms ease;
   animation: legStateEnter 400ms ease both;
   outline: none;
 }
@@ -3052,26 +3059,18 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 .leg-state-c3 { fill: var(--map-state-3); }
 .leg-state-c4 { fill: var(--map-state-4); }
 
-/* Hover: coral-red transparent glow overlay */
-.leg-state-path:hover,
-.leg-state-path:focus-visible,
+/* Hover: coral-red transparent glow (fill only, no border change) */
 .leg-state-path.map-hover {
   fill: var(--map-hover);
-  filter: url(#stateElevate);
-  stroke: oklch(0.30 0.06 25);
-  transform: scale(1.03);
 }
-.leg-map-paths:has(.leg-state-path:hover) .leg-state-path:not(:hover) {
-  opacity: 0.55;
+.leg-state-path:focus-visible {
+  outline: 2px solid var(--map-selected);
+  outline-offset: 1px;
 }
-.leg-state-path:focus-visible { stroke-width: 2; }
 
-/* Selected: gold accent */
+/* Selected: gold accent fill (static border) */
 .leg-state-path.selected {
   fill: var(--map-selected);
-  filter: drop-shadow(0 0 14px rgba(201,150,58,0.55));
-  stroke: oklch(0.35 0.06 75);
-  transform: scale(1.03);
 }
 
 /* Active/live-data: pulsing gold border ring */
@@ -3084,35 +3083,24 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 }
 
 @keyframes legStateEnter {
-  from { opacity: 0; transform: scale(0.94); }
-  to   { opacity: 1; transform: scale(1); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-/* ── State labels ────────────────────────────────────────────────────── */
+/* ── State labels — static, no color shift on hover/select ─────────── */
 .leg-state-label {
   font-family: 'Inter', var(--leg-font-mono);
-  font-size: 9.5px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-weight: 500;
+  letter-spacing: 0.06em;
   fill: var(--map-label);
-  filter: url(#labelHalo);
   text-anchor: middle;
   dominant-baseline: central;
   pointer-events: none;
   opacity: 0;
   animation: legLabelEnter 300ms ease forwards;
-  transition: opacity 220ms ease;
 }
 .leg-state-label--small {
-  font-size: 7.5px;
   fill: var(--leg-text-primary);
-}
-/* Fade labels when a state is hovered — keep hovered label bright */
-.leg-map-svg.has-hover .leg-state-label {
-  opacity: 0.3;
-}
-.leg-map-svg.has-hover .leg-state-label.label-active {
-  opacity: 1;
 }
 .leg-state-leader {
   stroke: rgba(100,80,60,0.35);
@@ -3145,6 +3133,46 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   color: rgba(160,140,100,0.22);
   pointer-events: none;
   z-index: 2;
+}
+
+/* ── Legend strip below map ───────────────────────────────────────────── */
+.leg-map-legend {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 16px;
+  margin-top: 8px;
+  font-family: var(--leg-font-mono);
+  font-size: 11px;
+  color: var(--leg-text-secondary);
+}
+.leg-map-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.leg-map-legend-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  border: 1px solid #1a1a1a;
+  flex-shrink: 0;
+}
+.leg-map-legend-pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1a1a1a;
+  opacity: 0.4;
+  animation: legLegendPulse 2.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes legLegendPulse {
+  0%, 100% { opacity: 0.2; transform: scale(0.9); }
+  50% { opacity: 0.5; transform: scale(1.1); }
 }
 
 /* ── Scan-line overlay on map container ──────────────────────────────── */
@@ -3774,9 +3802,9 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
     animation: none !important;
     opacity: 1 !important;
   }
-  .leg-state-path:hover,
-  .leg-state-path.map-hover { transform: none !important; }
+  .leg-state-group { transition: none !important; }
   .leg-state-path.leg-state-active { animation: legStateEnter 400ms ease both !important; }
+  .leg-map-legend-pulse { animation: none !important; opacity: 0.4 !important; }
 }
 
 } /* end @layer components */

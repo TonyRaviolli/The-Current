@@ -1794,7 +1794,22 @@ function getStateVisualCenter(pathData) {
     area = Math.abs(area);
     if (area > largestArea) { largestArea = area; largestRing = ring; }
   }
-  return polylabel([largestRing], 0.5);
+  return polylabel([largestRing], 0.1);
+}
+
+// ── Compute area of a state's largest ring (for font scaling) ──
+function getStateArea(pathData) {
+  const allRings = pathToRings(pathData);
+  if (!allRings.length) return 0;
+  let largest = 0;
+  for (const ring of allRings) {
+    let area = 0;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      area += ring[i][0] * ring[j][1] - ring[j][0] * ring[i][1];
+    }
+    largest = Math.max(largest, Math.abs(area));
+  }
+  return largest * 0.5;
 }
 
 // ── Small states: computed leader-line layout (sorted by y, minimum spacing) ──
@@ -1869,10 +1884,9 @@ export function renderUSMap(container) {
   divider.setAttribute('class', 'leg-map-divider');
   svg.appendChild(divider);
 
-  // State paths group (with noise texture filter for printed-map feel)
+  // State paths group
   const pathsGroup = document.createElementNS(svgNS, 'g');
   pathsGroup.setAttribute('class', 'leg-map-paths');
-  pathsGroup.setAttribute('filter', 'url(#mapNoise)');
 
   // Labels group (rendered on top of paths)
   const labelsGroup = document.createElementNS(svgNS, 'g');
@@ -1885,24 +1899,18 @@ export function renderUSMap(container) {
   });
   STATE_LIST_ORDER.sort((a, b) => STATE_NAMES[a].localeCompare(STATE_NAMES[b]));
 
-  // ── SVG filter definitions for label halos and hover effects ──
+  // ── SVG filter definitions ──
   const defs = document.createElementNS(svgNS, 'defs');
-  // Label halo filter
   defs.innerHTML = `
-    <filter id="labelHalo" x="-30%" y="-30%" width="160%" height="160%">
-      <feMorphology operator="dilate" radius="1.2" in="SourceAlpha" result="thick"/>
-      <feGaussianBlur in="thick" stdDeviation="0.8" result="blur"/>
-      <feFlood flood-color="rgba(255,255,255,0.65)" result="color"/>
-      <feComposite in="color" in2="blur" operator="in" result="halo"/>
-      <feMerge><feMergeNode in="halo"/><feMergeNode in="SourceGraphic"/></feMerge>
+    <filter id="stateShadow" x="-5%" y="-5%" width="115%" height="120%">
+      <feDropShadow dx="1" dy="2" stdDeviation="1.5" flood-color="#1a1a1a" flood-opacity="0.18"/>
     </filter>
-    <filter id="stateElevate" x="-10%" y="-10%" width="120%" height="130%">
-      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="rgba(0,0,0,0.4)"/>
+    <filter id="stateShadowHover" x="-10%" y="-10%" width="125%" height="135%">
+      <feDropShadow dx="2" dy="5" stdDeviation="3" flood-color="#1a1a1a" flood-opacity="0.28"/>
     </filter>
     <filter id="mapNoise" x="0" y="0" width="100%" height="100%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" result="noise"/>
-      <feColorMatrix type="saturate" values="0" in="noise" result="mono"/>
-      <feBlend in="SourceGraphic" in2="mono" mode="multiply"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
     </filter>
     <marker id="leaderDot" viewBox="0 0 4 4" refX="2" refY="2" markerWidth="4" markerHeight="4">
       <circle cx="2" cy="2" r="1.2" fill="rgba(100,80,60,0.5)"/>
@@ -1919,32 +1927,63 @@ export function renderUSMap(container) {
   grid.style.pointerEvents = 'none';
   svg.appendChild(grid);
 
-  // ── Compute visual centers for ALL states using polylabel ──
+  // ── Compute visual centers + areas for ALL states ──
   const visualCenters = {};
+  const stateAreas = {};
   US_STATES.forEach((state) => {
     const [cx, cy] = getStateVisualCenter(state.path);
     const nudge = LABEL_NUDGES[state.id];
     visualCenters[state.id] = nudge ? [cx + nudge.dx, cy + nudge.dy] : [cx, cy];
+    stateAreas[state.id] = getStateArea(state.path);
   });
 
-  // ── Create state paths (sorted by x for west-to-east entrance) ──
+  // Compute font sizes: scale with sqrt(area), min 8px max 12px
+  const areas = Object.values(stateAreas).filter(a => a > 0);
+  const maxArea = Math.max(...areas), minArea = Math.min(...areas);
+  const fontSizeForState = (id) => {
+    const a = stateAreas[id] || 0;
+    if (a <= 0) return 8;
+    const t = Math.sqrt((a - minArea) / (maxArea - minArea || 1));
+    return Math.max(8, Math.min(12, 8 + t * 4));
+  };
+
+  // ── Create per-state <g> groups (path + noise overlay) ──
   const statesByX = [...US_STATES].sort((a, b) => visualCenters[a.id][0] - visualCenters[b.id][0]);
   statesByX.forEach((state, index) => {
+    const g = document.createElementNS(svgNS, 'g');
+    g.setAttribute('class', 'leg-state-group');
+    g.setAttribute('data-state', state.id);
+    g.setAttribute('data-state-name', state.name);
+    g.setAttribute('filter', 'url(#stateShadow)');
+    // Transform-origin at visual center for hover lift
+    const [vcx, vcy] = visualCenters[state.id];
+    g.style.transformOrigin = `${vcx}px ${vcy}px`;
+    g.style.transition = 'transform 0.18s ease, filter 0.18s ease';
+
+    // State fill path
     const path = document.createElementNS(svgNS, 'path');
     path.setAttribute('d', state.path);
     const colorIdx = STATE_COLOR_MAP[state.id] || 1;
     const hasData = !!getLegData(state.id);
     path.setAttribute('class', `leg-state-path leg-state-c${colorIdx}${hasData ? ' leg-state-active' : ''}`);
-    path.setAttribute('data-state', state.id);
-    path.setAttribute('data-state-name', state.name);
     path.setAttribute('aria-label', state.name);
     path.setAttribute('role', 'button');
     path.setAttribute('tabindex', '0');
     path.style.animationDelay = `${index * 12}ms`;
-    // Set transform-origin to visual center for hover scale effect
-    const [vcx, vcy] = visualCenters[state.id];
-    path.style.transformOrigin = `${vcx}px ${vcy}px`;
-    pathsGroup.appendChild(path);
+    g.appendChild(path);
+
+    // Noise texture overlay (same shape, only covers fill, not borders/labels)
+    const noise = document.createElementNS(svgNS, 'path');
+    noise.setAttribute('d', state.path);
+    noise.setAttribute('fill', 'white');
+    noise.setAttribute('stroke', 'none');
+    noise.setAttribute('filter', 'url(#mapNoise)');
+    noise.setAttribute('opacity', '0.035');
+    noise.setAttribute('class', 'leg-state-noise');
+    noise.style.pointerEvents = 'none';
+    g.appendChild(noise);
+
+    pathsGroup.appendChild(g);
   });
 
   svg.appendChild(pathsGroup);
@@ -1955,9 +1994,8 @@ export function renderUSMap(container) {
   // Small states: compute non-overlapping label column layout
   const smallStatesData = SMALL_STATE_IDS
     .map((id) => ({ id, cx: visualCenters[id][0], cy: visualCenters[id][1] }))
-    .sort((a, b) => a.cy - b.cy); // Sort north to south
+    .sort((a, b) => a.cy - b.cy);
 
-  // Space labels evenly with minimum gap
   let nextY = smallStatesData[0] ? smallStatesData[0].cy - 20 : 100;
   const smallLabelPositions = {};
   for (const s of smallStatesData) {
@@ -1966,7 +2004,7 @@ export function renderUSMap(container) {
     nextY = labelY + SMALL_STATE_MIN_GAP;
   }
 
-  // Render all labels
+  // Render all labels (static — no hover/select color shift)
   US_STATES.forEach((state, index) => {
     const [cx, cy] = visualCenters[state.id];
     const isSmall = SMALL_STATES.has(state.id);
@@ -1976,7 +2014,6 @@ export function renderUSMap(container) {
       labelX = smallLabelPositions[state.id].labelX;
       labelY = smallLabelPositions[state.id].labelY;
 
-      // Leader line with dot marker
       const line = document.createElementNS(svgNS, 'line');
       line.setAttribute('x1', cx); line.setAttribute('y1', cy);
       line.setAttribute('x2', labelX - 8); line.setAttribute('y2', labelY);
@@ -1985,6 +2022,7 @@ export function renderUSMap(container) {
       labelsGroup.appendChild(line);
     }
 
+    const fontSize = isSmall ? 8 : fontSizeForState(state.id);
     const text = document.createElementNS(svgNS, 'text');
     text.setAttribute('x', labelX);
     text.setAttribute('y', labelY);
@@ -1992,6 +2030,7 @@ export function renderUSMap(container) {
     text.setAttribute('dominant-baseline', 'central');
     text.setAttribute('class', `leg-state-label${isSmall ? ' leg-state-label--small' : ''}`);
     text.setAttribute('data-state', state.id);
+    text.style.fontSize = `${fontSize}px`;
     text.textContent = state.id;
     text.style.animationDelay = `${index * 8 + 200}ms`;
     labelsGroup.appendChild(text);
@@ -1999,13 +2038,16 @@ export function renderUSMap(container) {
 
   svg.appendChild(labelsGroup);
 
-  // Vignette overlay (darker edges for depth)
-  const vignette = document.createElementNS(svgNS, 'rect');
-  vignette.setAttribute('width', '960'); vignette.setAttribute('height', '600');
-  vignette.setAttribute('fill', 'none');
-  vignette.setAttribute('style', 'pointer-events:none');
-  vignette.setAttribute('class', 'leg-map-vignette');
-  svg.appendChild(vignette);
+  // ── Legend strip below the map ──
+  const legend = document.createElement('div');
+  legend.className = 'leg-map-legend';
+  legend.innerHTML = `
+    <span class="leg-map-legend-item"><span class="leg-map-legend-swatch" style="background:oklch(0.76 0.04 75)"></span>Introduced</span>
+    <span class="leg-map-legend-item"><span class="leg-map-legend-swatch" style="background:oklch(0.70 0.03 55)"></span>In Committee</span>
+    <span class="leg-map-legend-item"><span class="leg-map-legend-swatch" style="background:oklch(0.72 0.04 140)"></span>Passed</span>
+    <span class="leg-map-legend-item"><span class="leg-map-legend-pulse"></span>Active legislation</span>
+  `;
+  container.appendChild(legend);
 
   // ── Render sidebar ──
   const sidebar = document.getElementById('legSidebar');
@@ -2013,22 +2055,23 @@ export function renderUSMap(container) {
 
   // ── SVG Event handlers ──
 
-  // Hover: tooltip + sidebar quick-stat + label highlight
-  let lastHoveredAbbr = null;
+  // Hover: tooltip + sidebar quick-stat + 3D lift on group
+  let lastHoveredGroup = null;
   svg.addEventListener('mousemove', (e) => {
-    const p = e.target.closest('.leg-state-path');
-    if (!p) {
+    const g = e.target.closest('.leg-state-group');
+    if (!g) {
       legMapTooltip.style.display = 'none';
-      if (lastHoveredAbbr) {
-        svg.classList.remove('has-hover');
-        const prev = svg.querySelector(`.leg-state-label[data-state="${lastHoveredAbbr}"]`);
-        if (prev) prev.classList.remove('label-active');
-        lastHoveredAbbr = null;
+      if (lastHoveredGroup) {
+        lastHoveredGroup.setAttribute('filter', 'url(#stateShadow)');
+        lastHoveredGroup.style.transform = '';
+        const prevPath = lastHoveredGroup.querySelector('.leg-state-path');
+        if (prevPath) prevPath.classList.remove('map-hover');
+        lastHoveredGroup = null;
       }
       return;
     }
-    const name = p.dataset.stateName;
-    const abbr = p.dataset.state;
+    const name = g.dataset.stateName;
+    const abbr = g.dataset.state;
     const data = getLegData(abbr);
     const billCount = data ? data.totalBills : 0;
     const passedCount = data ? data.bills.filter(b => b.status === 'Passed').length : 0;
@@ -2047,16 +2090,20 @@ export function renderUSMap(container) {
     legMapTooltip.style.top = (ty + th > vh - 12 ? e.clientY - th - 12 : ty) + 'px';
     updateQuickStat(abbr);
     highlightSidebarItem(abbr);
-    // Label highlight: dim all, brighten hovered
-    if (abbr !== lastHoveredAbbr) {
-      if (lastHoveredAbbr) {
-        const prev = svg.querySelector(`.leg-state-label[data-state="${lastHoveredAbbr}"]`);
-        if (prev) prev.classList.remove('label-active');
+
+    // 3D lift: swap filter + transform on hover group
+    if (g !== lastHoveredGroup) {
+      if (lastHoveredGroup) {
+        lastHoveredGroup.setAttribute('filter', 'url(#stateShadow)');
+        lastHoveredGroup.style.transform = '';
+        const prevPath = lastHoveredGroup.querySelector('.leg-state-path');
+        if (prevPath) prevPath.classList.remove('map-hover');
       }
-      svg.classList.add('has-hover');
-      const lbl = svg.querySelector(`.leg-state-label[data-state="${abbr}"]`);
-      if (lbl) lbl.classList.add('label-active');
-      lastHoveredAbbr = abbr;
+      g.setAttribute('filter', 'url(#stateShadowHover)');
+      g.style.transform = 'translateY(-4px) scale(1.03)';
+      const hovPath = g.querySelector('.leg-state-path');
+      if (hovPath) hovPath.classList.add('map-hover');
+      lastHoveredGroup = g;
     }
   });
 
@@ -2064,26 +2111,27 @@ export function renderUSMap(container) {
     legMapTooltip.style.display = 'none';
     clearSidebarHighlight();
     clearQuickStat();
-    svg.classList.remove('has-hover');
-    if (lastHoveredAbbr) {
-      const prev = svg.querySelector(`.leg-state-label[data-state="${lastHoveredAbbr}"]`);
-      if (prev) prev.classList.remove('label-active');
-      lastHoveredAbbr = null;
+    if (lastHoveredGroup) {
+      lastHoveredGroup.setAttribute('filter', 'url(#stateShadow)');
+      lastHoveredGroup.style.transform = '';
+      const prevPath = lastHoveredGroup.querySelector('.leg-state-path');
+      if (prevPath) prevPath.classList.remove('map-hover');
+      lastHoveredGroup = null;
     }
   });
 
-  // Click: select state
+  // Click: select state (target may be path or noise overlay)
   svg.addEventListener('click', (e) => {
-    const p = e.target.closest('.leg-state-path');
-    if (!p) return;
-    selectState(p.dataset.state);
+    const g = e.target.closest('.leg-state-group');
+    if (!g) return;
+    selectState(g.dataset.state);
   });
 
   // Keyboard: Enter/Space to select
   svg.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
-      const p = e.target.closest('.leg-state-path');
-      if (p) { e.preventDefault(); selectState(p.dataset.state); }
+      const g = e.target.closest('.leg-state-group');
+      if (g) { e.preventDefault(); selectState(g.dataset.state); }
     }
   });
 }
@@ -2152,12 +2200,21 @@ function clearSidebarHighlight() {
   document.querySelectorAll('.leg-state-item--hover').forEach((li) => li.classList.remove('leg-state-item--hover'));
 }
 function highlightMapState(abbr) {
-  document.querySelectorAll('.leg-state-path').forEach((p) => {
-    p.classList.toggle('map-hover', p.dataset.state === abbr);
+  document.querySelectorAll('.leg-state-group').forEach((g) => {
+    const isTarget = g.dataset.state === abbr;
+    const path = g.querySelector('.leg-state-path');
+    if (path) path.classList.toggle('map-hover', isTarget);
+    g.setAttribute('filter', isTarget ? 'url(#stateShadowHover)' : 'url(#stateShadow)');
+    g.style.transform = isTarget ? 'translateY(-4px) scale(1.03)' : '';
   });
 }
 function clearMapHighlight() {
-  document.querySelectorAll('.leg-state-path.map-hover').forEach((p) => p.classList.remove('map-hover'));
+  document.querySelectorAll('.leg-state-group').forEach((g) => {
+    const path = g.querySelector('.leg-state-path');
+    if (path) path.classList.remove('map-hover');
+    g.setAttribute('filter', 'url(#stateShadow)');
+    g.style.transform = '';
+  });
 }
 
 // ── Quick-stat panel ──
@@ -2204,7 +2261,8 @@ function selectState(stateId) {
   const svg = document.querySelector('.leg-map-svg');
   if (svg) {
     svg.querySelectorAll('.leg-state-path.selected').forEach((p) => p.classList.remove('selected'));
-    const path = svg.querySelector(`.leg-state-path[data-state="${stateId}"]`);
+    const g = svg.querySelector(`.leg-state-group[data-state="${stateId}"]`);
+    const path = g ? g.querySelector('.leg-state-path') : null;
     if (path) path.classList.add('selected');
   }
   // Update sidebar active
