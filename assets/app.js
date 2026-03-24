@@ -1250,6 +1250,16 @@ document.body.addEventListener('click', (e) => {
   }
 });
 
+// ── Legislation: Escape key clears all selections ──
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const legPage = document.getElementById('page-legislation');
+    if (legPage && legPage.classList.contains('active')) {
+      clearMapSelection();
+    }
+  }
+});
+
 // ── Legislation: state selection listener ──
 document.addEventListener('leg-state-selected', (e) => {
   // Panel rendering is handled in render.js via selectState()

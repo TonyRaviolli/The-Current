@@ -1916,25 +1916,27 @@ export function renderUSMap(container) {
   const sidebar = document.getElementById('legSidebar');
   if (sidebar) renderMapSidebar(sidebar);
 
-  // ── SVG Event handlers ──
+  // ══════════════════════════════════════════════════════════════════════
+  // SVG Event handlers — 3-channel architecture
+  // Channel 1: Map hover (map-only visual + tooltip, NO sidebar effect)
+  // Channel 2: Map click / keyboard (selection on BOTH map + sidebar)
+  // Channel 3: Sidebar click / search (sidebar-initiated, see renderMapSidebar)
+  // ══════════════════════════════════════════════════════════════════════
 
-  // Hover: tooltip + sidebar quick-stat + 3D lift on group
+  // ── Channel 1: Map hover — map-only, ephemeral ──
   let lastHoveredGroup = null;
   svg.addEventListener('mousemove', (e) => {
     const g = e.target.closest('.leg-state-group');
     if (!g) {
+      clearMapHover();
       legMapTooltip.style.display = 'none';
-      if (lastHoveredGroup) {
-        lastHoveredGroup.setAttribute('filter', 'url(#stateShadow)');
-        lastHoveredGroup.style.transform = '';
-        const prevPath = lastHoveredGroup.querySelector('.leg-state-path');
-        if (prevPath) prevPath.classList.remove('map-hover');
-        lastHoveredGroup = null;
-      }
+      updateQuickStat(null);
       return;
     }
-    const name = g.dataset.stateName;
     const abbr = g.dataset.state;
+
+    // Tooltip (map-only visual)
+    const name = g.dataset.stateName;
     const data = getLegData(abbr);
     const billCount = data ? data.totalBills : 0;
     const passedCount = data ? data.bills.filter(b => b.status === 'Passed').length : 0;
@@ -1951,50 +1953,39 @@ export function renderUSMap(container) {
     const vw = window.innerWidth, vh = window.innerHeight;
     legMapTooltip.style.left = (tx + tw > vw - 12 ? e.clientX - tw - 12 : tx) + 'px';
     legMapTooltip.style.top = (ty + th > vh - 12 ? e.clientY - th - 12 : ty) + 'px';
-    updateQuickStat(abbr);
-    highlightSidebarItem(abbr);
 
-    // Hover: brightness lift via CSS class
+    // Quick stat panel (map-only, doesn't touch sidebar list)
+    updateQuickStat(abbr);
+
+    // Map hover visual — ONLY on map path, NO sidebar class changes
     if (g !== lastHoveredGroup) {
-      if (lastHoveredGroup) {
-        lastHoveredGroup.setAttribute('filter', 'url(#stateShadow)');
-        lastHoveredGroup.style.transform = '';
-        const prevPath = lastHoveredGroup.querySelector('.leg-state-path');
-        if (prevPath) prevPath.classList.remove('map-hover');
-      }
+      clearMapHover();
       g.setAttribute('filter', 'url(#stateShadowHover)');
       g.style.transform = 'translateY(-2px) scale(1.02)';
       const hovPath = g.querySelector('.leg-state-path');
-      if (hovPath) hovPath.classList.add('map-hover');
+      if (hovPath) hovPath.classList.add('leg-state-path--hovered');
       lastHoveredGroup = g;
     }
   });
 
   svg.addEventListener('mouseleave', () => {
     legMapTooltip.style.display = 'none';
-    clearSidebarHighlight();
-    clearQuickStat();
-    if (lastHoveredGroup) {
-      lastHoveredGroup.setAttribute('filter', 'url(#stateShadow)');
-      lastHoveredGroup.style.transform = '';
-      const prevPath = lastHoveredGroup.querySelector('.leg-state-path');
-      if (prevPath) prevPath.classList.remove('map-hover');
-      lastHoveredGroup = null;
-    }
+    clearMapHover();
+    updateQuickStat(null);
   });
 
-  // Click: select state
+  // ── Channel 2: Map click — selection on both map + sidebar ──
   svg.addEventListener('click', (e) => {
     const g = e.target.closest('.leg-state-group');
     if (!g) return;
-    selectState(g.dataset.state);
+    selectState(g.dataset.state, 'map');
   });
 
-  // Keyboard: Enter/Space to select
+  // Keyboard: Enter/Space to select (Channel 2)
   svg.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       const g = e.target.closest('.leg-state-group');
-      if (g) { e.preventDefault(); selectState(g.dataset.state); }
+      if (g) { e.preventDefault(); selectState(g.dataset.state, 'map'); }
     }
   });
 }
@@ -2006,7 +1997,7 @@ function renderMapSidebar(sidebar) {
       <svg class="leg-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
       <input type="text" class="leg-search-input" id="legStateSearch" placeholder="Search a state..." autocomplete="off" spellcheck="false">
     </div>
-    <ul class="leg-state-list" id="legStateList"></ul>
+    <ul class="leg-state-list" id="legStateList" role="listbox" aria-label="State list"></ul>
     <div class="leg-quick-stat" id="legQuickStat">
       <div class="leg-quick-stat-empty">Hover a state to preview</div>
     </div>
@@ -2019,13 +2010,14 @@ function renderMapSidebar(sidebar) {
     li.className = 'leg-state-item';
     li.dataset.state = abbr;
     li.setAttribute('tabindex', '0');
-    li.setAttribute('role', 'button');
+    li.setAttribute('role', 'option');
+    li.setAttribute('aria-selected', 'false');
     li.setAttribute('aria-label', `View legislation for ${name}`);
     li.innerHTML = `<span class="leg-state-item-name">${name}</span><span class="leg-state-item-abbr">${abbr}</span>`;
     list.appendChild(li);
   });
 
-  // Search filtering
+  // ── Channel 3: Sidebar search — sidebar-only, NO map effect ──
   const searchInput = sidebar.querySelector('#legStateSearch');
   searchInput.addEventListener('input', () => {
     const q = searchInput.value.trim().toLowerCase();
@@ -2037,64 +2029,51 @@ function renderMapSidebar(sidebar) {
     });
   });
 
-  // List item click → select state
+  // ── Channel 3: List item click → select state (sidebar-initiated) ──
   list.addEventListener('click', (e) => {
     const li = e.target.closest('.leg-state-item');
-    if (li) selectState(li.dataset.state);
+    if (li) selectState(li.dataset.state, 'sidebar');
   });
 
-  // List item keyboard activation
+  // ── Channel 3: List item keyboard activation ──
   list.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       const li = e.target.closest('.leg-state-item');
-      if (li) { e.preventDefault(); selectState(li.dataset.state); }
+      if (li) { e.preventDefault(); selectState(li.dataset.state, 'sidebar'); }
     }
   });
 
-  // List item hover → quick stat + map highlight
+  // List item hover — sidebar-only quick stat, NO map hover effect
   list.addEventListener('mouseover', (e) => {
     const li = e.target.closest('.leg-state-item');
-    if (li) {
-      updateQuickStat(li.dataset.state);
-      highlightMapState(li.dataset.state);
-    }
+    if (li) updateQuickStat(li.dataset.state);
   });
   list.addEventListener('mouseleave', () => {
-    clearQuickStat();
-    clearMapHighlight();
+    updateQuickStat(null);
   });
 }
 
-function highlightSidebarItem(abbr) {
-  document.querySelectorAll('.leg-state-item').forEach((li) => {
-    li.classList.toggle('leg-state-item--hover', li.dataset.state === abbr);
-  });
-}
-function clearSidebarHighlight() {
-  document.querySelectorAll('.leg-state-item--hover').forEach((li) => li.classList.remove('leg-state-item--hover'));
-}
-function highlightMapState(abbr) {
-  document.querySelectorAll('.leg-state-group').forEach((g) => {
-    const isTarget = g.dataset.state === abbr;
-    const path = g.querySelector('.leg-state-path');
-    if (path) path.classList.toggle('map-hover', isTarget);
-    g.setAttribute('filter', isTarget ? 'url(#stateShadowHover)' : 'url(#stateShadow)');
-    g.style.transform = isTarget ? 'translateY(-2px) scale(1.02)' : '';
-  });
-}
-function clearMapHighlight() {
-  document.querySelectorAll('.leg-state-group').forEach((g) => {
-    const path = g.querySelector('.leg-state-path');
-    if (path) path.classList.remove('map-hover');
-    g.setAttribute('filter', 'url(#stateShadow)');
-    g.style.transform = '';
-  });
+// ── Channel 1: Clear map hover (map-only, never touches sidebar) ──
+function clearMapHover() {
+  const prev = document.querySelector('.leg-state-path--hovered');
+  if (prev) {
+    prev.classList.remove('leg-state-path--hovered');
+    const g = prev.closest('.leg-state-group');
+    if (g) {
+      g.setAttribute('filter', 'url(#stateShadow)');
+      g.style.transform = '';
+    }
+  }
 }
 
 // ── Quick-stat panel ──
 function updateQuickStat(abbr) {
   const el = document.getElementById('legQuickStat');
   if (!el) return;
+  if (!abbr) {
+    el.innerHTML = '<div class="leg-quick-stat-empty">Hover a state to preview</div>';
+    return;
+  }
   const data = getLegData(abbr);
   const name = STATE_NAMES[abbr] || abbr;
   if (!data) {
@@ -2109,10 +2088,7 @@ function updateQuickStat(abbr) {
       <div class="leg-qs-row"><span class="leg-qs-label">Most Active Category:</span><span class="leg-qs-val">${data.topCategory}</span></div>
     </div>`;
 }
-function clearQuickStat() {
-  const el = document.getElementById('legQuickStat');
-  if (el) el.innerHTML = '<div class="leg-quick-stat-empty">Hover a state to preview</div>';
-}
+// clearQuickStat removed — updateQuickStat(null) handles clearing
 
 // ── Lazy-load legislation data ──
 let _legDataModule = null;
@@ -2131,26 +2107,35 @@ function getLegData(abbr) {
 loadLegData();
 
 // ── State selection (shared by map click, sidebar click, search) ──
-function selectState(stateId) {
+function selectState(stateId, source = 'map') {
+  // Clear all previous selections (map + sidebar)
+  clearAllSelections();
+
+  // Map: add --selected class (persistent selection ring, NO glow/lift)
   const svg = document.querySelector('.leg-map-svg');
   if (svg) {
-    svg.querySelectorAll('.leg-state-path.selected').forEach((p) => {
-      p.classList.remove('selected');
-      p.setAttribute('aria-pressed', 'false');
-    });
     const g = svg.querySelector(`.leg-state-group[data-state="${stateId}"]`);
     const path = g ? g.querySelector('.leg-state-path') : null;
     if (path) {
-      path.classList.add('selected');
+      path.classList.add('leg-state-path--selected');
       path.setAttribute('aria-pressed', 'true');
     }
   }
-  // Update sidebar active
-  document.querySelectorAll('.leg-state-item').forEach((li) => {
-    li.classList.toggle('leg-state-item--active', li.dataset.state === stateId);
-  });
+
+  // Sidebar: add --selected class
+  const sidebarItem = document.querySelector(`.leg-state-item[data-state="${stateId}"]`);
+  if (sidebarItem) {
+    sidebarItem.classList.add('leg-state-item--selected');
+    sidebarItem.setAttribute('aria-selected', 'true');
+    // scrollIntoView ONLY on map-initiated selection (user is looking at map, not sidebar)
+    if (source === 'map') {
+      sidebarItem.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+    }
+  }
+
   legMapSelectedState = stateId;
-  legMapTooltip && (legMapTooltip.style.display = 'none');
+  if (legMapTooltip) legMapTooltip.style.display = 'none';
+
   // Dispatch event (app.js listens)
   const name = STATE_NAMES[stateId] || stateId;
   document.dispatchEvent(new CustomEvent('leg-state-selected', { detail: { id: stateId, name } }));
@@ -2158,10 +2143,22 @@ function selectState(stateId) {
   renderLegislationPanel(stateId);
 }
 
+function clearAllSelections() {
+  // Map: clear --selected
+  document.querySelectorAll('.leg-state-path--selected').forEach((p) => {
+    p.classList.remove('leg-state-path--selected');
+    p.setAttribute('aria-pressed', 'false');
+  });
+  // Sidebar: clear --selected
+  document.querySelectorAll('.leg-state-item--selected').forEach((li) => {
+    li.classList.remove('leg-state-item--selected');
+    li.setAttribute('aria-selected', 'false');
+  });
+}
+
 export function clearMapSelection() {
-  const svg = document.querySelector('.leg-map-svg');
-  if (svg) svg.querySelectorAll('.leg-state-path.selected').forEach((p) => p.classList.remove('selected'));
-  document.querySelectorAll('.leg-state-item--active').forEach((li) => li.classList.remove('leg-state-item--active'));
+  clearAllSelections();
+  clearMapHover();
   legMapSelectedState = null;
   const panel = document.getElementById('legStatePanel');
   if (panel) { panel.classList.remove('leg-panel-active'); setTimeout(() => { panel.innerHTML = ''; }, 350); }

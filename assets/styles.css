@@ -3050,8 +3050,8 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 .leg-state-c3 { fill: var(--map-state-3); }
 .leg-state-c4 { fill: var(--map-state-4); }
 
-/* Hover: brightness lift + subtle outline */
-.leg-state-path.map-hover {
+/* Channel 1: Map hover — ephemeral glow, map-only (no sidebar effect) */
+.leg-state-path--hovered {
   filter: brightness(1.12);
   stroke: var(--leg-text-secondary);
   stroke-width: 1.2;
@@ -3061,9 +3061,16 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   outline-offset: 1px;
 }
 
-/* Selected: warm highlight fill */
-.leg-state-path.selected {
+/* Channels 2 & 3: Map selection — persistent ring, no glow */
+.leg-state-path--selected {
   fill: var(--map-selected);
+  stroke: var(--leg-accent);
+  stroke-width: 2;
+  filter: none;
+}
+/* Both can coexist: selected + hovered gets softer glow */
+.leg-state-path--selected.leg-state-path--hovered {
+  filter: brightness(1.08);
 }
 
 /* Active/live-data: same border as all states */
@@ -3224,6 +3231,10 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   padding: 0;
   max-height: 320px;
   overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: auto;
   border: 1px solid var(--leg-border);
   border-radius: 8px;
   background: var(--leg-surface);
@@ -3243,8 +3254,8 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   max-height: 40px;
   overflow: hidden;
 }
-.leg-state-item:hover,
-.leg-state-item--hover {
+/* Channel 3: native CSS hover on sidebar list items (sidebar-only, no map effect) */
+.leg-state-item:hover {
   background: rgba(74,158,255,0.08);
   color: var(--leg-text-primary);
   border-left-color: var(--leg-accent-alt);
@@ -3253,7 +3264,13 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   outline: 2px solid var(--leg-accent-alt);
   outline-offset: -2px;
 }
-.leg-state-item--active {
+/* Channel 3: search match highlight (sidebar-only) */
+.leg-state-item--search-match {
+  background: rgba(74,158,255,0.06);
+  color: var(--leg-text-primary);
+}
+/* Channels 2 & 3: persistent selection (set by click from map or sidebar) */
+.leg-state-item--selected {
   background: rgba(200,169,110,0.12);
   border-left-color: var(--leg-accent);
   color: var(--leg-accent);
@@ -3270,9 +3287,8 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   font-size: 13px;
   color: var(--leg-text-secondary);
 }
-.leg-state-item--active .leg-state-item-name,
-.leg-state-item:hover .leg-state-item-name,
-.leg-state-item--hover .leg-state-item-name { color: inherit; }
+.leg-state-item--selected .leg-state-item-name,
+.leg-state-item:hover .leg-state-item-name { color: inherit; }
 .leg-state-item-abbr {
   font-family: var(--leg-font-mono);
   font-size: 11px;
