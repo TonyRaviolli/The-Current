@@ -401,9 +401,61 @@ body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-dee
       <div class="leg-view-inner">
         <h1 class="leg-view-title">Federal Legislation</h1>
         <p class="leg-view-subtitle">Congressional bills, executive orders, and SCOTUS decisions — updated daily.</p>
-        <div class="leg-placeholder">
-          <div class="leg-placeholder-icon">&#9878;</div>
-          <p>Federal legislation dashboard — Stage 4</p>
+
+        <!-- Headline ticker -->
+        <div class="leg-ticker" role="marquee" aria-label="Latest federal actions">
+          <div class="leg-ticker-track" id="legTickerTrack"></div>
+        </div>
+
+        <!-- Cross-column search + date range -->
+        <div class="leg-fed-controls">
+          <div class="leg-fed-search-wrap">
+            <svg class="leg-fed-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" class="leg-fed-search" id="legFedSearch" placeholder="Search across all columns..." aria-label="Search federal legislation">
+            <span class="leg-fed-search-count" id="legFedSearchCount"></span>
+          </div>
+          <div class="leg-fed-date-wrap">
+            <label class="leg-fed-date-label" for="legFedDateFrom">From</label>
+            <input type="date" class="leg-fed-date" id="legFedDateFrom" aria-label="Date range start">
+            <label class="leg-fed-date-label" for="legFedDateTo">To</label>
+            <input type="date" class="leg-fed-date" id="legFedDateTo" aria-label="Date range end">
+            <button type="button" class="leg-fed-date-clear" id="legFedDateClear" aria-label="Clear date filters">Clear</button>
+          </div>
+        </div>
+
+        <!-- Mobile tab switcher (visible ≤899px) -->
+        <div class="leg-fed-tabs" role="tablist" aria-label="Federal legislation columns">
+          <button type="button" class="leg-fed-tab active" role="tab" aria-selected="true" data-fed-tab="congressional">Congressional</button>
+          <button type="button" class="leg-fed-tab" role="tab" aria-selected="false" data-fed-tab="executive">Executive</button>
+          <button type="button" class="leg-fed-tab" role="tab" aria-selected="false" data-fed-tab="scotus">SCOTUS</button>
+        </div>
+
+        <!-- 3-column dashboard -->
+        <div class="leg-fed-grid">
+          <section class="leg-fed-col" id="legColCongressional" role="tabpanel" aria-label="Congressional bills">
+            <div class="leg-fed-col-header">
+              <h2 class="leg-fed-col-title">Congressional</h2>
+              <span class="leg-fed-col-count" id="legColCountCongress">0</span>
+            </div>
+            <div class="leg-fed-col-cards" id="legColCardsCongress"></div>
+            <div class="leg-fed-col-more" id="legColMoreCongress"></div>
+          </section>
+          <section class="leg-fed-col" id="legColExecutive" role="tabpanel" aria-label="Executive orders">
+            <div class="leg-fed-col-header">
+              <h2 class="leg-fed-col-title">Executive Orders</h2>
+              <span class="leg-fed-col-count" id="legColCountExec">0</span>
+            </div>
+            <div class="leg-fed-col-cards" id="legColCardsExec"></div>
+            <div class="leg-fed-col-more" id="legColMoreExec"></div>
+          </section>
+          <section class="leg-fed-col" id="legColScotus" role="tabpanel" aria-label="SCOTUS cases">
+            <div class="leg-fed-col-header">
+              <h2 class="leg-fed-col-title">SCOTUS</h2>
+              <span class="leg-fed-col-count" id="legColCountScotus">0</span>
+            </div>
+            <div class="leg-fed-col-cards" id="legColCardsScotus"></div>
+            <div class="leg-fed-col-more" id="legColMoreScotus"></div>
+          </section>
         </div>
       </div>
     </div>

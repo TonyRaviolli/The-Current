@@ -2862,6 +2862,7 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   position: relative;
   z-index: 2;
   padding: 10px 32px;
+  min-height: 44px;
   border: none;
   border-radius: 999px;
   background: none;
@@ -2876,6 +2877,10 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 }
 .leg-toggle-btn.active {
   color: var(--leg-bg);
+}
+.leg-toggle-btn:focus-visible {
+  outline: 2px solid var(--leg-accent-alt);
+  outline-offset: 2px;
 }
 .leg-toggle-indicator {
   position: absolute;
@@ -3244,6 +3249,10 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   color: var(--leg-text-primary);
   border-left-color: var(--leg-accent-alt);
 }
+.leg-state-item:focus-visible {
+  outline: 2px solid var(--leg-accent-alt);
+  outline-offset: -2px;
+}
 .leg-state-item--active {
   background: rgba(200,169,110,0.12);
   border-left-color: var(--leg-accent);
@@ -3348,6 +3357,7 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
+  min-height: 44px;
   border: 1px solid var(--leg-border);
   border-radius: 6px;
   background: none;
@@ -3359,6 +3369,7 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   white-space: nowrap;
 }
 .leg-panel-back:hover { border-color: var(--leg-accent); color: var(--leg-accent); }
+.leg-panel-back:focus-visible { outline: 2px solid var(--leg-accent-alt); outline-offset: 2px; }
 .leg-panel-stats { display: flex; align-items: center; gap: 32px; flex-wrap: wrap; }
 .leg-panel-stat { font-family: var(--leg-font-mono); font-size: 11px; color: var(--leg-text-secondary); }
 .leg-panel-stat strong { color: var(--leg-text-primary); }
@@ -3398,6 +3409,7 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   white-space: nowrap;
 }
 .leg-pill:hover { border-color: var(--leg-accent-alt); color: var(--leg-text-primary); }
+.leg-pill:focus-visible { outline: 2px solid var(--leg-accent-alt); outline-offset: 2px; }
 .leg-pill--active { background: var(--leg-accent); border-color: var(--leg-accent); color: #0d0f14; font-weight: 700; }
 .leg-pill--active svg { stroke: #0d0f14; }
 
@@ -3417,6 +3429,7 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   white-space: nowrap;
 }
 .leg-status-pill:hover { border-color: var(--leg-accent-alt); color: var(--leg-text-primary); }
+.leg-status-pill:focus-visible { outline: 2px solid var(--leg-accent-alt); outline-offset: 2px; }
 .leg-status-pill--active { background: rgba(255,255,255,0.08); border-color: var(--leg-text-primary); color: var(--leg-text-primary); font-weight: 600; }
 .leg-status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; }
 .leg-dot-all { background: var(--leg-text-secondary); }
@@ -3487,7 +3500,10 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 }
 .leg-filter-tag:hover { border-color: #e55; color: #e55; }
 .leg-filter-clear-all {
-  padding: 3px 12px;
+  padding: 8px 12px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   border: none;
   border-radius: 999px;
   background: none;
@@ -3499,6 +3515,7 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   text-underline-offset: 2px;
 }
 .leg-filter-clear-all:hover { color: var(--leg-text-primary); }
+.leg-filter-clear-all:focus-visible { outline: 2px solid var(--leg-accent-alt); outline-offset: 2px; }
 
 /* ── Legislation cards grid ──────────────────────────────────────────── */
 .leg-cards-grid {
@@ -3533,6 +3550,10 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   border-color: var(--leg-accent-alt);
   box-shadow: 0 4px 24px rgba(0,0,0,0.45), 0 0 0 1px rgba(74,158,255,0.15);
   transform: translateY(-2px);
+}
+.leg-card:focus-visible {
+  outline: 2px solid var(--leg-accent-alt);
+  outline-offset: 2px;
 }
 @keyframes legCardEnter {
   from { opacity: 0; transform: translateY(12px); }
@@ -3687,6 +3708,425 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   color: var(--leg-accent);
   background: rgba(200,169,110,0.06);
 }
+.leg-load-more-btn:focus-visible {
+  outline: 2px solid var(--leg-accent-alt);
+  outline-offset: 2px;
+}
+
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║  FEDERAL LEGISLATION DASHBOARD                                  ║
+   ╚══════════════════════════════════════════════════════════════════╝ */
+
+/* ── Headline ticker ─────────────────────────────────────────────── */
+.leg-ticker {
+  overflow: hidden;
+  background: var(--leg-surface);
+  border: 1px solid var(--leg-border);
+  border-radius: 8px;
+  padding: 10px 0;
+  margin-bottom: var(--sp-5);
+  position: relative;
+}
+.leg-ticker::before,
+.leg-ticker::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 48px;
+  z-index: 2;
+  pointer-events: none;
+}
+.leg-ticker::before { left: 0; background: linear-gradient(90deg, var(--leg-surface), transparent); }
+.leg-ticker::after  { right: 0; background: linear-gradient(270deg, var(--leg-surface), transparent); }
+.leg-ticker-track {
+  display: flex;
+  gap: 48px;
+  white-space: nowrap;
+  animation: legTickerScroll 40s linear infinite;
+  will-change: transform;
+}
+.leg-ticker:hover .leg-ticker-track { animation-play-state: paused; }
+.leg-ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--leg-font-mono);
+  font-size: 12px;
+  color: var(--leg-text-secondary);
+  flex-shrink: 0;
+}
+.leg-ticker-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 3px;
+  color: var(--leg-bg);
+}
+.leg-ticker-badge--bill { background: var(--leg-accent-alt); }
+.leg-ticker-badge--eo { background: var(--leg-accent); }
+.leg-ticker-badge--scotus { background: var(--leg-passed); }
+.leg-ticker-title { color: var(--leg-text-primary); font-weight: 500; }
+.leg-ticker-date { opacity: 0.5; }
+@keyframes legTickerScroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ── Federal controls (search + date picker) ─────────────────────── */
+.leg-fed-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-5);
+  flex-wrap: wrap;
+}
+.leg-fed-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 240px;
+}
+.leg-fed-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--leg-text-secondary);
+  pointer-events: none;
+}
+.leg-fed-search {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  background: var(--leg-surface);
+  border: 1px solid var(--leg-border);
+  border-radius: 8px;
+  color: var(--leg-text-primary);
+  font-family: var(--leg-font-mono);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 200ms ease;
+  box-sizing: border-box;
+}
+.leg-fed-search:focus { border-color: var(--leg-accent-alt); }
+.leg-fed-search::placeholder { color: var(--leg-text-secondary); opacity: 0.5; }
+.leg-fed-search-count {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--leg-font-mono);
+  font-size: 11px;
+  color: var(--leg-text-secondary);
+  pointer-events: none;
+}
+.leg-fed-date-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.leg-fed-date-label {
+  font-family: var(--leg-font-mono);
+  font-size: 11px;
+  color: var(--leg-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.leg-fed-date {
+  padding: 8px 10px;
+  background: var(--leg-surface);
+  border: 1px solid var(--leg-border);
+  border-radius: 6px;
+  color: var(--leg-text-primary);
+  font-family: var(--leg-font-mono);
+  font-size: 12px;
+  outline: none;
+  color-scheme: dark;
+}
+.leg-fed-date:focus { border-color: var(--leg-accent-alt); }
+.leg-fed-date-clear {
+  padding: 8px 14px;
+  background: none;
+  border: 1px solid var(--leg-border);
+  border-radius: 6px;
+  color: var(--leg-text-secondary);
+  font-family: var(--leg-font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+.leg-fed-date-clear:hover { border-color: var(--leg-accent); color: var(--leg-accent); }
+
+/* ── Mobile tab switcher ─────────────────────────────────────────── */
+.leg-fed-tabs {
+  display: none;
+  gap: 0;
+  margin-bottom: var(--sp-4);
+  background: var(--leg-surface);
+  border: 1px solid var(--leg-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.leg-fed-tab {
+  flex: 1;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  border-right: 1px solid var(--leg-border);
+  color: var(--leg-text-secondary);
+  font-family: var(--leg-font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+  min-height: 44px;
+}
+.leg-fed-tab:last-child { border-right: none; }
+.leg-fed-tab:hover { background: rgba(255,255,255,0.03); }
+.leg-fed-tab.active {
+  background: rgba(200,169,110,0.1);
+  color: var(--leg-accent);
+  font-weight: 700;
+}
+
+/* ── 3-column grid ───────────────────────────────────────────────── */
+.leg-fed-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-5);
+  align-items: start;
+}
+.leg-fed-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.leg-fed-col-header {
+  position: sticky;
+  top: 130px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--leg-surface);
+  border: 1px solid var(--leg-border);
+  border-radius: 8px 8px 0 0;
+  margin-bottom: -1px;
+}
+.leg-fed-col-title {
+  font-family: var(--leg-font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--leg-text-primary);
+  margin: 0;
+}
+.leg-fed-col-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 999px;
+  font-family: var(--leg-font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--leg-text-secondary);
+}
+.leg-fed-col-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: var(--sp-3) 0;
+}
+
+/* ── Federal card types ──────────────────────────────────────────── */
+.leg-fed-card {
+  background: var(--leg-surface);
+  border: 1px solid var(--leg-border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 150ms ease;
+  position: relative;
+  overflow: hidden;
+  animation: legCardEnter 300ms ease both;
+}
+.leg-fed-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--fed-accent, var(--leg-text-secondary));
+  border-radius: 10px 0 0 10px;
+}
+.leg-fed-card:hover {
+  border-color: var(--leg-accent-alt);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 0 1px rgba(74,158,255,0.12);
+  transform: translateY(-2px);
+}
+.leg-fed-card:focus-visible {
+  outline: 2px solid var(--leg-accent-alt);
+  outline-offset: 2px;
+}
+.leg-fed-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.leg-fed-card-id {
+  font-family: var(--leg-font-mono);
+  font-size: 11px;
+  color: var(--leg-text-secondary);
+}
+.leg-fed-card-chamber {
+  font-family: var(--leg-font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(74,158,255,0.1);
+  color: var(--leg-accent-alt);
+}
+.leg-fed-card-title {
+  font-family: var(--leg-font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--leg-text-primary);
+  line-height: 1.3;
+  margin: 0 0 8px;
+}
+.leg-fed-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.leg-fed-card-badge {
+  font-family: var(--leg-font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+.leg-fed-badge-passed { background: rgba(61,186,126,0.12); color: var(--leg-passed); }
+.leg-fed-badge-proposed { background: rgba(224,156,58,0.12); color: var(--leg-proposed); }
+.leg-fed-badge-signed { background: rgba(200,169,110,0.12); color: var(--leg-accent); }
+.leg-fed-badge-decided { background: rgba(61,186,126,0.12); color: var(--leg-passed); }
+.leg-fed-badge-pending { background: rgba(224,156,58,0.12); color: var(--leg-proposed); }
+.leg-fed-badge-cert { background: rgba(74,158,255,0.12); color: var(--leg-accent-alt); }
+.leg-fed-card-date {
+  font-family: var(--leg-font-mono);
+  font-size: 11px;
+  color: var(--leg-text-secondary);
+}
+.leg-fed-card-summary {
+  font-family: var(--leg-font-body);
+  font-size: 13px;
+  color: var(--leg-text-secondary);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ── SCOTUS-specific: case name in Playfair italics ──────────────── */
+.leg-fed-card-case-name {
+  font-family: var(--leg-font-display);
+  font-style: italic;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--leg-text-primary);
+  line-height: 1.3;
+  margin: 0 0 8px;
+}
+.leg-fed-card-docket {
+  font-family: var(--leg-font-mono);
+  font-size: 11px;
+  color: var(--leg-text-secondary);
+}
+.leg-fed-card-vote {
+  font-family: var(--leg-font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--leg-accent);
+}
+.leg-fed-card-opinion {
+  font-family: var(--leg-font-body);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--leg-text-secondary);
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--leg-border);
+}
+
+/* ── EO impact badge ─────────────────────────────────────────────── */
+.leg-fed-card-impact {
+  font-family: var(--leg-font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.leg-fed-impact-high { background: rgba(224,60,60,0.12); color: #e55; }
+.leg-fed-impact-medium { background: rgba(224,156,58,0.12); color: var(--leg-proposed); }
+
+/* ── Federal load more ───────────────────────────────────────────── */
+.leg-fed-col-more { padding: var(--sp-2) 0; }
+.leg-fed-load-more {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid var(--leg-border);
+  border-radius: 8px;
+  color: var(--leg-text-secondary);
+  font-family: var(--leg-font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 200ms ease, color 200ms ease;
+}
+.leg-fed-load-more:hover { border-color: var(--leg-accent); color: var(--leg-accent); }
+.leg-fed-load-more:focus-visible { outline: 2px solid var(--leg-accent-alt); outline-offset: 2px; }
+
+/* ── Federal dashboard responsive ────────────────────────────────── */
+@media (max-width: 1100px) {
+  .leg-fed-grid { grid-template-columns: 1fr 1fr; }
+  .leg-fed-col:last-child { grid-column: 1 / -1; }
+}
+@media (max-width: 899px) {
+  .leg-fed-tabs { display: flex; }
+  .leg-fed-grid { grid-template-columns: 1fr; }
+  .leg-fed-col { display: none; }
+  .leg-fed-col.leg-fed-col--active { display: flex; }
+  .leg-fed-controls { flex-direction: column; }
+  .leg-fed-search-wrap { min-width: 0; width: 100%; }
+  .leg-fed-date-wrap { width: 100%; flex-wrap: wrap; }
+  .leg-fed-date { flex: 1; min-width: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leg-ticker-track {
+    animation: none !important;
+  }
+  .leg-fed-card,
+  .leg-fed-tab {
+    animation: none !important;
+    opacity: 1 !important;
+    transition-duration: 0ms !important;
+  }
+}
 
 /* ── Map + panel responsive ──────────────────────────────────────────── */
 @media (max-width: 640px) {
@@ -3754,6 +4194,16 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   .story-card-title a{text-decoration-thickness:2px;text-underline-offset:3px}
   .hero-inner .citation{border-width:2px;border-left-width:4px;border-color:rgba(0,0,0,0.35)}
   .hero-inner .citation-author{color:#111}
+  /* Legislation high-contrast overrides */
+  .leg-card,.leg-fed-card{border-width:2px}
+  .leg-pill,.leg-status-pill{border-width:2px;border-color:var(--leg-text-secondary)}
+  .leg-pill--active{border-width:2px}
+  .leg-toggle-btn{font-weight:800}
+  .leg-panel-back{border-width:2px}
+  .leg-state-item{border-left-width:3px}
+  .leg-fed-col-header{border-width:2px}
+  .leg-ticker{border-width:2px}
+  .leg-fed-search,.leg-fed-date,.leg-panel-search{border-width:2px}
 }
 } /* end @layer utilities */
 

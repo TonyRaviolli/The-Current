@@ -25,7 +25,7 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
 import { fetchFeed, runRefresh, fetchResources, fetchSearch, fetchStory, fetchDigest, trackEvent, fetchSources, toggleSource, addSource, deleteSource, fetchScoring, saveScoring, invalidateFeedCache, adminQuerySuffix, setAdminToken } from './api.js';
-import { renderHero, renderTopStories, renderDailyFeed, renderHighImportance, renderTopics, renderDailyInsight, renderResources, renderWeeklyDigest, renderMetaRibbon, renderTodayBrief, renderDeveloping, renderTopicBlocks, renderGlobalSearchResults, renderStoryPage, renderDigestPage, renderOps, renderSinceLastVisit, renderArchiveDays, renderSourceManager, renderScoringPanel, renderMarketIntel, renderCartoons, renderMarketHeatmap, renderTopicBreakdownStrip, renderSourceSpectrum, computeTopicDegrees, renderUSMap, clearMapSelection } from './render.js';
+import { renderHero, renderTopStories, renderDailyFeed, renderHighImportance, renderTopics, renderDailyInsight, renderResources, renderWeeklyDigest, renderMetaRibbon, renderTodayBrief, renderDeveloping, renderTopicBlocks, renderGlobalSearchResults, renderStoryPage, renderDigestPage, renderOps, renderSinceLastVisit, renderArchiveDays, renderSourceManager, renderScoringPanel, renderMarketIntel, renderCartoons, renderMarketHeatmap, renderTopicBreakdownStrip, renderSourceSpectrum, computeTopicDegrees, renderUSMap, clearMapSelection, renderFederalDashboard } from './render.js';
 import { initNavigation, initRunSelector, initTierTabs, initTopicFilters, initSearchFilter, initForms, initCtas, initSaveFollow, getSavedStories, getFollowedTopics, initReaderMode, initShortcuts, initGlobalSearch, applySaveFollowState, initArchiveWeekToggles, recordVisitAndGetLastTime, exportBriefing, exportBriefingText, copyStoryLink, initMyTopicsFilter, getWatches, initKeywordWatches, markAsRead, applyReadState, initUnreadFilter, initNavMore, initAlertStrip, renderTrendingBar, renderEditorsPicks, initTopicBreakdownStrip } from './ui.js';
 
 const refreshButton = document.getElementById('refreshButton');
@@ -1229,6 +1229,10 @@ document.body.addEventListener('click', (e) => {
           renderUSMap(mapContainer);
         }
       }
+      // Initialize federal dashboard when switching to Federal view
+      if (view === 'federal') {
+        renderFederalDashboard();
+      }
     }
     return;
   }
@@ -1251,6 +1255,17 @@ document.addEventListener('leg-state-selected', (e) => {
   // Panel rendering is handled in render.js via selectState()
   // This listener is available for any additional app-level side effects
 });
+
+// ── Initialize federal dashboard when legislation page is shown ──
+const _legPage = document.getElementById('page-legislation');
+if (_legPage) {
+  const _legObs = new MutationObserver(() => {
+    if (_legPage.classList.contains('active')) {
+      renderFederalDashboard();
+    }
+  });
+  _legObs.observe(_legPage, { attributes: true, attributeFilter: ['class'] });
+}
 
 initNavigation();
 initRunSelector();

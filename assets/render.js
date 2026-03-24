@@ -2018,6 +2018,9 @@ function renderMapSidebar(sidebar) {
     const li = document.createElement('li');
     li.className = 'leg-state-item';
     li.dataset.state = abbr;
+    li.setAttribute('tabindex', '0');
+    li.setAttribute('role', 'button');
+    li.setAttribute('aria-label', `View legislation for ${name}`);
     li.innerHTML = `<span class="leg-state-item-name">${name}</span><span class="leg-state-item-abbr">${abbr}</span>`;
     list.appendChild(li);
   });
@@ -2038,6 +2041,14 @@ function renderMapSidebar(sidebar) {
   list.addEventListener('click', (e) => {
     const li = e.target.closest('.leg-state-item');
     if (li) selectState(li.dataset.state);
+  });
+
+  // List item keyboard activation
+  list.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const li = e.target.closest('.leg-state-item');
+      if (li) { e.preventDefault(); selectState(li.dataset.state); }
+    }
   });
 
   // List item hover → quick stat + map highlight
@@ -2123,10 +2134,16 @@ loadLegData();
 function selectState(stateId) {
   const svg = document.querySelector('.leg-map-svg');
   if (svg) {
-    svg.querySelectorAll('.leg-state-path.selected').forEach((p) => p.classList.remove('selected'));
+    svg.querySelectorAll('.leg-state-path.selected').forEach((p) => {
+      p.classList.remove('selected');
+      p.setAttribute('aria-pressed', 'false');
+    });
     const g = svg.querySelector(`.leg-state-group[data-state="${stateId}"]`);
     const path = g ? g.querySelector('.leg-state-path') : null;
-    if (path) path.classList.add('selected');
+    if (path) {
+      path.classList.add('selected');
+      path.setAttribute('aria-pressed', 'true');
+    }
   }
   // Update sidebar active
   document.querySelectorAll('.leg-state-item').forEach((li) => {
@@ -2241,6 +2258,7 @@ async function renderLegislationPanel(stateId) {
     btn.type = 'button';
     btn.className = 'leg-pill' + (cat === 'All' ? ' leg-pill--active' : '');
     btn.dataset.category = cat;
+    btn.setAttribute('aria-pressed', cat === 'All' ? 'true' : 'false');
     const icon = cat !== 'All' ? (LEG_CATEGORY_ICONS[cat] || '') : '';
     btn.innerHTML = `${icon}<span>${cat}</span>`;
     catContainer.appendChild(btn);
@@ -2253,6 +2271,7 @@ async function renderLegislationPanel(stateId) {
     btn.type = 'button';
     btn.className = 'leg-status-pill' + (st === 'All' ? ' leg-status-pill--active' : '');
     btn.dataset.status = st;
+    btn.setAttribute('aria-pressed', st === 'All' ? 'true' : 'false');
     const dotClass = st === 'Passed' ? 'leg-dot-passed' : st === 'Proposed' ? 'leg-dot-proposed' : 'leg-dot-all';
     btn.innerHTML = `<span class="leg-status-dot ${dotClass}"></span>${st}`;
     statusContainer.appendChild(btn);
@@ -2289,18 +2308,27 @@ function wireUpPanelEvents(panel, stateData) {
     const cat = btn.dataset.category;
     if (cat === 'All') {
       legPanelState.categories.clear();
-      panel.querySelectorAll('.leg-pill').forEach((b) => b.classList.remove('leg-pill--active'));
+      panel.querySelectorAll('.leg-pill').forEach((b) => {
+        b.classList.remove('leg-pill--active');
+        b.setAttribute('aria-pressed', 'false');
+      });
       btn.classList.add('leg-pill--active');
+      btn.setAttribute('aria-pressed', 'true');
     } else {
-      panel.querySelector('.leg-pill[data-category="All"]').classList.remove('leg-pill--active');
+      const allBtn = panel.querySelector('.leg-pill[data-category="All"]');
+      allBtn.classList.remove('leg-pill--active');
+      allBtn.setAttribute('aria-pressed', 'false');
       btn.classList.toggle('leg-pill--active');
-      if (btn.classList.contains('leg-pill--active')) {
+      const isActive = btn.classList.contains('leg-pill--active');
+      btn.setAttribute('aria-pressed', String(isActive));
+      if (isActive) {
         legPanelState.categories.add(cat);
       } else {
         legPanelState.categories.delete(cat);
       }
       if (legPanelState.categories.size === 0) {
-        panel.querySelector('.leg-pill[data-category="All"]').classList.add('leg-pill--active');
+        allBtn.classList.add('leg-pill--active');
+        allBtn.setAttribute('aria-pressed', 'true');
       }
     }
     legPanelState.page = 1;
@@ -2311,8 +2339,12 @@ function wireUpPanelEvents(panel, stateData) {
   panel.querySelector('#legStatusPills').addEventListener('click', (e) => {
     const btn = e.target.closest('.leg-status-pill');
     if (!btn) return;
-    panel.querySelectorAll('.leg-status-pill').forEach((b) => b.classList.remove('leg-status-pill--active'));
+    panel.querySelectorAll('.leg-status-pill').forEach((b) => {
+      b.classList.remove('leg-status-pill--active');
+      b.setAttribute('aria-pressed', 'false');
+    });
     btn.classList.add('leg-status-pill--active');
+    btn.setAttribute('aria-pressed', 'true');
     legPanelState.status = btn.dataset.status;
     legPanelState.page = 1;
     renderFilteredCards(stateData);
@@ -2382,6 +2414,19 @@ function wireUpPanelEvents(panel, stateData) {
   }, true);
 
   // Card expand/collapse + load more (delegated)
+  function toggleCard(card) {
+    if (!card) return;
+    const id = card.dataset.billId;
+    if (legPanelState.expanded.has(id)) {
+      legPanelState.expanded.delete(id);
+      card.classList.remove('leg-card--expanded');
+      card.setAttribute('aria-expanded', 'false');
+    } else {
+      legPanelState.expanded.add(id);
+      card.classList.add('leg-card--expanded');
+      card.setAttribute('aria-expanded', 'true');
+    }
+  }
   panel.addEventListener('click', (e) => {
     // Load more button
     if (e.target.closest('.leg-load-more-btn')) {
@@ -2392,13 +2437,17 @@ function wireUpPanelEvents(panel, stateData) {
     // Card expand (skip links)
     const card = e.target.closest('.leg-card');
     if (card && !e.target.closest('a')) {
-      const id = card.dataset.billId;
-      if (legPanelState.expanded.has(id)) {
-        legPanelState.expanded.delete(id);
-        card.classList.remove('leg-card--expanded');
-      } else {
-        legPanelState.expanded.add(id);
-        card.classList.add('leg-card--expanded');
+      toggleCard(card);
+    }
+  });
+
+  // Keyboard activation for cards (Enter/Space)
+  panel.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const card = e.target.closest('.leg-card');
+      if (card && !e.target.closest('a')) {
+        e.preventDefault();
+        toggleCard(card);
       }
     }
   });
@@ -2487,8 +2536,12 @@ function renderFilteredCards(stateData, append = false) {
 
   billsToShow.slice(append ? startIdx : 0).forEach((bill, i) => {
     const card = document.createElement('div');
-    card.className = 'leg-card' + (legPanelState.expanded.has(bill.id) ? ' leg-card--expanded' : '');
+    const isExpanded = legPanelState.expanded.has(bill.id);
+    card.className = 'leg-card' + (isExpanded ? ' leg-card--expanded' : '');
     card.dataset.billId = bill.id;
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('aria-expanded', String(isExpanded));
     if (append) card.style.animationDelay = `${i * 30}ms`;
 
     const isPassed = bill.status === 'passed';
@@ -2545,4 +2598,312 @@ function fmtDate(dateStr) {
   if (!dateStr) return '—';
   const d = new Date(dateStr + 'T00:00:00');
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  §L2  FEDERAL LEGISLATION DASHBOARD                                    ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+const FED_PAGE_SIZE = 6;
+
+let fedState = {
+  search: '',
+  dateFrom: null,
+  dateTo: null,
+  pages: { congressional: 1, executive: 1, scotus: 1 },
+  activeTab: 'congressional',
+  initialized: false,
+  data: { bills: [], orders: [], cases: [] }
+};
+
+export async function renderFederalDashboard() {
+  if (fedState.initialized) return;
+
+  // Load federal data
+  try {
+    const mod = await import('./legislation.js');
+    fedState.data.bills = mod.FEDERAL_BILLS || [];
+    fedState.data.orders = mod.EXECUTIVE_ORDERS || [];
+    fedState.data.cases = mod.SCOTUS_CASES || [];
+  } catch {
+    fedState.data = { bills: [], orders: [], cases: [] };
+  }
+
+  fedState.initialized = true;
+
+  // Build ticker
+  buildFederalTicker();
+
+  // Show first column as active on mobile
+  const firstCol = document.getElementById('legColCongressional');
+  if (firstCol) firstCol.classList.add('leg-fed-col--active');
+
+  // Initial render
+  renderAllFederalColumns();
+
+  // Wire events
+  wireFederalEvents();
+}
+
+function buildFederalTicker() {
+  const track = document.getElementById('legTickerTrack');
+  if (!track) return;
+
+  // Collect 5 most recent items across all columns
+  const items = [];
+  for (const bill of fedState.data.bills) {
+    const d = bill.enacted || bill.introduced;
+    items.push({ type: 'bill', label: bill.chamber, title: bill.title, date: d, id: bill.id });
+  }
+  for (const eo of fedState.data.orders) {
+    items.push({ type: 'eo', label: 'EO', title: eo.title, date: eo.signedDate, id: eo.id });
+  }
+  for (const sc of fedState.data.cases) {
+    const d = sc.decisionDate || '2025-01-01';
+    items.push({ type: 'scotus', label: 'SCOTUS', title: sc.name, date: d, id: sc.docket });
+  }
+  items.sort((a, b) => new Date(b.date) - new Date(a.date));
+  const top = items.slice(0, 5);
+  const esc = escapeHtml;
+
+  // Double the content for seamless loop
+  const html = [...top, ...top].map(it => {
+    const badgeClass = it.type === 'bill' ? 'leg-ticker-badge--bill' : it.type === 'eo' ? 'leg-ticker-badge--eo' : 'leg-ticker-badge--scotus';
+    return `<span class="leg-ticker-item"><span class="leg-ticker-badge ${badgeClass}">${esc(it.label)}</span><span class="leg-ticker-title">${esc(it.title)}</span><span class="leg-ticker-date">${fmtDate(it.date)}</span></span>`;
+  }).join('');
+
+  track.innerHTML = html;
+}
+
+function getFilteredFedItems(type) {
+  let items;
+  if (type === 'congressional') items = [...fedState.data.bills];
+  else if (type === 'executive') items = [...fedState.data.orders];
+  else items = [...fedState.data.cases];
+
+  const { search, dateFrom, dateTo } = fedState;
+
+  if (search) {
+    const q = search.toLowerCase();
+    items = items.filter(it => {
+      const text = [it.title || it.name, it.summary, it.id || it.docket, it.sponsor || '', it.category || ''].join(' ').toLowerCase();
+      return text.includes(q);
+    });
+  }
+
+  if (dateFrom) {
+    const from = new Date(dateFrom + 'T00:00:00');
+    items = items.filter(it => {
+      const d = getItemDate(it);
+      return d && new Date(d + 'T00:00:00') >= from;
+    });
+  }
+  if (dateTo) {
+    const to = new Date(dateTo + 'T23:59:59');
+    items = items.filter(it => {
+      const d = getItemDate(it);
+      return d && new Date(d + 'T00:00:00') <= to;
+    });
+  }
+
+  return items;
+}
+
+function getItemDate(it) {
+  return it.enacted || it.introduced || it.signedDate || it.decisionDate || null;
+}
+
+function renderAllFederalColumns() {
+  renderFederalColumn('congressional', 'legColCardsCongress', 'legColMoreCongress', 'legColCountCongress');
+  renderFederalColumn('executive', 'legColCardsExec', 'legColMoreExec', 'legColCountExec');
+  renderFederalColumn('scotus', 'legColCardsScotus', 'legColMoreScotus', 'legColCountScotus');
+
+  // Update search count
+  const countEl = document.getElementById('legFedSearchCount');
+  if (countEl && fedState.search) {
+    const total = getFilteredFedItems('congressional').length + getFilteredFedItems('executive').length + getFilteredFedItems('scotus').length;
+    countEl.textContent = `${total} results`;
+  } else if (countEl) {
+    countEl.textContent = '';
+  }
+}
+
+function renderFederalColumn(type, cardsId, moreId, countId) {
+  const cards = document.getElementById(cardsId);
+  const more = document.getElementById(moreId);
+  const countBadge = document.getElementById(countId);
+  if (!cards) return;
+
+  const filtered = getFilteredFedItems(type);
+  const page = fedState.pages[type];
+  const visible = Math.min(filtered.length, page * FED_PAGE_SIZE);
+  const esc = escapeHtml;
+
+  if (countBadge) countBadge.textContent = filtered.length;
+
+  cards.innerHTML = '';
+
+  if (filtered.length === 0) {
+    cards.innerHTML = '<div class="leg-panel-empty" style="min-height:120px"><p class="leg-panel-empty-heading" style="font-size:0.95rem">No results</p></div>';
+    if (more) more.innerHTML = '';
+    return;
+  }
+
+  const slice = filtered.slice(0, visible);
+
+  if (type === 'congressional') {
+    slice.forEach((bill, i) => {
+      const card = document.createElement('div');
+      card.className = 'leg-fed-card';
+      card.setAttribute('tabindex', '0');
+      card.style.animationDelay = `${i * 30}ms`;
+      const isPassed = bill.status === 'passed';
+      const badgeClass = isPassed ? 'leg-fed-badge-passed' : 'leg-fed-badge-proposed';
+      const badgeLabel = isPassed ? 'PASSED' : 'PROPOSED';
+      const dateStr = isPassed && bill.enacted ? fmtDate(bill.enacted) : fmtDate(bill.introduced);
+      const summaryShort = bill.summary.length > 140 ? bill.summary.slice(0, 140) + '...' : bill.summary;
+      card.style.setProperty('--fed-accent', isPassed ? 'var(--leg-passed)' : 'var(--leg-proposed)');
+      card.innerHTML = `
+        <div class="leg-fed-card-top">
+          <span class="leg-fed-card-id">${esc(bill.id)}</span>
+          <span class="leg-fed-card-chamber">${esc(bill.chamber)}</span>
+        </div>
+        <h3 class="leg-fed-card-title">${esc(bill.title)}</h3>
+        <div class="leg-fed-card-meta">
+          <span class="leg-fed-card-badge ${badgeClass}">${badgeLabel}</span>
+          <span class="leg-fed-card-date">${dateStr}</span>
+        </div>
+        <p class="leg-fed-card-summary">${esc(summaryShort)}</p>`;
+      cards.appendChild(card);
+    });
+  } else if (type === 'executive') {
+    slice.forEach((eo, i) => {
+      const card = document.createElement('div');
+      card.className = 'leg-fed-card';
+      card.setAttribute('tabindex', '0');
+      card.style.animationDelay = `${i * 30}ms`;
+      card.style.setProperty('--fed-accent', 'var(--leg-accent)');
+      const impactClass = eo.impact === 'High' ? 'leg-fed-impact-high' : 'leg-fed-impact-medium';
+      card.innerHTML = `
+        <div class="leg-fed-card-top">
+          <span class="leg-fed-card-id">${esc(eo.id)}</span>
+          <span class="leg-fed-card-impact ${impactClass}">${esc(eo.impact)} Impact</span>
+        </div>
+        <h3 class="leg-fed-card-title">${esc(eo.title)}</h3>
+        <div class="leg-fed-card-meta">
+          <span class="leg-fed-card-badge leg-fed-badge-signed">SIGNED</span>
+          <span class="leg-fed-card-date">${fmtDate(eo.signedDate)}</span>
+        </div>
+        <p class="leg-fed-card-summary">${esc(eo.summary.length > 140 ? eo.summary.slice(0, 140) + '...' : eo.summary)}</p>`;
+      cards.appendChild(card);
+    });
+  } else {
+    // SCOTUS
+    slice.forEach((sc, i) => {
+      const card = document.createElement('div');
+      card.className = 'leg-fed-card';
+      card.setAttribute('tabindex', '0');
+      card.style.animationDelay = `${i * 30}ms`;
+      const isDecided = sc.status === 'decided';
+      const isCert = sc.status === 'cert_granted';
+      const badgeClass = isDecided ? 'leg-fed-badge-decided' : isCert ? 'leg-fed-badge-cert' : 'leg-fed-badge-pending';
+      const badgeLabel = isDecided ? 'DECIDED' : isCert ? 'CERT. GRANTED' : 'PENDING';
+      const accentColor = isDecided ? 'var(--leg-passed)' : isCert ? 'var(--leg-accent-alt)' : 'var(--leg-proposed)';
+      card.style.setProperty('--fed-accent', accentColor);
+      const dateStr = sc.decisionDate ? fmtDate(sc.decisionDate) : 'Pending';
+      card.innerHTML = `
+        <div class="leg-fed-card-top">
+          <span class="leg-fed-card-docket">${esc(sc.docket)}</span>
+          <span class="leg-fed-card-badge ${badgeClass}">${badgeLabel}</span>
+        </div>
+        <h3 class="leg-fed-card-case-name">${esc(sc.name)}</h3>
+        <div class="leg-fed-card-meta">
+          ${sc.voteSplit ? `<span class="leg-fed-card-vote">${esc(sc.voteSplit)}</span>` : ''}
+          <span class="leg-fed-card-date">${dateStr}</span>
+        </div>
+        <p class="leg-fed-card-summary">${esc(sc.summary.length > 140 ? sc.summary.slice(0, 140) + '...' : sc.summary)}</p>
+        ${sc.opinion ? `<p class="leg-fed-card-opinion">${esc(sc.opinion)}</p>` : ''}`;
+      cards.appendChild(card);
+    });
+  }
+
+  // Load more
+  if (more) {
+    const remaining = filtered.length - visible;
+    if (remaining > 0) {
+      more.innerHTML = `<button class="leg-fed-load-more" type="button" data-fed-more="${type}">Load ${Math.min(FED_PAGE_SIZE, remaining)} More (${remaining} remaining)</button>`;
+    } else {
+      more.innerHTML = '';
+    }
+  }
+}
+
+function wireFederalEvents() {
+  const view = document.getElementById('legFederalView');
+  if (!view) return;
+
+  // Search
+  let searchTimer;
+  const searchInput = document.getElementById('legFedSearch');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        fedState.search = searchInput.value.trim().toLowerCase();
+        fedState.pages = { congressional: 1, executive: 1, scotus: 1 };
+        renderAllFederalColumns();
+      }, 200);
+    });
+  }
+
+  // Date filters
+  const dateFrom = document.getElementById('legFedDateFrom');
+  const dateTo = document.getElementById('legFedDateTo');
+  const dateClear = document.getElementById('legFedDateClear');
+
+  const onDateChange = () => {
+    fedState.dateFrom = dateFrom?.value || null;
+    fedState.dateTo = dateTo?.value || null;
+    fedState.pages = { congressional: 1, executive: 1, scotus: 1 };
+    renderAllFederalColumns();
+  };
+  dateFrom?.addEventListener('change', onDateChange);
+  dateTo?.addEventListener('change', onDateChange);
+  dateClear?.addEventListener('click', () => {
+    if (dateFrom) dateFrom.value = '';
+    if (dateTo) dateTo.value = '';
+    fedState.dateFrom = null;
+    fedState.dateTo = null;
+    fedState.pages = { congressional: 1, executive: 1, scotus: 1 };
+    renderAllFederalColumns();
+  });
+
+  // Mobile tab switcher
+  view.addEventListener('click', (e) => {
+    const tab = e.target.closest('[data-fed-tab]');
+    if (tab) {
+      const type = tab.dataset.fedTab;
+      fedState.activeTab = type;
+      view.querySelectorAll('.leg-fed-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.fedTab === type);
+        t.setAttribute('aria-selected', t.dataset.fedTab === type ? 'true' : 'false');
+      });
+      const colMap = { congressional: 'legColCongressional', executive: 'legColExecutive', scotus: 'legColScotus' };
+      Object.values(colMap).forEach(id => {
+        const col = document.getElementById(id);
+        if (col) col.classList.remove('leg-fed-col--active');
+      });
+      const activeCol = document.getElementById(colMap[type]);
+      if (activeCol) activeCol.classList.add('leg-fed-col--active');
+      return;
+    }
+
+    // Load more buttons
+    const moreBtn = e.target.closest('[data-fed-more]');
+    if (moreBtn) {
+      const col = moreBtn.dataset.fedMore;
+      fedState.pages[col]++;
+      renderAllFederalColumns();
+    }
+  });
 }

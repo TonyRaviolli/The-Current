@@ -3588,3 +3588,364 @@ export const STATE_LEGISLATION = {
   }
 
 };
+
+// ══════════════════════════════════════════════════════════════════════════
+// FEDERAL LEGISLATION — Mock data for Stage 4 Federal Dashboard
+// ══════════════════════════════════════════════════════════════════════════
+
+export const FEDERAL_BILLS = [
+  {
+    id: "HR-4521",
+    title: "National Infrastructure Modernization Act",
+    chamber: "House",
+    category: "Infrastructure",
+    status: "passed",
+    introduced: "2025-01-08",
+    enacted: "2025-03-12",
+    summary: "Authorizes $180 billion in federal funding for bridge, highway, and broadband infrastructure upgrades across all 50 states, prioritizing rural communities with aging infrastructure graded D+ or below by ASCE.",
+    keyProvisions: ["$180B infrastructure authorization", "Rural broadband priority funding", "ASCE-guided project prioritization"],
+    sponsor: "Rep. David Valadao (R-CA)",
+    cosponsors: 47,
+    committee: "Transportation and Infrastructure",
+    fullTextUrl: "https://www.congress.gov/"
+  },
+  {
+    id: "S-2314",
+    title: "Federal Data Privacy and Protection Act",
+    chamber: "Senate",
+    category: "Civil Rights",
+    status: "passed",
+    introduced: "2024-11-19",
+    enacted: "2025-02-28",
+    summary: "Establishes comprehensive federal data privacy standards, requiring opt-in consent for collection of sensitive personal data and creating a private right of action for data breaches affecting 100,000+ individuals.",
+    keyProvisions: ["Opt-in consent for sensitive data", "Private right of action for breaches", "FTC enforcement authority expansion"],
+    sponsor: "Sen. Maria Cantwell (D-WA)",
+    cosponsors: 32,
+    committee: "Commerce, Science, and Transportation",
+    fullTextUrl: "https://www.congress.gov/"
+  },
+  {
+    id: "HR-1187",
+    title: "AI Transparency and Accountability Act",
+    chamber: "House",
+    category: "Economy & Taxes",
+    status: "proposed",
+    introduced: "2025-02-14",
+    enacted: null,
+    summary: "Requires all federal agencies to conduct algorithmic impact assessments before deploying AI systems affecting public benefits, employment, or criminal justice decisions. Creates an AI Audit Office within GAO.",
+    keyProvisions: ["Algorithmic impact assessments", "AI Audit Office under GAO", "Public AI deployment registry"],
+    sponsor: "Rep. Ted Lieu (D-CA)",
+    cosponsors: 28,
+    committee: "Science, Space, and Technology",
+    fullTextUrl: "https://www.congress.gov/"
+  },
+  {
+    id: "S-891",
+    title: "Clean Water Infrastructure Resilience Act",
+    chamber: "Senate",
+    category: "Environment",
+    status: "passed",
+    introduced: "2024-12-03",
+    enacted: "2025-03-05",
+    summary: "Allocates $45 billion to replace aging water treatment facilities and lead service lines in communities with populations under 100,000, with accelerated timelines for environmental justice communities.",
+    keyProvisions: ["$45B water infrastructure fund", "Lead pipe replacement mandate", "EJ community acceleration"],
+    sponsor: "Sen. Tammy Duckworth (D-IL)",
+    cosponsors: 21,
+    committee: "Environment and Public Works",
+    fullTextUrl: "https://www.congress.gov/"
+  },
+  {
+    id: "HR-3892",
+    title: "Prescription Drug Pricing Reform Act",
+    chamber: "House",
+    category: "Healthcare",
+    status: "proposed",
+    introduced: "2025-01-22",
+    enacted: null,
+    summary: "Expands Medicare drug price negotiation authority to 50 additional drugs annually, caps insulin at $35 per month for all insured Americans, and creates a drug pricing transparency portal.",
+    keyProvisions: ["50 additional drugs for negotiation", "$35 insulin cap for all insured", "Drug pricing transparency portal"],
+    sponsor: "Rep. Frank Pallone (D-NJ)",
+    cosponsors: 55,
+    committee: "Energy and Commerce",
+    fullTextUrl: "https://www.congress.gov/"
+  },
+  {
+    id: "S-1456",
+    title: "Cybersecurity Critical Infrastructure Protection Act",
+    chamber: "Senate",
+    category: "Public Safety",
+    status: "proposed",
+    introduced: "2025-02-05",
+    enacted: null,
+    summary: "Mandates CISA-developed cybersecurity standards for all operators of critical infrastructure including energy, water, and financial systems, with 24-hour breach reporting requirements.",
+    keyProvisions: ["CISA cybersecurity standards mandate", "24-hour breach reporting", "Critical infrastructure classification update"],
+    sponsor: "Sen. Gary Peters (D-MI)",
+    cosponsors: 18,
+    committee: "Homeland Security and Governmental Affairs",
+    fullTextUrl: "https://www.congress.gov/"
+  },
+  {
+    id: "HR-2201",
+    title: "National Teacher Recruitment and Retention Act",
+    chamber: "House",
+    category: "Education",
+    status: "passed",
+    introduced: "2024-10-15",
+    enacted: "2025-01-30",
+    summary: "Creates a federal student loan forgiveness pathway for teachers in Title I schools after 5 years of service, provides $10,000 annual retention bonuses funded through the Department of Education.",
+    keyProvisions: ["5-year loan forgiveness pathway", "$10K annual retention bonus", "Title I school priority"],
+    sponsor: "Rep. Frederica Wilson (D-FL)",
+    cosponsors: 38,
+    committee: "Education and the Workforce",
+    fullTextUrl: "https://www.congress.gov/"
+  },
+  {
+    id: "S-3104",
+    title: "Federal Sentencing Reform and Rehabilitation Act",
+    chamber: "Senate",
+    category: "Criminal Justice",
+    status: "proposed",
+    introduced: "2025-03-01",
+    enacted: null,
+    summary: "Reduces mandatory minimum sentences for nonviolent federal drug offenses by 40%, expands earned-time credit programs, and creates a $2B reentry services fund for formerly incarcerated individuals.",
+    keyProvisions: ["40% mandatory minimum reduction", "Expanded earned-time credits", "$2B reentry services fund"],
+    sponsor: "Sen. Cory Booker (D-NJ)",
+    cosponsors: 15,
+    committee: "Judiciary",
+    fullTextUrl: "https://www.congress.gov/"
+  },
+  {
+    id: "HR-5567",
+    title: "Small Business Innovation Accelerator Act",
+    chamber: "House",
+    category: "Economy & Taxes",
+    status: "proposed",
+    introduced: "2025-02-20",
+    enacted: null,
+    summary: "Doubles SBIR/STTR funding allocations, creates a streamlined federal grant application portal, and provides 15% tax credits for R&D spending by businesses with fewer than 100 employees.",
+    keyProvisions: ["Double SBIR/STTR funding", "Unified grant portal", "15% R&D tax credit for small biz"],
+    sponsor: "Rep. Young Kim (R-CA)",
+    cosponsors: 42,
+    committee: "Small Business",
+    fullTextUrl: "https://www.congress.gov/"
+  },
+  {
+    id: "S-2780",
+    title: "National Wildfire Prevention and Response Act",
+    chamber: "Senate",
+    category: "Environment",
+    status: "passed",
+    introduced: "2024-11-28",
+    enacted: "2025-02-14",
+    summary: "Authorizes $12 billion over 5 years for wildfire prevention including prescribed burns, defensible space enforcement, and aerial firefighting fleet modernization across western states.",
+    keyProvisions: ["$12B five-year authorization", "Prescribed burn expansion", "Aerial fleet modernization"],
+    sponsor: "Sen. Ron Wyden (D-OR)",
+    cosponsors: 24,
+    committee: "Energy and Natural Resources",
+    fullTextUrl: "https://www.congress.gov/"
+  },
+  {
+    id: "HR-6120",
+    title: "Veterans Mental Health Access Expansion Act",
+    chamber: "House",
+    category: "Healthcare",
+    status: "passed",
+    introduced: "2024-12-10",
+    enacted: "2025-03-18",
+    summary: "Expands VA mental health services eligibility to include veterans with Other-Than-Honorable discharges, funds 200 new community-based outpatient clinics, and mandates telehealth options for all VA mental health services.",
+    keyProvisions: ["OTH discharge eligibility", "200 new outpatient clinics", "Telehealth mandate"],
+    sponsor: "Rep. Mike Bost (R-IL)",
+    cosponsors: 61,
+    committee: "Veterans' Affairs",
+    fullTextUrl: "https://www.congress.gov/"
+  },
+  {
+    id: "S-4201",
+    title: "Housing Affordability and Supply Act",
+    chamber: "Senate",
+    category: "Infrastructure",
+    status: "proposed",
+    introduced: "2025-03-10",
+    enacted: null,
+    summary: "Provides $30 billion in grants to state and local governments that reform zoning to allow higher-density housing near transit, with bonus funding for communities eliminating single-family-only zoning.",
+    keyProvisions: ["$30B zoning reform grants", "Transit-oriented density incentives", "Single-family zoning reform bonuses"],
+    sponsor: "Sen. Brian Schatz (D-HI)",
+    cosponsors: 12,
+    committee: "Banking, Housing, and Urban Affairs",
+    fullTextUrl: "https://www.congress.gov/"
+  }
+];
+
+export const EXECUTIVE_ORDERS = [
+  {
+    id: "EO-14178",
+    title: "Establishing the Federal AI Safety Board",
+    category: "Economy & Taxes",
+    status: "signed",
+    signedDate: "2025-03-15",
+    summary: "Creates an interagency AI Safety Board within the Executive Office of the President to coordinate federal AI policy, conduct risk assessments of frontier AI models, and establish voluntary safety commitments with leading AI companies.",
+    federalRegisterUrl: "https://www.federalregister.gov/",
+    impact: "High"
+  },
+  {
+    id: "EO-14177",
+    title: "Strengthening Critical Mineral Supply Chains",
+    category: "Economy & Taxes",
+    status: "signed",
+    signedDate: "2025-03-08",
+    summary: "Invokes the Defense Production Act to accelerate domestic production of lithium, cobalt, and rare earth elements essential for defense and clean energy technologies, with $6 billion in DPA Title III funding.",
+    federalRegisterUrl: "https://www.federalregister.gov/",
+    impact: "High"
+  },
+  {
+    id: "EO-14176",
+    title: "Modernizing Federal Cybersecurity Standards",
+    category: "Public Safety",
+    status: "signed",
+    signedDate: "2025-02-22",
+    summary: "Mandates zero-trust architecture adoption across all federal civilian agencies by December 2026, requires CISA-approved endpoint detection on all federal networks, and establishes a Federal Cyber Workforce Academy.",
+    federalRegisterUrl: "https://www.federalregister.gov/",
+    impact: "High"
+  },
+  {
+    id: "EO-14175",
+    title: "Expanding Access to Federal Lands for Renewable Energy",
+    category: "Environment",
+    status: "signed",
+    signedDate: "2025-02-10",
+    summary: "Directs BLM and USFS to expedite permitting for solar and wind installations on federal lands, targeting 50 GW of new capacity by 2030 with streamlined NEPA review for projects under 200 MW.",
+    federalRegisterUrl: "https://www.federalregister.gov/",
+    impact: "Medium"
+  },
+  {
+    id: "EO-14174",
+    title: "Protecting Federal Workers from Workplace Retaliation",
+    category: "Civil Rights",
+    status: "signed",
+    signedDate: "2025-01-28",
+    summary: "Strengthens whistleblower protections for federal employees and contractors, creates an independent ombudsman office, and prohibits retaliation against workers who report waste, fraud, or safety violations.",
+    federalRegisterUrl: "https://www.federalregister.gov/",
+    impact: "Medium"
+  },
+  {
+    id: "EO-14173",
+    title: "Emergency Measures for Southwest Border Water Security",
+    category: "Environment",
+    status: "signed",
+    signedDate: "2025-01-15",
+    summary: "Declares a water emergency along the Colorado River basin, activates federal coordination mechanisms for drought response, and allocates $3 billion in emergency conservation and desalination funding.",
+    federalRegisterUrl: "https://www.federalregister.gov/",
+    impact: "High"
+  },
+  {
+    id: "EO-14172",
+    title: "Reducing Prescription Drug Costs for Federal Employees",
+    category: "Healthcare",
+    status: "signed",
+    signedDate: "2025-01-05",
+    summary: "Directs OPM to negotiate lower prescription drug prices for FEHB plans, mandates transparency in pharmacy benefit manager contracts, and caps out-of-pocket costs for specialty drugs at $250/month.",
+    federalRegisterUrl: "https://www.federalregister.gov/",
+    impact: "Medium"
+  },
+  {
+    id: "EO-14171",
+    title: "Establishing the National Climate Adaptation Strategy",
+    category: "Environment",
+    status: "signed",
+    signedDate: "2024-12-20",
+    summary: "Directs all federal agencies to develop climate adaptation plans within 180 days, establishes a $5 billion Climate Resilience Fund, and creates mandatory climate risk disclosure for federal contractors.",
+    federalRegisterUrl: "https://www.federalregister.gov/",
+    impact: "High"
+  }
+];
+
+export const SCOTUS_CASES = [
+  {
+    id: "23-726",
+    name: "United States v. Rahimi",
+    docket: "No. 23-726",
+    status: "decided",
+    decisionDate: "2025-03-18",
+    voteSplit: "7–2",
+    summary: "Upheld the constitutionality of 18 U.S.C. § 922(g)(8), which prohibits firearm possession by individuals subject to domestic violence restraining orders, finding it consistent with the Second Amendment's historical tradition of disarming dangerous individuals.",
+    opinion: "Roberts, C.J., delivered the opinion of the Court.",
+    category: "Criminal Justice"
+  },
+  {
+    id: "24-108",
+    name: "Gonzalez v. Google LLC",
+    docket: "No. 24-108",
+    status: "decided",
+    decisionDate: "2025-03-05",
+    voteSplit: "6–3",
+    summary: "Narrowed the scope of Section 230 immunity for algorithmic recommendation systems, holding that targeted content amplification through recommendation algorithms constitutes publisher conduct outside Section 230's safe harbor.",
+    opinion: "Thomas, J., delivered the opinion of the Court.",
+    category: "Civil Rights"
+  },
+  {
+    id: "24-356",
+    name: "EPA v. State of Texas",
+    docket: "No. 24-356",
+    status: "decided",
+    decisionDate: "2025-02-20",
+    voteSplit: "5–4",
+    summary: "Affirmed EPA authority to set interstate air pollution standards under the Good Neighbor provision of the Clean Air Act, rejecting Texas's argument that the 2024 rule exceeded statutory authority.",
+    opinion: "Kagan, J., delivered the opinion of the Court.",
+    category: "Environment"
+  },
+  {
+    id: "24-501",
+    name: "National Student Loan Servicers Assn. v. Department of Education",
+    docket: "No. 24-501",
+    status: "pending",
+    decisionDate: null,
+    voteSplit: null,
+    summary: "Challenges the Department of Education's SAVE repayment plan as exceeding the Secretary's statutory authority under the Higher Education Act, with potential implications for $150 billion in projected loan forgiveness.",
+    opinion: null,
+    category: "Education"
+  },
+  {
+    id: "24-612",
+    name: "TikTok Inc. v. Garland",
+    docket: "No. 24-612",
+    status: "pending",
+    decisionDate: null,
+    voteSplit: null,
+    summary: "Considers whether the Protecting Americans from Foreign Adversary Controlled Applications Act's forced divestiture requirement violates the First Amendment rights of TikTok and its 170 million U.S. users.",
+    opinion: null,
+    category: "Civil Rights"
+  },
+  {
+    id: "24-289",
+    name: "Moore v. United States",
+    docket: "No. 24-289",
+    status: "decided",
+    decisionDate: "2025-01-15",
+    voteSplit: "9–0",
+    summary: "Unanimously held that the Mandatory Repatriation Tax under the 2017 Tax Cuts and Jobs Act does not violate the Sixteenth Amendment, declining to broadly rule on whether the Constitution requires realization for income taxation.",
+    opinion: "Barrett, J., delivered the opinion of the Court.",
+    category: "Economy & Taxes"
+  },
+  {
+    id: "24-743",
+    name: "Amazon.com v. NLRB",
+    docket: "No. 24-743",
+    status: "cert_granted",
+    decisionDate: null,
+    voteSplit: null,
+    summary: "Granted certiorari to resolve a circuit split on whether warehouse workers at Amazon fulfillment centers are joint employees of Amazon and temporary staffing agencies for purposes of the National Labor Relations Act.",
+    opinion: null,
+    category: "Economy & Taxes"
+  },
+  {
+    id: "24-890",
+    name: "Dobbs Revisited: June Medical Services v. Gee",
+    docket: "No. 24-890",
+    status: "cert_granted",
+    decisionDate: null,
+    voteSplit: null,
+    summary: "Granted certiorari to consider whether EMTALA preempts state laws that prohibit emergency abortions in cases where the pregnant patient's life is endangered but fetal cardiac activity is still detectable.",
+    opinion: null,
+    category: "Healthcare"
+  }
+];
