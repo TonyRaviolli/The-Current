@@ -3002,8 +3002,8 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   padding: var(--sp-4);
   border: 1px solid var(--leg-border);
   border-radius: 12px;
-  background: var(--leg-bg);
-  box-shadow: inset 0 0 60px rgba(22,25,33,0.5), 0 4px 24px rgba(0,0,0,0.4);
+  background: hsl(205, 45%, 82%);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
   overflow: hidden;
 }
 .leg-map-svg {
@@ -3019,15 +3019,16 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   stroke-dasharray: 4 3;
 }
 
-/* ── Warm Topo fill palette (4-tone matte, OKLCH) ────────────────── */
+/* ── Warm Topo fill palette (4-tone, four-color theorem) ─────────── */
 .leg-page {
-  --map-state-1: oklch(0.76 0.04 75);    /* sandy beige */
-  --map-state-2: oklch(0.70 0.03 55);    /* warm stone */
-  --map-state-3: oklch(0.72 0.04 140);   /* dusty sage */
-  --map-state-4: oklch(0.73 0.05 45);    /* warm clay */
-  --map-border: var(--leg-border);         /* page border token */
-  --map-selected: oklch(0.78 0.06 55);   /* warm highlight on select */
-  --map-label: var(--leg-text-primary);   /* #e8eaf0 — page text token */
+  --map-state-1: hsl(140, 35%, 70%);     /* sage */
+  --map-state-2: hsl(35, 55%, 65%);      /* sandstone */
+  --map-state-3: hsl(175, 30%, 68%);     /* dusty teal */
+  --map-state-4: hsl(25, 30%, 72%);      /* warm taupe */
+  --map-border: rgba(255,255,255,0.6);    /* white state borders */
+  --map-border-outer: hsl(25, 20%, 45%); /* darker country outline */
+  --map-selected: hsl(20, 70%, 50%);     /* warm rust for selection */
+  --map-hover-stroke: hsl(25, 60%, 45%); /* warm brown-orange hover */
 }
 
 /* ── State groups (3D shadow via filter on <g>) ──────────────────────── */
@@ -3039,9 +3040,9 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 /* ── State paths — page-consistent borders ────────────────────────── */
 .leg-state-path {
   stroke: var(--map-border);
-  stroke-width: 0.8;
+  stroke-width: 1;
   cursor: pointer;
-  transition: fill 150ms ease-out, filter 150ms ease-out, opacity 220ms ease;
+  transition: filter 200ms ease, stroke 200ms ease, stroke-width 200ms ease;
   animation: legStateEnter 400ms ease both;
   outline: none;
 }
@@ -3050,27 +3051,26 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 .leg-state-c3 { fill: var(--map-state-3); }
 .leg-state-c4 { fill: var(--map-state-4); }
 
-/* Channel 1: Map hover — ephemeral glow, map-only (no sidebar effect) */
+/* Channel 1: Map hover — warm stroke + subtle brightness lift, no scale/transform */
 .leg-state-path--hovered {
-  filter: brightness(1.12);
-  stroke: var(--leg-text-secondary);
-  stroke-width: 1.2;
+  stroke: var(--map-hover-stroke);
+  stroke-width: 2;
+  filter: brightness(1.1) drop-shadow(0 2px 6px rgba(0,0,0,0.2));
 }
 .leg-state-path:focus-visible {
-  outline: 2px solid var(--leg-text-secondary);
+  outline: 2px solid var(--map-hover-stroke);
   outline-offset: 1px;
 }
 
-/* Channels 2 & 3: Map selection — persistent ring, no glow */
+/* Channels 2 & 3: Map selection — warm rust ring + soft glow */
 .leg-state-path--selected {
-  fill: var(--map-selected);
-  stroke: var(--leg-accent);
-  stroke-width: 2;
-  filter: none;
+  stroke: var(--map-selected);
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 8px rgba(180,90,40,0.35));
 }
-/* Both can coexist: selected + hovered gets softer glow */
+/* Both can coexist: selected + hovered keeps selection glow with brightness lift */
 .leg-state-path--selected.leg-state-path--hovered {
-  filter: brightness(1.08);
+  filter: brightness(1.08) drop-shadow(0 0 8px rgba(180,90,40,0.35));
 }
 
 /* Active/live-data: same border as all states */
@@ -3083,33 +3083,7 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   to   { opacity: 1; }
 }
 
-/* ── State labels — clean white, no halo ────────────────────────────── */
-.leg-state-label {
-  font-family: 'Inter', var(--leg-font-mono);
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  fill: var(--map-label);
-  text-anchor: middle;
-  dominant-baseline: central;
-  pointer-events: none;
-  opacity: 0;
-  animation: legLabelEnter 300ms ease forwards;
-}
-.leg-state-label--small {
-  fill: var(--map-label);
-  font-size: 10px;
-}
-.leg-state-leader {
-  stroke: var(--leg-border);
-  stroke-width: 0.6;
-  stroke-dasharray: 2 2;
-  marker-end: url(#leaderDot);
-}
-
-@keyframes legLabelEnter {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
+/* Labels/leaders removed — state identification via hover tooltip */
 
 /* MAP PRECISION v2 — Search-driven map highlight (pulsing ring) */
 .leg-state-path--search-match {

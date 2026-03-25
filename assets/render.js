@@ -1834,31 +1834,6 @@ function largestRing(rings) {
   return best;
 }
 
-// ── Technique Layer 2: Manual precision overrides ──
-// dx/dy are adjustments on top of polylabel result; leaderLine flags small-state mode
-const STATE_LABEL_OVERRIDES = {
-  AK: { dx: 0, dy: 8 },
-  FL: { dx: -12, dy: 0 },
-  MI: { dx: 20, dy: 0 },
-  LA: { dx: 0, dy: -8 },
-  OK: { dx: -10, dy: 0 },
-  MD: { dx: 0, dy: 0, leaderLine: true },
-  DE: { leaderLine: true },
-  RI: { leaderLine: true },
-  CT: { leaderLine: true },
-  NJ: { leaderLine: true },
-  NH: { leaderLine: true },
-  VT: { leaderLine: true },
-  MA: { leaderLine: true },
-  DC: { leaderLine: true, labelOutside: true },
-  HI: { dx: 0, dy: 0 },
-};
-
-// ── Small states: leader-line layout constants ──
-const SMALL_STATE_IDS = ['VT','NH','MA','RI','CT','NJ','DE','MD','DC'];
-const SMALL_STATE_LABEL_X = 920;
-const SMALL_STATE_MIN_GAP = 22;
-
 // ── Keyboard adjacency map (geographic neighbors for arrow-key traversal) ──
 const STATE_ADJACENCY = {
   AL:['MS','TN','GA','FL'],AR:['MO','TN','MS','LA','TX','OK'],AZ:['CA','NV','UT','CO','NM'],
@@ -1926,6 +1901,31 @@ export function renderUSMap(container) {
 
   // Radial gradient background glow (::before pseudo handled in CSS)
 
+  // Ocean water background — soft blue behind all land
+  const ocean = document.createElementNS(svgNS, 'rect');
+  ocean.setAttribute('width', '960');
+  ocean.setAttribute('height', '600');
+  ocean.setAttribute('fill', 'hsl(205, 45%, 78%)');
+  ocean.setAttribute('rx', '0');
+  ocean.style.pointerEvents = 'none';
+  svg.appendChild(ocean);
+
+  // Subtle radial gradient overlay on ocean (lighter near center, deeper at edges)
+  const oceanGrad = document.createElementNS(svgNS, 'radialGradient');
+  oceanGrad.id = 'oceanDepth';
+  oceanGrad.setAttribute('cx', '50%');
+  oceanGrad.setAttribute('cy', '45%');
+  oceanGrad.setAttribute('r', '65%');
+  const stop1 = document.createElementNS(svgNS, 'stop');
+  stop1.setAttribute('offset', '0%');
+  stop1.setAttribute('stop-color', 'hsl(205, 40%, 82%)');
+  const stop2 = document.createElementNS(svgNS, 'stop');
+  stop2.setAttribute('offset', '100%');
+  stop2.setAttribute('stop-color', 'hsl(205, 50%, 72%)');
+  oceanGrad.appendChild(stop1);
+  oceanGrad.appendChild(stop2);
+  // Append to defs (will be created below)
+
   // Inset divider line (separates AK/HI from continental US)
   const divider = document.createElementNS(svgNS, 'line');
   divider.setAttribute('x1', '30'); divider.setAttribute('y1', '510');
@@ -1936,10 +1936,6 @@ export function renderUSMap(container) {
   // State paths group
   const pathsGroup = document.createElementNS(svgNS, 'g');
   pathsGroup.setAttribute('class', 'leg-map-paths');
-
-  // Labels group (rendered on top of paths)
-  const labelsGroup = document.createElementNS(svgNS, 'g');
-  labelsGroup.setAttribute('class', 'leg-map-labels');
 
   // Build name lookup
   US_STATES.forEach((s) => {
@@ -1952,18 +1948,24 @@ export function renderUSMap(container) {
   const defs = document.createElementNS(svgNS, 'defs');
   defs.innerHTML = `
     <filter id="stateShadow" x="-5%" y="-5%" width="115%" height="120%">
-      <feDropShadow dx="1" dy="2" stdDeviation="1.5" flood-color="#1a1a1a" flood-opacity="0.18"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#1a1a1a" flood-opacity="0.12"/>
     </filter>
-    <filter id="stateShadowHover" x="-10%" y="-10%" width="125%" height="135%">
-      <feDropShadow dx="2" dy="5" stdDeviation="3" flood-color="#1a1a1a" flood-opacity="0.28"/>
+    <filter id="stateShadowHover" x="-8%" y="-8%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1a1a1a" flood-opacity="0.2"/>
     </filter>
-    <marker id="leaderDot" viewBox="0 0 4 4" refX="2" refY="2" markerWidth="4" markerHeight="4">
-      <circle cx="2" cy="2" r="1.2" fill="rgba(122,129,144,0.5)"/>
-    </marker>
     <pattern id="mapGrid" width="48" height="48" patternUnits="userSpaceOnUse">
       <path d="M 48 0 L 0 0 0 48" fill="none" stroke="rgba(255,255,255,0.018)" stroke-width="0.5"/>
     </pattern>`;
+  defs.appendChild(oceanGrad);
   svg.appendChild(defs);
+
+  // Apply ocean gradient overlay
+  const oceanOverlay = document.createElementNS(svgNS, 'rect');
+  oceanOverlay.setAttribute('width', '960');
+  oceanOverlay.setAttribute('height', '600');
+  oceanOverlay.setAttribute('fill', 'url(#oceanDepth)');
+  oceanOverlay.style.pointerEvents = 'none';
+  svg.appendChild(oceanOverlay);
 
   // Grid overlay (subtle intelligence/cartographic feel)
   const grid = document.createElementNS(svgNS, 'rect');
@@ -1980,7 +1982,7 @@ export function renderUSMap(container) {
     g.setAttribute('data-state', state.id);
     g.setAttribute('data-state-name', state.name);
     g.setAttribute('filter', 'url(#stateShadow)');
-    g.style.transition = 'transform 0.15s ease-out, filter 0.15s ease-out';
+    g.style.transition = 'filter 0.2s ease';
 
     const path = document.createElementNS(svgNS, 'path');
     path.setAttribute('d', state.path);
@@ -2027,15 +2029,8 @@ export function renderUSMap(container) {
     const primary = largestRing(rings);
     try {
       const result = polylabel([primary], 1.0);
-      let cx = result[0], cy = result[1];
+      const cx = result[0], cy = result[1];
       inscribedRadii[state.id] = result[2];
-
-      // TECHNIQUE LAYER 2 — Apply manual dx/dy overrides
-      const ovr = STATE_LABEL_OVERRIDES[state.id];
-      if (ovr) {
-        cx += (ovr.dx || 0);
-        cy += (ovr.dy || 0);
-      }
       visualCenters[state.id] = [cx, cy];
     } catch (_) {
       visualCenters[state.id] = [bbox.x + bbox.width / 2, bbox.y + bbox.height / 2];
@@ -2054,173 +2049,7 @@ export function renderUSMap(container) {
     stateGroups[state.id].g.style.transformOrigin = `${vcx}px ${vcy}px`;
   });
 
-  // ══════════════════════════════════════════════════════════════════════
-  // TECHNIQUE LAYER 3 — Dynamic font sizing by state area
-  // fontSize = max(8, min(14, sqrt(area) / 14))
-  // If inscribed radius < fontSize * 0.8, escalate to leader line
-  // ══════════════════════════════════════════════════════════════════════
-  const fontSizeForState = (id) => {
-    const a = stateAreas[id] || 0;
-    if (a <= 0) return 10;
-    return Math.max(8, Math.min(14, Math.sqrt(a) / 14));
-  };
-
-  // Determine which states need leader lines (override flags + radius check)
-  const leaderLineStates = new Set();
-  US_STATES.forEach((state) => {
-    const ovr = STATE_LABEL_OVERRIDES[state.id];
-    if (ovr && ovr.leaderLine) {
-      leaderLineStates.add(state.id);
-    } else {
-      const fontSize = fontSizeForState(state.id);
-      const radius = inscribedRadii[state.id] || 0;
-      if (radius > 0 && radius < fontSize * 0.8) {
-        leaderLineStates.add(state.id);
-      }
-    }
-  });
-
-  // ══════════════════════════════════════════════════════════════════════
-  // TECHNIQUE LAYER 4 — Small state leader line system
-  // Northeast small states cluster labels in a right-side column
-  // ══════════════════════════════════════════════════════════════════════
-  const leaderStatesArr = SMALL_STATE_IDS.filter(id => leaderLineStates.has(id));
-  const smallStatesData = leaderStatesArr
-    .map((id) => ({ id, cx: visualCenters[id][0], cy: visualCenters[id][1] }))
-    .sort((a, b) => a.cy - b.cy);
-
-  let nextY = smallStatesData[0] ? smallStatesData[0].cy - 20 : 100;
-  const smallLabelPositions = {};
-  for (const s of smallStatesData) {
-    const labelY = Math.max(nextY, s.cy);
-    smallLabelPositions[s.id] = { labelX: SMALL_STATE_LABEL_X, labelY };
-    nextY = labelY + SMALL_STATE_MIN_GAP;
-  }
-
-  // Render all labels
-  US_STATES.forEach((state, index) => {
-    const [cx, cy] = visualCenters[state.id];
-    const isLeader = leaderLineStates.has(state.id);
-    let labelX = cx, labelY = cy;
-
-    if (isLeader && smallLabelPositions[state.id]) {
-      labelX = smallLabelPositions[state.id].labelX;
-      labelY = smallLabelPositions[state.id].labelY;
-
-      // Leader line from state center to label column
-      const line = document.createElementNS(svgNS, 'line');
-      line.setAttribute('x1', cx); line.setAttribute('y1', cy);
-      line.setAttribute('x2', labelX - 8); line.setAttribute('y2', labelY);
-      line.setAttribute('class', 'leg-state-leader');
-      line.setAttribute('marker-start', 'url(#leaderDot)');
-      line.setAttribute('data-leader-state', state.id);
-      labelsGroup.appendChild(line);
-    }
-
-    const fontSize = isLeader ? 9 : fontSizeForState(state.id);
-    const text = document.createElementNS(svgNS, 'text');
-    text.setAttribute('x', labelX);
-    text.setAttribute('y', labelY);
-    text.setAttribute('text-anchor', isLeader ? 'end' : 'middle');
-    text.setAttribute('dominant-baseline', 'central');
-    text.setAttribute('class', `leg-state-label${isLeader ? ' leg-state-label--small' : ''}`);
-    text.setAttribute('data-state-label', state.id);
-    text.setAttribute('data-state', state.id);
-    text.setAttribute('data-base-font-size', fontSize);
-    text.style.fontSize = `${fontSize}px`;
-    text.textContent = state.id;
-    text.style.animationDelay = `${index * 8 + 200}ms`;
-    labelsGroup.appendChild(text);
-  });
-
-  svg.appendChild(labelsGroup);
-
-  // ══════════════════════════════════════════════════════════════════════
-  // TECHNIQUE LAYER 7 — Render-time validation & fallback
-  // Check that label center is inside its state path; auto-escalate if not
-  // ══════════════════════════════════════════════════════════════════════
-  function validateLabelPlacement() {
-    const labels = svg.querySelectorAll('[data-state-label]');
-    labels.forEach(label => {
-      const stateId = label.getAttribute('data-state-label');
-      if (leaderLineStates.has(stateId)) return; // already a leader line
-      const stateGroup = svg.querySelector(`.leg-state-group[data-state="${stateId}"]`);
-      if (!stateGroup) return;
-      const statePath = stateGroup.querySelector('path');
-      if (!statePath) return;
-
-      const svgPoint = svg.createSVGPoint();
-      svgPoint.x = parseFloat(label.getAttribute('x'));
-      svgPoint.y = parseFloat(label.getAttribute('y'));
-      try {
-        if (!statePath.isPointInFill(svgPoint)) {
-          // Label center is outside the state — auto-escalate to leader line
-          console.warn(`[Map] Auto-escalated ${stateId} to leader line (label outside polygon)`);
-          convertToLeaderLine(stateId, label);
-        }
-      } catch (_) { /* isPointInFill not supported — skip validation */ }
-    });
-  }
-
-  function convertToLeaderLine(stateId, label) {
-    leaderLineStates.add(stateId);
-    const [cx, cy] = visualCenters[stateId];
-
-    // Find next available Y in the leader column
-    const existingLeaders = svg.querySelectorAll('.leg-state-label--small');
-    let maxLeaderY = 100;
-    existingLeaders.forEach(l => {
-      const ly = parseFloat(l.getAttribute('y'));
-      if (ly > maxLeaderY) maxLeaderY = ly;
-    });
-    const labelY = maxLeaderY + SMALL_STATE_MIN_GAP;
-    const labelX = SMALL_STATE_LABEL_X;
-
-    // Create leader line
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', cx); line.setAttribute('y1', cy);
-    line.setAttribute('x2', labelX - 8); line.setAttribute('y2', labelY);
-    line.setAttribute('class', 'leg-state-leader');
-    line.setAttribute('marker-start', 'url(#leaderDot)');
-    line.setAttribute('data-leader-state', stateId);
-    labelsGroup.insertBefore(line, label);
-
-    // Update label position
-    label.setAttribute('x', labelX);
-    label.setAttribute('y', labelY);
-    label.setAttribute('text-anchor', 'end');
-    label.classList.add('leg-state-label--small');
-    label.style.fontSize = '9px';
-  }
-
-  // Run initial validation
-  validateLabelPlacement();
-
-  // ══════════════════════════════════════════════════════════════════════
-  // TECHNIQUE LAYER 5 — Responsive coordinate scaling (ResizeObserver)
-  // Debounced at 100ms; recalculates font sizes for current viewport
-  // ══════════════════════════════════════════════════════════════════════
-  let resizeTimer = null;
-  const naturalWidth = 960;
-  if (typeof ResizeObserver !== 'undefined') {
-    const ro = new ResizeObserver(() => {
-      if (resizeTimer) clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        const clientW = svg.clientWidth || naturalWidth;
-        const scaleX = clientW / naturalWidth;
-        // Adjust font sizes so labels remain readable at all scales
-        svg.querySelectorAll('[data-state-label]').forEach(label => {
-          const base = parseFloat(label.getAttribute('data-base-font-size') || '10');
-          // At small viewports, bump font slightly to stay legible
-          const adjusted = scaleX < 0.6 ? base * 0.85 : base;
-          label.style.fontSize = `${adjusted}px`;
-        });
-        // Re-validate after resize
-        validateLabelPlacement();
-      }, 100);
-    });
-    ro.observe(container);
-  }
+  // (Labels and leader lines removed — map shows state shapes only)
 
   // ── Aria live region for keyboard state announcements ──
   let ariaLive = document.getElementById('legMapAriaLive');
@@ -2270,8 +2099,10 @@ export function renderUSMap(container) {
     // Map hover visual — ONLY on map path, NO sidebar class changes
     if (g !== lastHoveredGroup) {
       clearMapHover();
+      // Re-append to end of parent for SVG paint order (renders on top)
+      const parent = g.parentNode;
+      if (parent) parent.appendChild(g);
       g.setAttribute('filter', 'url(#stateShadowHover)');
-      g.style.transform = 'translateY(-2px) scale(1.02)';
       const hovPath = g.querySelector('.leg-state-path');
       if (hovPath) hovPath.classList.add('leg-state-path--hovered');
       lastHoveredGroup = g;
@@ -2502,7 +2333,6 @@ function clearMapHover() {
     const g = prev.closest('.leg-state-group');
     if (g) {
       g.setAttribute('filter', 'url(#stateShadow)');
-      g.style.transform = '';
     }
   }
 }
@@ -2560,6 +2390,8 @@ function selectState(stateId, source = 'map') {
     if (path) {
       path.classList.add('leg-state-path--selected');
       path.setAttribute('aria-pressed', 'true');
+      // Re-append to end for SVG paint order (selected state renders on top)
+      if (g && g.parentNode) g.parentNode.appendChild(g);
     }
   }
 
@@ -3042,49 +2874,57 @@ function fmtDate(dateStr) {
 // ║  §L2  FEDERAL LEGISLATION DASHBOARD                                    ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
-const FED_PAGE_SIZE = 6;
+/* ══════════════════════════════════════════════════════════════════════════
+   FEDERAL LEGISLATION — Topic Grid + Glassmorphism
+   ══════════════════════════════════════════════════════════════════════════ */
 
-let fedState = {
-  search: '',
-  dateFrom: null,
-  dateTo: null,
-  pages: { congressional: 1, executive: 1, scotus: 1 },
-  activeTab: 'congressional',
-  initialized: false,
-  data: { bills: [], orders: [], cases: [] }
+const TOPIC_CONFIG = {
+  'most-recent':      { label: 'Most Recent',       color: 'hsl(48,85%,75%)',  dark: 'hsl(48,75%,35%)',  svg: '<polyline points="18 6 11 14 7 10 2 15" stroke-linecap="round"/><polyline points="14 6 18 6 18 10" stroke-linecap="round"/>' },
+  'Economy & Taxes':  { label: 'Economy & Fiscal',  color: 'hsl(45,80%,72%)',  dark: 'hsl(45,70%,35%)',  svg: '<circle cx="10" cy="10" r="7"/><path d="M10 6v8M8 8h4M8 12h4"/>' },
+  'Healthcare':       { label: 'Healthcare',         color: 'hsl(160,55%,68%)', dark: 'hsl(160,50%,30%)', svg: '<path d="M7 3h6v4h4v6h-4v4H7v-4H3V7h4z"/>' },
+  'Public Safety':    { label: 'Defense & Safety',   color: 'hsl(220,60%,72%)', dark: 'hsl(220,55%,35%)', svg: '<path d="M10 2L3 6v5c0 4.5 3 8 7 9 4-1 7-4.5 7-9V6z"/>' },
+  'Environment':      { label: 'Environment',        color: 'hsl(140,50%,65%)', dark: 'hsl(140,45%,30%)', svg: '<path d="M10 18V9M6 13c0-4 4-9 4-9s4 5 4 9-2 4-4 4-4 0-4-4z"/>' },
+  'Education':        { label: 'Education',          color: 'hsl(25,70%,72%)',  dark: 'hsl(25,60%,35%)',  svg: '<path d="M2 8l8-4 8 4-8 4z"/><path d="M5 10v4l5 3 5-3v-4"/>' },
+  'Civil Rights':     { label: 'Civil Rights',       color: 'hsl(190,55%,70%)', dark: 'hsl(190,50%,30%)', svg: '<path d="M10 2v16M6 6l-3 4h14l-3-4"/><rect x="4" y="14" width="12" height="2" rx="1"/>' },
+  'Criminal Justice': { label: 'Criminal Justice',   color: 'hsl(0,45%,72%)',   dark: 'hsl(0,40%,35%)',   svg: '<rect x="5" y="8" width="10" height="8" rx="2"/><path d="M8 8V6a2 2 0 0 1 4 0v2"/>' },
+  'Infrastructure':   { label: 'Infrastructure',     color: 'hsl(35,55%,70%)',  dark: 'hsl(35,50%,35%)',  svg: '<path d="M2 16h16M4 16V8l6-4 6 4v8"/><rect x="8" y="11" width="4" height="5"/>' },
+  'Law':              { label: 'Law',                color: 'hsl(260,45%,72%)', dark: 'hsl(260,40%,35%)', svg: '<path d="M4 2h9l3 3v13H4z"/><path d="M13 2v3h3"/><line x1="7" y1="8" x2="13" y2="8"/><line x1="7" y1="11" x2="13" y2="11"/>' },
 };
 
-function insertFederalSkeletons() {
-  const skeletonHtml = Array.from({ length: 3 }, () =>
-    `<div class="leg-fed-skeleton">
-      <div class="leg-fed-skeleton-line leg-fed-skeleton-line--meta"></div>
-      <div class="leg-fed-skeleton-line leg-fed-skeleton-line--title"></div>
-      <div class="leg-fed-skeleton-line leg-fed-skeleton-line--title-2"></div>
-      <div class="leg-fed-skeleton-line leg-fed-skeleton-line--status"></div>
-      <div class="leg-fed-skeleton-line leg-fed-skeleton-line--summary"></div>
-      <div class="leg-fed-skeleton-line leg-fed-skeleton-line--summary-2"></div>
-    </div>`
-  ).join('');
-  for (const id of ['legColCardsCongress', 'legColCardsExec', 'legColCardsScotus']) {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = skeletonHtml;
-  }
+let fedState = {
+  initialized: false,
+  data: { bills: [], orders: [], cases: [] },
+  allItems: [],
+  activeTopics: new Set(),
+  recentOpen: false,
+};
+
+function getTopicColor(cat) {
+  return TOPIC_CONFIG[cat]?.color || 'hsl(0,0%,80%)';
+}
+function getTopicDark(cat) {
+  return TOPIC_CONFIG[cat]?.dark || 'hsl(0,0%,40%)';
 }
 
-function removeFederalSkeletons() {
-  for (const id of ['legColCardsCongress', 'legColCardsExec', 'legColCardsScotus']) {
-    const el = document.getElementById(id);
-    if (el) {
-      el.querySelectorAll('.leg-fed-skeleton').forEach(s => s.remove());
-    }
-  }
+/** Slugify a topic key for URL params (e.g. "Economy & Taxes" → "economy-taxes") */
+function topicToSlug(key) {
+  return key.toLowerCase().replace(/[&\s]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
 }
+/** Reverse: slug → original TOPIC_CONFIG key */
+const _slugToKey = Object.fromEntries(
+  Object.keys(TOPIC_CONFIG).map(k => [topicToSlug(k), k])
+);
+function slugToTopic(slug) {
+  return _slugToKey[slug] || null;
+}
+
+/* ── Topic-Grid Federal Dashboard ────────────────────────────── */
 
 export async function renderFederalDashboard() {
   if (fedState.initialized) return;
 
-  // Show skeletons while data loads
-  insertFederalSkeletons();
+  // Show skeleton loaders
+  insertCardSkeletons();
 
   // Load federal data
   try {
@@ -3097,314 +2937,424 @@ export async function renderFederalDashboard() {
   }
 
   fedState.initialized = true;
+  fedState.allItems = normalizeAllItems();
 
-  // Remove skeletons
-  removeFederalSkeletons();
+  // Sync from URL params
+  syncFromUrl();
 
-  // Build ticker
-  buildFederalTicker();
+  // Build topic tiles
+  buildTopicTiles();
 
-  // Show first column as active on mobile
-  const firstCol = document.getElementById('legColCongressional');
-  if (firstCol) firstCol.classList.add('leg-fed-col--active');
+  // Build "Most Recent" ranked list
+  buildMostRecentPanel();
 
-  // Initial render
-  renderAllFederalColumns();
+  // Render card grid
+  renderCardGrid();
+  initCardRevealObserver();
 
-  // Wire events
+  // Update topic count
+  const countEl = document.getElementById('ltgTopicCount');
+  if (countEl) {
+    const topics = new Set(fedState.allItems.map(it => it.category));
+    countEl.textContent = topics.size;
+  }
+
+  // Wire all events
   wireFederalEvents();
 }
 
-function buildFederalTicker() {
-  const track = document.getElementById('legTickerTrack');
-  if (!track) return;
-
-  // Collect 5 most recent items across all columns
+/**
+ * Flatten bills, EOs, and SCOTUS cases into a single sorted array
+ */
+function normalizeAllItems() {
   const items = [];
-  for (const bill of fedState.data.bills) {
-    const d = bill.enacted || bill.introduced;
-    items.push({ type: 'bill', label: bill.chamber, title: bill.title, date: d, id: bill.id });
-  }
-  for (const eo of fedState.data.orders) {
-    items.push({ type: 'eo', label: 'EO', title: eo.title, date: eo.signedDate, id: eo.id });
-  }
-  for (const sc of fedState.data.cases) {
-    const d = sc.decisionDate || '2025-01-01';
-    items.push({ type: 'scotus', label: 'SCOTUS', title: sc.name, date: d, id: sc.docket });
-  }
-  items.sort((a, b) => new Date(b.date) - new Date(a.date));
-  const top = items.slice(0, 5);
   const esc = escapeHtml;
 
-  // Branch color map for separator dots
-  const branchColor = { bill: 'var(--accent-congress)', eo: 'var(--accent-exec)', scotus: 'var(--accent-scotus)' };
-
-  // Double the content for seamless loop, with separator dots between items
-  const doubled = [...top, ...top];
-  const html = doubled.map((it, idx) => {
-    const badgeClass = it.type === 'bill' ? 'leg-ticker-badge--bill' : it.type === 'eo' ? 'leg-ticker-badge--eo' : 'leg-ticker-badge--scotus';
-    const item = `<span class="leg-ticker-item"><span class="leg-ticker-badge ${badgeClass}">${esc(it.label)}</span><span class="leg-ticker-title">${esc(it.title)}</span><span class="leg-ticker-date">${fmtDate(it.date)}</span></span>`;
-    // Separator dot colored by the NEXT item's branch
-    if (idx < doubled.length - 1) {
-      const nextType = doubled[idx + 1].type;
-      return item + `<span class="leg-ticker-sep" style="background:${branchColor[nextType] || branchColor.bill}"></span>`;
-    }
-    return item;
-  }).join('');
-
-  track.innerHTML = html;
-}
-
-function getFilteredFedItems(type) {
-  let items;
-  if (type === 'congressional') items = [...fedState.data.bills];
-  else if (type === 'executive') items = [...fedState.data.orders];
-  else items = [...fedState.data.cases];
-
-  const { search, dateFrom, dateTo } = fedState;
-
-  if (search) {
-    const q = search.toLowerCase();
-    items = items.filter(it => {
-      const text = [it.title || it.name, it.summary, it.id || it.docket, it.sponsor || '', it.category || ''].join(' ').toLowerCase();
-      return text.includes(q);
+  for (const bill of fedState.data.bills) {
+    items.push({
+      type: 'bill',
+      id: bill.id,
+      title: bill.title,
+      summary: bill.summary,
+      category: bill.category || 'Law',
+      status: bill.status || 'proposed',
+      date: bill.enacted || bill.introduced,
+      chamber: bill.chamber,
+      sponsor: bill.sponsor || '',
+      url: bill.fullTextUrl || null,
     });
   }
 
-  if (dateFrom) {
-    const from = new Date(dateFrom + 'T00:00:00');
-    items = items.filter(it => {
-      const d = getItemDate(it);
-      return d && new Date(d + 'T00:00:00') >= from;
+  for (const eo of fedState.data.orders) {
+    items.push({
+      type: 'eo',
+      id: eo.id,
+      title: eo.title,
+      summary: eo.summary,
+      category: eo.category || 'Law',
+      status: 'signed',
+      date: eo.signedDate,
+      impact: eo.impact,
+      url: eo.federalRegisterUrl || null,
     });
   }
-  if (dateTo) {
-    const to = new Date(dateTo + 'T23:59:59');
-    items = items.filter(it => {
-      const d = getItemDate(it);
-      return d && new Date(d + 'T00:00:00') <= to;
+
+  for (const sc of fedState.data.cases) {
+    items.push({
+      type: 'scotus',
+      id: sc.docket,
+      title: sc.name,
+      summary: sc.summary,
+      category: sc.category || 'Law',
+      status: sc.status || 'pending',
+      date: sc.decisionDate || null,
+      voteSplit: sc.voteSplit || null,
+      opinion: sc.opinion || null,
     });
   }
+
+  // Sort by date descending (null dates go last)
+  items.sort((a, b) => {
+    if (!a.date && !b.date) return 0;
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return new Date(b.date) - new Date(a.date);
+  });
 
   return items;
 }
 
-function getItemDate(it) {
-  return it.enacted || it.introduced || it.signedDate || it.decisionDate || null;
-}
+/**
+ * Build the topic tile grid
+ */
+function buildTopicTiles() {
+  const grid = document.getElementById('ltgTileGrid');
+  if (!grid) return;
 
-function renderAllFederalColumns() {
-  renderFederalColumn('congressional', 'legColCardsCongress', 'legColMoreCongress', 'legColCountCongress');
-  renderFederalColumn('executive', 'legColCardsExec', 'legColMoreExec', 'legColCountExec');
-  renderFederalColumn('scotus', 'legColCardsScotus', 'legColMoreScotus', 'legColCountScotus');
-
-  // Update search count
-  const countEl = document.getElementById('legFedSearchCount');
-  if (countEl && fedState.search) {
-    const total = getFilteredFedItems('congressional').length + getFilteredFedItems('executive').length + getFilteredFedItems('scotus').length;
-    countEl.textContent = `${total} results`;
-  } else if (countEl) {
-    countEl.textContent = '';
-  }
-}
-
-function renderFederalColumn(type, cardsId, moreId, countId) {
-  const cards = document.getElementById(cardsId);
-  const more = document.getElementById(moreId);
-  const countBadge = document.getElementById(countId);
-  if (!cards) return;
-
-  const filtered = getFilteredFedItems(type);
-  const page = fedState.pages[type];
-  const visible = Math.min(filtered.length, page * FED_PAGE_SIZE);
+  // Collect unique categories from data
+  const categories = new Set(fedState.allItems.map(it => it.category));
   const esc = escapeHtml;
 
-  if (countBadge) countBadge.textContent = filtered.length;
+  let html = '';
+  for (const [key, cfg] of Object.entries(TOPIC_CONFIG)) {
+    if (key === 'most-recent') continue; // Most Recent has its own panel
+    if (!categories.has(key)) continue;
 
-  cards.innerHTML = '';
+    const count = fedState.allItems.filter(it => it.category === key).length;
+    const isActive = fedState.activeTopics.has(key);
 
-  if (filtered.length === 0) {
-    cards.innerHTML = '<div class="leg-panel-empty" style="min-height:120px"><p class="leg-panel-empty-heading" style="font-size:0.95rem">No results</p></div>';
-    if (more) more.innerHTML = '';
+    html += buildTile(key, cfg, count, isActive);
+  }
+
+  grid.innerHTML = html;
+}
+
+function buildTile(key, cfg, count, isActive) {
+  const esc = escapeHtml;
+  return `<button type="button"
+    class="ltg-tile"
+    data-topic="${esc(key)}"
+    style="--tile-color:${cfg.color};--tile-color-dark:${cfg.dark};--tile-glass-bg:${cfg.color.replace(')', ',0.12)')};--tile-glass-inset:${cfg.color.replace(')', ',0.08)')}"
+    aria-pressed="${isActive}"
+    aria-label="${esc(cfg.label)}: ${count} items">
+    <svg class="ltg-tile-icon" viewBox="0 0 20 20" aria-hidden="true">${cfg.svg}</svg>
+    <span class="ltg-tile-name">${esc(cfg.label)}</span>
+    <div class="ltg-tile-footer">
+      <span class="ltg-tile-count">${count}</span>
+      <svg class="ltg-tile-chevron" viewBox="0 0 12 12" aria-hidden="true"><polyline points="4 2 8 6 4 10"/></svg>
+    </div>
+    <span class="ltg-tile-check" aria-hidden="true"><svg viewBox="0 0 10 10"><polyline points="2 5 4.5 7.5 8 3"/></svg></span>
+  </button>`;
+}
+
+/**
+ * Build the "Most Recent" ranked list inside the <details> panel
+ */
+function buildMostRecentPanel() {
+  const panel = document.getElementById('ltgRecentPanel');
+  if (!panel) return;
+
+  const top10 = fedState.allItems.slice(0, 10);
+  const esc = escapeHtml;
+  const dtf = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
+
+  let html = '';
+  top10.forEach((item, i) => {
+    const dateStr = item.date ? dtf.format(new Date(item.date + 'T12:00:00')) : '';
+    const topicCfg = TOPIC_CONFIG[item.category];
+    const color = topicCfg?.color || 'hsl(0,0%,80%)';
+    const badgeClass = getStatusBadgeClass(item.status);
+    const typeLabel = item.type === 'bill' ? (item.chamber || 'Bill') : item.type === 'eo' ? 'Exec. Order' : 'SCOTUS';
+
+    html += `<div class="ltg-rank-row" role="listitem" tabindex="0" style="--row-index:${i};--row-accent:${color};--row-hover-bg:${color.replace(')', ',0.06)')}"${item.url ? ` data-href="${esc(item.url)}"` : ''}>
+      <span class="ltg-rank-num">${i + 1}</span>
+      <div class="ltg-rank-content">
+        <span class="ltg-rank-bill">${esc(typeLabel)}</span>
+        <span class="ltg-rank-title">${esc(item.title)}</span>
+        <div class="ltg-rank-meta">
+          <span class="ltg-rank-topic-dot" style="background:${color}"></span>
+          <span class="ltg-rank-topic-name">${esc(TOPIC_CONFIG[item.category]?.label || item.category)}</span>
+          <span class="ltg-badge ${badgeClass}" aria-label="Bill status: ${esc(item.status)}">${esc(item.status.replace('_', ' ').toUpperCase())}</span>
+          <span class="ltg-rank-date">${dateStr}</span>
+        </div>
+      </div>
+      <svg class="ltg-rank-arrow" viewBox="0 0 16 16" aria-hidden="true"><polyline points="5 3 11 8 5 13"/></svg>
+    </div>`;
+  });
+
+  panel.innerHTML = html;
+}
+
+function getStatusBadgeClass(status) {
+  const map = {
+    proposed: 'ltg-badge--proposed',
+    passed: 'ltg-badge--passed',
+    signed: 'ltg-badge--signed',
+    decided: 'ltg-badge--decided',
+    pending: 'ltg-badge--pending',
+    committee: 'ltg-badge--committee',
+    in_committee: 'ltg-badge--committee',
+    cert_granted: 'ltg-badge--cert',
+  };
+  return map[status] || 'ltg-badge--proposed';
+}
+
+/**
+ * Render filtered card grid
+ */
+function renderCardGrid() {
+  const grid = document.getElementById('ltgCardGrid');
+  const empty = document.getElementById('ltgEmpty');
+  if (!grid) return;
+
+  // Filter by active topics (if any)
+  let items = fedState.allItems;
+  if (fedState.activeTopics.size > 0) {
+    items = items.filter(it => fedState.activeTopics.has(it.category));
+  }
+
+  if (items.length === 0) {
+    grid.innerHTML = '';
+    if (empty) empty.hidden = false;
     return;
   }
 
-  const slice = filtered.slice(0, visible);
+  if (empty) empty.hidden = true;
 
-  if (type === 'congressional') {
-    slice.forEach((bill, i) => {
-      const card = document.createElement('div');
-      card.className = 'leg-fed-card';
-      card.setAttribute('tabindex', '0');
-      card.setAttribute('data-branch', 'congress');
-      card.style.setProperty('--card-index', i);
-      const isPassed = bill.status === 'passed';
-      const badgeClass = isPassed ? 'leg-fed-badge-passed' : 'leg-fed-badge-proposed';
-      const badgeLabel = isPassed ? 'PASSED' : 'PROPOSED';
-      const dateStr = isPassed && bill.enacted ? fmtDate(bill.enacted) : fmtDate(bill.introduced);
-      const summaryShort = bill.summary.length > 140 ? bill.summary.slice(0, 140) + '...' : bill.summary;
-      card.innerHTML = `
-        <div class="leg-fed-card-top">
-          <span class="leg-fed-card-id">${esc(bill.id)}</span>
-          <span class="leg-fed-card-chamber">${esc(bill.chamber)}</span>
-        </div>
-        <h3 class="leg-fed-card-title">${esc(bill.title)}</h3>
-        <div class="leg-fed-card-meta">
-          <span class="leg-fed-card-badge ${badgeClass}">${badgeLabel}</span>
-          <span class="leg-fed-card-date">${dateStr}</span>
-        </div>
-        <p class="leg-fed-card-summary">${esc(summaryShort)}</p>
-        <span class="leg-fed-card-details">View details \u2192</span>`;
-      cards.appendChild(card);
-    });
-  } else if (type === 'executive') {
-    slice.forEach((eo, i) => {
-      const card = document.createElement('div');
-      card.className = 'leg-fed-card';
-      card.setAttribute('tabindex', '0');
-      card.setAttribute('data-branch', 'exec');
-      if (eo.impact === 'High') card.setAttribute('data-impact', 'high');
-      card.style.setProperty('--card-index', i);
-      const impactClass = eo.impact === 'High' ? 'leg-fed-impact-high' : 'leg-fed-impact-medium';
-      card.innerHTML = `
-        <div class="leg-fed-card-top">
-          <span class="leg-fed-card-id">${esc(eo.id)}</span>
-          <span class="leg-fed-card-chamber">EO</span>
-        </div>
-        <h3 class="leg-fed-card-title">${esc(eo.title)}</h3>
-        <div class="leg-fed-card-meta">
-          <span class="leg-fed-card-badge leg-fed-badge-signed">SIGNED</span>
-          <span class="leg-fed-card-date">${fmtDate(eo.signedDate)}</span>
-        </div>
-        <p class="leg-fed-card-summary">${esc(eo.summary.length > 140 ? eo.summary.slice(0, 140) + '...' : eo.summary)}</p>
-        <span class="leg-fed-card-impact ${impactClass}">${esc(eo.impact)} Impact</span>
-        <span class="leg-fed-card-details">View details \u2192</span>`;
-      cards.appendChild(card);
-    });
-  } else {
-    // SCOTUS
-    slice.forEach((sc, i) => {
-      const card = document.createElement('div');
-      card.className = 'leg-fed-card';
-      card.setAttribute('tabindex', '0');
-      card.setAttribute('data-branch', 'scotus');
-      card.style.setProperty('--card-index', i);
-      const isDecided = sc.status === 'decided';
-      const isCert = sc.status === 'cert_granted';
-      const badgeClass = isDecided ? 'leg-fed-badge-decided' : isCert ? 'leg-fed-badge-cert' : 'leg-fed-badge-pending';
-      const badgeLabel = isDecided ? 'DECIDED' : isCert ? 'CERT. GRANTED' : 'PENDING';
-      const dateStr = sc.decisionDate ? fmtDate(sc.decisionDate) : 'Pending';
+  const esc = escapeHtml;
+  const dtf = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-      // Vote visualizer: parse "7-2" into majority/dissent dots
-      let voteVizHtml = '';
-      if (sc.voteSplit) {
-        const parts = sc.voteSplit.match(/^(\d+)\s*[-–]\s*(\d+)/);
-        if (parts) {
-          const maj = parseInt(parts[1], 10);
-          const dis = parseInt(parts[2], 10);
-          const dots = [];
-          for (let d = 0; d < maj && d < 9; d++) dots.push('<span class="leg-fed-vote-dot leg-fed-vote-dot--majority"></span>');
-          for (let d = 0; d < dis && dots.length < 9; d++) dots.push('<span class="leg-fed-vote-dot leg-fed-vote-dot--dissent"></span>');
-          voteVizHtml = `<div class="leg-fed-card-vote-viz">${dots.join('')}</div>`;
-        } else {
-          voteVizHtml = `<span class="leg-fed-card-vote">${esc(sc.voteSplit)}</span>`;
-        }
-      }
+  let html = '';
+  items.forEach((item, i) => {
+    const topicCfg = TOPIC_CONFIG[item.category];
+    const color = topicCfg?.color || 'hsl(0,0%,80%)';
+    const dark = topicCfg?.dark || 'hsl(0,0%,40%)';
+    const dateStr = item.date ? dtf.format(new Date(item.date + 'T12:00:00')) : '';
+    const badgeClass = getStatusBadgeClass(item.status);
+    const typeLabel = item.type === 'bill' ? (item.chamber || 'Bill') : item.type === 'eo' ? 'Executive Order' : 'SCOTUS Case';
+    const summaryShort = item.summary.length > 180 ? item.summary.slice(0, 180) + '\u2026' : item.summary;
 
-      card.innerHTML = `
-        <div class="leg-fed-card-top">
-          <span class="leg-fed-card-docket">${esc(sc.docket)}</span>
-          <span class="leg-fed-card-badge ${badgeClass}">${badgeLabel}</span>
-        </div>
-        <h3 class="leg-fed-card-case-name">${esc(sc.name)}</h3>
-        <div class="leg-fed-card-meta">
-          <span class="leg-fed-card-date">${dateStr}</span>
-        </div>
-        <p class="leg-fed-card-summary">${esc(sc.summary.length > 140 ? sc.summary.slice(0, 140) + '...' : sc.summary)}</p>
-        ${voteVizHtml}
-        ${sc.opinion ? `<p class="leg-fed-card-opinion">${esc(sc.opinion)}</p>` : ''}
-        <span class="leg-fed-card-details">View details \u2192</span>`;
-      cards.appendChild(card);
-    });
+    const cardTitleId = `ltg-card-title-${i}`;
+    html += `<article class="ltg-card" style="--card-index:${i};--card-topic-color:${color};--card-glass-wash:${color.replace(')', ',0.03)')}" tabindex="0" aria-labelledby="${cardTitleId}" data-category="${esc(item.category)}"${item.url ? ` data-href="${esc(item.url)}"` : ''}>
+      <span class="ltg-card-category" style="color:${dark}">${esc(topicCfg?.label || item.category)}</span>
+      <h3 class="ltg-card-title" id="${cardTitleId}">${esc(item.title)}</h3>
+      <p class="ltg-card-summary">${esc(summaryShort)}</p>
+      <div class="ltg-card-badges">
+        <span class="ltg-badge ${badgeClass}" aria-label="Bill status: ${esc(item.status)}">${esc(item.status.replace('_', ' ').toUpperCase())}</span>
+        ${item.chamber ? `<span class="ltg-badge ltg-badge--chamber">${esc(item.chamber)}</span>` : ''}
+      </div>
+      <div class="ltg-card-footer">
+        <span class="ltg-card-date">${dateStr}</span>
+        <span class="ltg-card-more" style="color:${dark}">Read More <svg class="ltg-card-more-arrow" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></span>
+      </div>
+    </article>`;
+  });
+
+  grid.innerHTML = html;
+}
+
+/**
+ * Show skeleton cards while data loads
+ */
+function insertCardSkeletons() {
+  const grid = document.getElementById('ltgCardGrid');
+  if (!grid) return;
+
+  let html = '';
+  for (let i = 0; i < 6; i++) {
+    html += `<div class="ltg-card-skeleton" aria-hidden="true">
+      <div class="ltg-skel-line ltg-skel-line--accent"></div>
+      <div class="ltg-skel-line ltg-skel-line--label"></div>
+      <div class="ltg-skel-line ltg-skel-line--title"></div>
+      <div class="ltg-skel-line ltg-skel-line--title2"></div>
+      <div class="ltg-skel-line ltg-skel-line--body"></div>
+      <div class="ltg-skel-line ltg-skel-line--body2"></div>
+      <div class="ltg-skel-line ltg-skel-line--badge"></div>
+      <div class="ltg-skel-line ltg-skel-line--footer"></div>
+    </div>`;
   }
+  grid.innerHTML = html;
+}
 
-  // Load more
-  if (more) {
-    const remaining = filtered.length - visible;
-    if (remaining > 0) {
-      more.innerHTML = `<button class="leg-fed-load-more" type="button" data-fed-more="${type}">Load ${Math.min(FED_PAGE_SIZE, remaining)} More (${remaining} remaining)</button>`;
-    } else {
-      more.innerHTML = '';
-    }
+/**
+ * Sync active topics from URL search params
+ */
+function syncFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const topics = params.get('topics');
+  if (topics) {
+    fedState.activeTopics = new Set(
+      topics.split(',').map(slugToTopic).filter(Boolean)
+    );
   }
 }
 
+/**
+ * Sync active topics to URL search params (slugified for clean URLs)
+ */
+function syncToUrl() {
+  const params = new URLSearchParams(window.location.search);
+  if (fedState.activeTopics.size > 0) {
+    params.set('topics', [...fedState.activeTopics].map(topicToSlug).join(','));
+  } else {
+    params.delete('topics');
+  }
+  const qs = params.toString();
+  const url = window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
+  history.replaceState(null, '', url);
+}
+
+/**
+ * Wire all event handlers for the topic-grid federal dashboard
+ */
 function wireFederalEvents() {
   const view = document.getElementById('legFederalView');
   if (!view) return;
 
-  // Search
-  let searchTimer;
-  const searchInput = document.getElementById('legFedSearch');
-  if (searchInput) {
-    searchInput.addEventListener('input', () => {
-      clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => {
-        fedState.search = searchInput.value.trim().toLowerCase();
-        fedState.pages = { congressional: 1, executive: 1, scotus: 1 };
-        renderAllFederalColumns();
-      }, 200);
+  // Topic tile clicks (event delegation)
+  const tileGrid = document.getElementById('ltgTileGrid');
+  if (tileGrid) {
+    tileGrid.addEventListener('click', (e) => {
+      const tile = e.target.closest('.ltg-tile');
+      if (!tile) return;
+
+      const topic = tile.dataset.topic;
+      if (fedState.activeTopics.has(topic)) {
+        fedState.activeTopics.delete(topic);
+      } else {
+        fedState.activeTopics.add(topic);
+      }
+
+      // Re-render tiles and cards
+      buildTopicTiles();
+      renderCardGrid();
+      initCardRevealObserver();
+      syncToUrl();
+    });
+
+    // Keyboard support for tiles
+    tileGrid.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        const tile = e.target.closest('.ltg-tile');
+        if (tile) {
+          e.preventDefault();
+          tile.click();
+        }
+      }
     });
   }
 
-  // Date filters
-  const dateFrom = document.getElementById('legFedDateFrom');
-  const dateTo = document.getElementById('legFedDateTo');
-  const dateClear = document.getElementById('legFedDateClear');
+  // "Most Recent" details panel
+  const details = document.getElementById('ltgRecent');
+  const closeBtn = document.getElementById('ltgRecentClose');
 
-  const onDateChange = () => {
-    fedState.dateFrom = dateFrom?.value || null;
-    fedState.dateTo = dateTo?.value || null;
-    fedState.pages = { congressional: 1, executive: 1, scotus: 1 };
-    renderAllFederalColumns();
-  };
-  dateFrom?.addEventListener('change', onDateChange);
-  dateTo?.addEventListener('change', onDateChange);
-  dateClear?.addEventListener('click', () => {
-    if (dateFrom) dateFrom.value = '';
-    if (dateTo) dateTo.value = '';
-    fedState.dateFrom = null;
-    fedState.dateTo = null;
-    fedState.pages = { congressional: 1, executive: 1, scotus: 1 };
-    renderAllFederalColumns();
+  if (details) {
+    details.addEventListener('toggle', () => {
+      fedState.recentOpen = details.open;
+    });
+  }
+
+  if (closeBtn && details) {
+    closeBtn.addEventListener('click', () => {
+      details.open = false;
+    });
+  }
+
+  // Escape key closes Most Recent panel when focused within it
+  if (details) {
+    details.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && details.open) {
+        details.open = false;
+        details.querySelector('.ltg-recent-summary')?.focus();
+      }
+    });
+  }
+
+  // Empty state CTA → open Most Recent panel
+  const emptyCta = document.getElementById('ltgEmptyCta');
+  if (emptyCta && details) {
+    emptyCta.addEventListener('click', () => {
+      details.open = true;
+      details.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
+  // Rank row clicks → navigate to URL if available
+  const panel = document.getElementById('ltgRecentPanel');
+  if (panel) {
+    panel.addEventListener('click', (e) => {
+      const row = e.target.closest('.ltg-rank-row[data-href]');
+      if (row) window.open(row.dataset.href, '_blank', 'noopener');
+    });
+    panel.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        const row = e.target.closest('.ltg-rank-row[data-href]');
+        if (row) { e.preventDefault(); window.open(row.dataset.href, '_blank', 'noopener'); }
+      }
+    });
+  }
+
+  // Card clicks → navigate to URL if available
+  const cardGrid = document.getElementById('ltgCardGrid');
+  if (cardGrid) {
+    cardGrid.addEventListener('click', (e) => {
+      const card = e.target.closest('.ltg-card[data-href]');
+      if (card) window.open(card.dataset.href, '_blank', 'noopener');
+    });
+    cardGrid.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        const card = e.target.closest('.ltg-card[data-href]');
+        if (card) { e.preventDefault(); window.open(card.dataset.href, '_blank', 'noopener'); }
+      }
+    });
+  }
+
+  // Intersection Observer for scroll entrance animations on cards
+  initCardRevealObserver();
+}
+
+/**
+ * Intersection Observer — staggered reveal on scroll for cards
+ */
+function initCardRevealObserver() {
+  if (typeof IntersectionObserver === 'undefined') return;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.setAttribute('data-reveal', 'visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, {
+    threshold: 0.15,
+    rootMargin: '0px 0px -50px 0px',
   });
 
-  // Mobile tab switcher
-  view.addEventListener('click', (e) => {
-    const tab = e.target.closest('[data-fed-tab]');
-    if (tab) {
-      const type = tab.dataset.fedTab;
-      fedState.activeTab = type;
-      view.querySelectorAll('.leg-fed-tab').forEach(t => {
-        t.classList.toggle('active', t.dataset.fedTab === type);
-        t.setAttribute('aria-selected', t.dataset.fedTab === type ? 'true' : 'false');
-      });
-      const colMap = { congressional: 'legColCongressional', executive: 'legColExecutive', scotus: 'legColScotus' };
-      Object.values(colMap).forEach(id => {
-        const col = document.getElementById(id);
-        if (col) col.classList.remove('leg-fed-col--active');
-      });
-      const activeCol = document.getElementById(colMap[type]);
-      if (activeCol) activeCol.classList.add('leg-fed-col--active');
-      return;
-    }
-
-    // Load more buttons
-    const moreBtn = e.target.closest('[data-fed-more]');
-    if (moreBtn) {
-      const col = moreBtn.dataset.fedMore;
-      fedState.pages[col]++;
-      renderAllFederalColumns();
-    }
+  // Observe all cards in the grid
+  const cards = document.querySelectorAll('#ltgCardGrid .ltg-card');
+  cards.forEach((card) => {
+    card.setAttribute('data-reveal', '');
+    observer.observe(card);
   });
 }
