@@ -1678,29 +1678,207 @@ const STATE_COLOR_MAP = {
   WI:1,WV:4,WY:4
 };
 
-const SMALL_STATES = new Set(['RI','DE','CT','MD','MA','VT','NH','DC']);
+// ── Polylabel algorithm (MIT, mapbox/polylabel) — finds visual center of polygon ──
+// Returns [x, y, radius] — point farthest from polygon edges (max inscribed circle center)
+function polylabel(polygon, precision) {
+  if (precision === undefined) precision = 1.0;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const ring of polygon) {
+    for (const p of ring) {
+      if (p[0] < minX) minX = p[0];
+      if (p[1] < minY) minY = p[1];
+      if (p[0] > maxX) maxX = p[0];
+      if (p[1] > maxY) maxY = p[1];
+    }
+  }
+  const width = maxX - minX, height = maxY - minY;
+  const cellSize = Math.max(width, height);
+  if (cellSize === 0) return [minX, minY, 0];
 
-// ── Manual label overrides for states where getBBox center falls outside the polygon ──
-// Only needed for ~8 oddly-shaped states; all others use getBBox center automatically.
-const LABEL_OVERRIDES = {
-  FL: [738, 490],   // Peninsula center, not panhandle
-  MI: [680, 225],   // Lower peninsula, not upper
-  LA: [568, 442],   // Main body, not delta
-  OK: [470, 368],   // Body, not panhandle
-  MD: [808, 256],   // Thin state — nudge into center
-  VA: [782, 296],   // Long state — shift west
-  NY: [840, 178],   // Upstate body, not NYC
-  CA: [92, 325],    // Central Valley center
-  HI: [305, 565],   // Big Island cluster
-  AK: [110, 490],   // Mainland mass center
-  ID: [188, 162],   // Shift south into wider portion
-  NJ: [853, 238],   // Small but not in leader-line group
+  // Max-heap by potential
+  const heap = [];
+  function heapPush(cell) {
+    heap.push(cell);
+    let i = heap.length - 1;
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (heap[i].max <= heap[p].max) break;
+      [heap[i], heap[p]] = [heap[p], heap[i]];
+      i = p;
+    }
+  }
+  function heapPop() {
+    const top = heap[0], last = heap.pop();
+    if (heap.length > 0) {
+      heap[0] = last;
+      let i = 0;
+      for (;;) {
+        let best = i;
+        const l = 2 * i + 1, r = 2 * i + 2;
+        if (l < heap.length && heap[l].max > heap[best].max) best = l;
+        if (r < heap.length && heap[r].max > heap[best].max) best = r;
+        if (best === i) break;
+        [heap[i], heap[best]] = [heap[best], heap[i]];
+        i = best;
+      }
+    }
+    return top;
+  }
+  function makeCell(x, y, h) {
+    const d = _polyDist(x, y, polygon);
+    return { x, y, h, d, max: d + h * Math.SQRT2 };
+  }
+
+  let h = cellSize / 2;
+  for (let x = minX; x < maxX; x += cellSize)
+    for (let y = minY; y < maxY; y += cellSize)
+      heapPush(makeCell(x + h, y + h, h));
+
+  // Centroid as initial best guess
+  let bestCell = _centroidCell(polygon);
+  const bboxCell = makeCell(minX + width / 2, minY + height / 2, 0);
+  if (bboxCell.d > bestCell.d) bestCell = bboxCell;
+
+  while (heap.length) {
+    const cell = heapPop();
+    if (cell.d > bestCell.d) bestCell = cell;
+    if (cell.max - bestCell.d <= precision) continue;
+    h = cell.h / 2;
+    heapPush(makeCell(cell.x - h, cell.y - h, h));
+    heapPush(makeCell(cell.x + h, cell.y - h, h));
+    heapPush(makeCell(cell.x - h, cell.y + h, h));
+    heapPush(makeCell(cell.x + h, cell.y + h, h));
+  }
+  return [bestCell.x, bestCell.y, bestCell.d];
+}
+function _polyDist(x, y, polygon) {
+  let inside = false, minDist = Infinity;
+  for (const ring of polygon) {
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const ax = ring[i][0], ay = ring[i][1], bx = ring[j][0], by = ring[j][1];
+      if ((ay > y !== by > y) && (x < (bx - ax) * (y - ay) / (by - ay) + ax)) inside = !inside;
+      minDist = Math.min(minDist, _segDist(x, y, ax, ay, bx, by));
+    }
+  }
+  return (inside ? 1 : -1) * Math.sqrt(minDist);
+}
+function _segDist(px, py, ax, ay, bx, by) {
+  let dx = bx - ax, dy = by - ay;
+  if (dx !== 0 || dy !== 0) {
+    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
+    ax += t * dx; ay += t * dy;
+  }
+  dx = px - ax; dy = py - ay;
+  return dx * dx + dy * dy;
+}
+function _centroidCell(polygon) {
+  let area = 0, cx = 0, cy = 0;
+  const ring = polygon[0];
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const ax = ring[i][0], ay = ring[i][1], bx = ring[j][0], by = ring[j][1];
+    const f = ax * by - bx * ay;
+    cx += (ax + bx) * f; cy += (ay + by) * f; area += f * 3;
+  }
+  if (area === 0) return { x: ring[0][0], y: ring[0][1], h: 0, d: 0, max: 0 };
+  const pcx = cx / area, pcy = cy / area;
+  return { x: pcx, y: pcy, h: 0, d: _polyDist(pcx, pcy, polygon), max: 0 };
+}
+
+// ── Parse SVG path d="" to polygon rings for polylabel ──
+// Handles M/L/Z commands — standard for d3-geo projected paths (Albers USA)
+function pathToRings(d) {
+  const rings = [];
+  let current = [];
+  const cmds = d.match(/[MLZmlz][^MLZmlz]*/g) || [];
+  let cx = 0, cy = 0, sx = 0, sy = 0;
+  for (const cmd of cmds) {
+    const type = cmd[0], coords = cmd.slice(1).trim();
+    if (type === 'M' || type === 'm') {
+      if (current.length > 2) rings.push(current);
+      current = [];
+      const nums = coords.split(/[,\s]+/).map(Number);
+      for (let i = 0; i < nums.length - 1; i += 2) {
+        const x = type === 'M' ? nums[i] : cx + nums[i];
+        const y = type === 'M' ? nums[i + 1] : cy + nums[i + 1];
+        current.push([x, y]); cx = x; cy = y;
+        if (i === 0) { sx = x; sy = y; }
+      }
+    } else if (type === 'L' || type === 'l') {
+      const nums = coords.split(/[,\s]+/).map(Number);
+      for (let i = 0; i < nums.length - 1; i += 2) {
+        const x = type === 'L' ? nums[i] : cx + nums[i];
+        const y = type === 'L' ? nums[i + 1] : cy + nums[i + 1];
+        current.push([x, y]); cx = x; cy = y;
+      }
+    } else if (type === 'Z' || type === 'z') {
+      if (current.length > 2) { current.push([sx, sy]); rings.push(current); }
+      current = []; cx = sx; cy = sy;
+    }
+  }
+  if (current.length > 2) rings.push(current);
+  return rings;
+}
+
+// ── Find the largest ring by bounding-box area (for multi-polygon states: HI, MI, AK) ──
+function largestRing(rings) {
+  let best = rings[0], bestArea = 0;
+  for (const ring of rings) {
+    let mnX = Infinity, mnY = Infinity, mxX = -Infinity, mxY = -Infinity;
+    for (const p of ring) {
+      if (p[0] < mnX) mnX = p[0]; if (p[1] < mnY) mnY = p[1];
+      if (p[0] > mxX) mxX = p[0]; if (p[1] > mxY) mxY = p[1];
+    }
+    const a = (mxX - mnX) * (mxY - mnY);
+    if (a > bestArea) { bestArea = a; best = ring; }
+  }
+  return best;
+}
+
+// ── Technique Layer 2: Manual precision overrides ──
+// dx/dy are adjustments on top of polylabel result; leaderLine flags small-state mode
+const STATE_LABEL_OVERRIDES = {
+  AK: { dx: 0, dy: 8 },
+  FL: { dx: -12, dy: 0 },
+  MI: { dx: 20, dy: 0 },
+  LA: { dx: 0, dy: -8 },
+  OK: { dx: -10, dy: 0 },
+  MD: { dx: 0, dy: 0, leaderLine: true },
+  DE: { leaderLine: true },
+  RI: { leaderLine: true },
+  CT: { leaderLine: true },
+  NJ: { leaderLine: true },
+  NH: { leaderLine: true },
+  VT: { leaderLine: true },
+  MA: { leaderLine: true },
+  DC: { leaderLine: true, labelOutside: true },
+  HI: { dx: 0, dy: 0 },
 };
 
-// ── Small states: leader-line layout ──
-const SMALL_STATE_IDS = ['VT','NH','MA','RI','CT','DE','MD','DC'];
+// ── Small states: leader-line layout constants ──
+const SMALL_STATE_IDS = ['VT','NH','MA','RI','CT','NJ','DE','MD','DC'];
 const SMALL_STATE_LABEL_X = 920;
-const SMALL_STATE_MIN_GAP = 20;
+const SMALL_STATE_MIN_GAP = 22;
+
+// ── Keyboard adjacency map (geographic neighbors for arrow-key traversal) ──
+const STATE_ADJACENCY = {
+  AL:['MS','TN','GA','FL'],AR:['MO','TN','MS','LA','TX','OK'],AZ:['CA','NV','UT','CO','NM'],
+  CA:['OR','NV','AZ'],CO:['WY','NE','KS','OK','NM','AZ','UT'],CT:['NY','MA','RI'],
+  DE:['MD','PA','NJ'],FL:['AL','GA'],GA:['FL','AL','TN','NC','SC'],HI:[],
+  IA:['MN','WI','IL','MO','NE','SD'],ID:['MT','WY','UT','NV','OR','WA'],
+  IL:['WI','IA','MO','KY','IN'],IN:['IL','MI','OH','KY'],KS:['NE','MO','OK','CO'],
+  KY:['IN','OH','WV','VA','TN','MO','IL'],LA:['TX','AR','MS'],MA:['NY','CT','RI','NH','VT'],
+  MD:['VA','WV','PA','DE','DC'],ME:['NH'],MI:['OH','IN','WI'],MN:['WI','IA','SD','ND'],
+  MO:['IA','IL','KY','TN','AR','OK','KS','NE'],MS:['LA','AR','TN','AL'],
+  MT:['ND','SD','WY','ID'],NC:['VA','TN','GA','SC'],ND:['MN','SD','MT'],
+  NE:['SD','IA','MO','KS','CO','WY'],NH:['VT','ME','MA'],NJ:['DE','PA','NY'],
+  NM:['AZ','UT','CO','OK','TX'],NV:['OR','ID','UT','AZ','CA'],NY:['VT','MA','CT','NJ','PA'],
+  OH:['MI','PA','WV','KY','IN'],OK:['KS','MO','AR','TX','NM','CO'],OR:['WA','ID','NV','CA'],
+  PA:['NY','NJ','DE','MD','WV','OH'],RI:['CT','MA'],SC:['GA','NC'],SD:['ND','MN','IA','NE','WY','MT'],
+  TN:['KY','VA','NC','GA','AL','MS','AR','MO'],TX:['NM','OK','AR','LA'],UT:['ID','WY','CO','NM','AZ','NV'],
+  VA:['MD','DC','WV','KY','TN','NC'],VT:['NY','NH','MA'],WA:['ID','OR'],
+  WV:['OH','PA','MD','VA','KY'],WI:['MN','IA','IL','MI'],WY:['MT','SD','NE','CO','UT','ID'],
+  AK:[],DC:['MD','VA']
+};
 
 let legMapTooltip = null;
 let legMapSelectedState = null;
@@ -1822,28 +2000,52 @@ export function renderUSMap(container) {
   svg.appendChild(pathsGroup);
   container.appendChild(svg);
 
-  // ── Compute label centers via getBBox (paths are now in DOM) ──
-  // getBBox gives pixel-accurate bounding box for each state path.
-  // Manual overrides only for ~8 states where bbox center falls outside the polygon.
+  // ══════════════════════════════════════════════════════════════════════
+  // TECHNIQUE LAYER 1 — Polylabel visual center algorithm
+  // Paths are now in the DOM so we can extract their d="" data
+  // ══════════════════════════════════════════════════════════════════════
   const visualCenters = {};
   const stateAreas = {};
+  const inscribedRadii = {};
+
   US_STATES.forEach((state) => {
-    if (LABEL_OVERRIDES[state.id]) {
-      visualCenters[state.id] = LABEL_OVERRIDES[state.id];
-    } else {
-      try {
-        const bbox = stateGroups[state.id].path.getBBox();
-        visualCenters[state.id] = [bbox.x + bbox.width / 2, bbox.y + bbox.height / 2];
-      } catch (_) {
-        visualCenters[state.id] = [480, 300]; // fallback
-      }
+    const pathEl = stateGroups[state.id].path;
+    let bbox;
+    try { bbox = pathEl.getBBox(); } catch (_) { bbox = { x: 0, y: 0, width: 0, height: 0 }; }
+    stateAreas[state.id] = bbox.width * bbox.height;
+
+    // Parse path d="" into polygon rings
+    const d = state.path;
+    const rings = pathToRings(d);
+    if (rings.length === 0) {
+      visualCenters[state.id] = [bbox.x + bbox.width / 2, bbox.y + bbox.height / 2];
+      inscribedRadii[state.id] = 0;
+      return;
     }
+
+    // For multi-polygon states (HI, MI, AK), use the largest polygon
+    const primary = largestRing(rings);
     try {
-      const bbox = stateGroups[state.id].path.getBBox();
-      stateAreas[state.id] = bbox.width * bbox.height;
+      const result = polylabel([primary], 1.0);
+      let cx = result[0], cy = result[1];
+      inscribedRadii[state.id] = result[2];
+
+      // TECHNIQUE LAYER 2 — Apply manual dx/dy overrides
+      const ovr = STATE_LABEL_OVERRIDES[state.id];
+      if (ovr) {
+        cx += (ovr.dx || 0);
+        cy += (ovr.dy || 0);
+      }
+      visualCenters[state.id] = [cx, cy];
     } catch (_) {
-      stateAreas[state.id] = 0;
+      visualCenters[state.id] = [bbox.x + bbox.width / 2, bbox.y + bbox.height / 2];
+      inscribedRadii[state.id] = 0;
     }
+
+    // Store polylabel result on the group element for ResizeObserver
+    const g = stateGroups[state.id].g;
+    g.setAttribute('data-label-x', visualCenters[state.id][0]);
+    g.setAttribute('data-label-y', visualCenters[state.id][1]);
   });
 
   // Set transform-origin on each group now that we have centers
@@ -1852,20 +2054,38 @@ export function renderUSMap(container) {
     stateGroups[state.id].g.style.transformOrigin = `${vcx}px ${vcy}px`;
   });
 
-  // Compute font sizes: scale with sqrt(area), min 10px max 12px
-  const areas = Object.values(stateAreas).filter(a => a > 0);
-  const maxArea = Math.max(...areas), minArea = Math.min(...areas);
+  // ══════════════════════════════════════════════════════════════════════
+  // TECHNIQUE LAYER 3 — Dynamic font sizing by state area
+  // fontSize = max(8, min(14, sqrt(area) / 14))
+  // If inscribed radius < fontSize * 0.8, escalate to leader line
+  // ══════════════════════════════════════════════════════════════════════
   const fontSizeForState = (id) => {
     const a = stateAreas[id] || 0;
     if (a <= 0) return 10;
-    const t = Math.sqrt((a - minArea) / (maxArea - minArea || 1));
-    return Math.max(10, Math.min(12, 10 + t * 2));
+    return Math.max(8, Math.min(14, Math.sqrt(a) / 14));
   };
 
-  // ── Create labels using getBBox centers ──
+  // Determine which states need leader lines (override flags + radius check)
+  const leaderLineStates = new Set();
+  US_STATES.forEach((state) => {
+    const ovr = STATE_LABEL_OVERRIDES[state.id];
+    if (ovr && ovr.leaderLine) {
+      leaderLineStates.add(state.id);
+    } else {
+      const fontSize = fontSizeForState(state.id);
+      const radius = inscribedRadii[state.id] || 0;
+      if (radius > 0 && radius < fontSize * 0.8) {
+        leaderLineStates.add(state.id);
+      }
+    }
+  });
 
-  // Small states: compute non-overlapping label column layout
-  const smallStatesData = SMALL_STATE_IDS
+  // ══════════════════════════════════════════════════════════════════════
+  // TECHNIQUE LAYER 4 — Small state leader line system
+  // Northeast small states cluster labels in a right-side column
+  // ══════════════════════════════════════════════════════════════════════
+  const leaderStatesArr = SMALL_STATE_IDS.filter(id => leaderLineStates.has(id));
+  const smallStatesData = leaderStatesArr
     .map((id) => ({ id, cx: visualCenters[id][0], cy: visualCenters[id][1] }))
     .sort((a, b) => a.cy - b.cy);
 
@@ -1880,10 +2100,10 @@ export function renderUSMap(container) {
   // Render all labels
   US_STATES.forEach((state, index) => {
     const [cx, cy] = visualCenters[state.id];
-    const isSmall = SMALL_STATES.has(state.id);
+    const isLeader = leaderLineStates.has(state.id);
     let labelX = cx, labelY = cy;
 
-    if (isSmall && smallLabelPositions[state.id]) {
+    if (isLeader && smallLabelPositions[state.id]) {
       labelX = smallLabelPositions[state.id].labelX;
       labelY = smallLabelPositions[state.id].labelY;
 
@@ -1893,17 +2113,20 @@ export function renderUSMap(container) {
       line.setAttribute('x2', labelX - 8); line.setAttribute('y2', labelY);
       line.setAttribute('class', 'leg-state-leader');
       line.setAttribute('marker-start', 'url(#leaderDot)');
+      line.setAttribute('data-leader-state', state.id);
       labelsGroup.appendChild(line);
     }
 
-    const fontSize = isSmall ? 10 : fontSizeForState(state.id);
+    const fontSize = isLeader ? 9 : fontSizeForState(state.id);
     const text = document.createElementNS(svgNS, 'text');
     text.setAttribute('x', labelX);
     text.setAttribute('y', labelY);
-    text.setAttribute('text-anchor', isSmall ? 'end' : 'middle');
+    text.setAttribute('text-anchor', isLeader ? 'end' : 'middle');
     text.setAttribute('dominant-baseline', 'central');
-    text.setAttribute('class', `leg-state-label${isSmall ? ' leg-state-label--small' : ''}`);
+    text.setAttribute('class', `leg-state-label${isLeader ? ' leg-state-label--small' : ''}`);
+    text.setAttribute('data-state-label', state.id);
     text.setAttribute('data-state', state.id);
+    text.setAttribute('data-base-font-size', fontSize);
     text.style.fontSize = `${fontSize}px`;
     text.textContent = state.id;
     text.style.animationDelay = `${index * 8 + 200}ms`;
@@ -1911,6 +2134,104 @@ export function renderUSMap(container) {
   });
 
   svg.appendChild(labelsGroup);
+
+  // ══════════════════════════════════════════════════════════════════════
+  // TECHNIQUE LAYER 7 — Render-time validation & fallback
+  // Check that label center is inside its state path; auto-escalate if not
+  // ══════════════════════════════════════════════════════════════════════
+  function validateLabelPlacement() {
+    const labels = svg.querySelectorAll('[data-state-label]');
+    labels.forEach(label => {
+      const stateId = label.getAttribute('data-state-label');
+      if (leaderLineStates.has(stateId)) return; // already a leader line
+      const stateGroup = svg.querySelector(`.leg-state-group[data-state="${stateId}"]`);
+      if (!stateGroup) return;
+      const statePath = stateGroup.querySelector('path');
+      if (!statePath) return;
+
+      const svgPoint = svg.createSVGPoint();
+      svgPoint.x = parseFloat(label.getAttribute('x'));
+      svgPoint.y = parseFloat(label.getAttribute('y'));
+      try {
+        if (!statePath.isPointInFill(svgPoint)) {
+          // Label center is outside the state — auto-escalate to leader line
+          console.warn(`[Map] Auto-escalated ${stateId} to leader line (label outside polygon)`);
+          convertToLeaderLine(stateId, label);
+        }
+      } catch (_) { /* isPointInFill not supported — skip validation */ }
+    });
+  }
+
+  function convertToLeaderLine(stateId, label) {
+    leaderLineStates.add(stateId);
+    const [cx, cy] = visualCenters[stateId];
+
+    // Find next available Y in the leader column
+    const existingLeaders = svg.querySelectorAll('.leg-state-label--small');
+    let maxLeaderY = 100;
+    existingLeaders.forEach(l => {
+      const ly = parseFloat(l.getAttribute('y'));
+      if (ly > maxLeaderY) maxLeaderY = ly;
+    });
+    const labelY = maxLeaderY + SMALL_STATE_MIN_GAP;
+    const labelX = SMALL_STATE_LABEL_X;
+
+    // Create leader line
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', cx); line.setAttribute('y1', cy);
+    line.setAttribute('x2', labelX - 8); line.setAttribute('y2', labelY);
+    line.setAttribute('class', 'leg-state-leader');
+    line.setAttribute('marker-start', 'url(#leaderDot)');
+    line.setAttribute('data-leader-state', stateId);
+    labelsGroup.insertBefore(line, label);
+
+    // Update label position
+    label.setAttribute('x', labelX);
+    label.setAttribute('y', labelY);
+    label.setAttribute('text-anchor', 'end');
+    label.classList.add('leg-state-label--small');
+    label.style.fontSize = '9px';
+  }
+
+  // Run initial validation
+  validateLabelPlacement();
+
+  // ══════════════════════════════════════════════════════════════════════
+  // TECHNIQUE LAYER 5 — Responsive coordinate scaling (ResizeObserver)
+  // Debounced at 100ms; recalculates font sizes for current viewport
+  // ══════════════════════════════════════════════════════════════════════
+  let resizeTimer = null;
+  const naturalWidth = 960;
+  if (typeof ResizeObserver !== 'undefined') {
+    const ro = new ResizeObserver(() => {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        const clientW = svg.clientWidth || naturalWidth;
+        const scaleX = clientW / naturalWidth;
+        // Adjust font sizes so labels remain readable at all scales
+        svg.querySelectorAll('[data-state-label]').forEach(label => {
+          const base = parseFloat(label.getAttribute('data-base-font-size') || '10');
+          // At small viewports, bump font slightly to stay legible
+          const adjusted = scaleX < 0.6 ? base * 0.85 : base;
+          label.style.fontSize = `${adjusted}px`;
+        });
+        // Re-validate after resize
+        validateLabelPlacement();
+      }, 100);
+    });
+    ro.observe(container);
+  }
+
+  // ── Aria live region for keyboard state announcements ──
+  let ariaLive = document.getElementById('legMapAriaLive');
+  if (!ariaLive) {
+    ariaLive = document.createElement('div');
+    ariaLive.id = 'legMapAriaLive';
+    ariaLive.setAttribute('aria-live', 'polite');
+    ariaLive.setAttribute('role', 'status');
+    ariaLive.className = 'sr-only';
+    document.body.appendChild(ariaLive);
+  }
 
   // ── Render sidebar ──
   const sidebar = document.getElementById('legSidebar');
@@ -1924,35 +2245,24 @@ export function renderUSMap(container) {
   // ══════════════════════════════════════════════════════════════════════
 
   // ── Channel 1: Map hover — map-only, ephemeral ──
+  // TECHNIQUE LAYER 6 — Tooltip with 200ms dwell delay + viewport collision avoidance
   let lastHoveredGroup = null;
+  let tooltipDwellTimer = null;
+  let tooltipReady = false;
+  let lastTooltipAbbr = null;
+
   svg.addEventListener('mousemove', (e) => {
     const g = e.target.closest('.leg-state-group');
     if (!g) {
       clearMapHover();
+      if (tooltipDwellTimer) { clearTimeout(tooltipDwellTimer); tooltipDwellTimer = null; }
+      tooltipReady = false;
+      lastTooltipAbbr = null;
       legMapTooltip.style.display = 'none';
       updateQuickStat(null);
       return;
     }
     const abbr = g.dataset.state;
-
-    // Tooltip (map-only visual)
-    const name = g.dataset.stateName;
-    const data = getLegData(abbr);
-    const billCount = data ? data.totalBills : 0;
-    const passedCount = data ? data.bills.filter(b => b.status === 'Passed').length : 0;
-    const proposedCount = billCount - passedCount;
-    legMapTooltip.innerHTML = `
-      <span class="leg-tooltip-badge">PRIMARY SOURCE</span>
-      <span class="leg-tooltip-name">${escapeHtml(name)}</span>
-      <span class="leg-tooltip-domain"><strong>${escapeHtml(abbr)}</strong> <span class="leg-tooltip-path">/ legislature / ${new Date().getFullYear()} session</span></span>
-      <span class="leg-tooltip-stat">${billCount} active bill${billCount !== 1 ? 's' : ''} · <span class="leg-tooltip-passed">${passedCount} passed</span> · <span class="leg-tooltip-proposed">${proposedCount} proposed</span></span>
-      <span class="leg-tooltip-date">${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>`;
-    legMapTooltip.style.display = '';
-    const tx = e.clientX + 16, ty = e.clientY - 10;
-    const tw = legMapTooltip.offsetWidth, th = legMapTooltip.offsetHeight;
-    const vw = window.innerWidth, vh = window.innerHeight;
-    legMapTooltip.style.left = (tx + tw > vw - 12 ? e.clientX - tw - 12 : tx) + 'px';
-    legMapTooltip.style.top = (ty + th > vh - 12 ? e.clientY - th - 12 : ty) + 'px';
 
     // Quick stat panel (map-only, doesn't touch sidebar list)
     updateQuickStat(abbr);
@@ -1966,26 +2276,138 @@ export function renderUSMap(container) {
       if (hovPath) hovPath.classList.add('leg-state-path--hovered');
       lastHoveredGroup = g;
     }
+
+    // 200ms dwell delay before showing tooltip (prevents flicker on small states)
+    if (abbr !== lastTooltipAbbr) {
+      lastTooltipAbbr = abbr;
+      tooltipReady = false;
+      legMapTooltip.style.display = 'none';
+      if (tooltipDwellTimer) clearTimeout(tooltipDwellTimer);
+      tooltipDwellTimer = setTimeout(() => {
+        tooltipReady = true;
+        showMapTooltip(g, e);
+      }, 200);
+    } else if (tooltipReady) {
+      // Already dwelling — update position only
+      positionTooltip(e);
+    }
   });
 
+  function showMapTooltip(g, e) {
+    const abbr = g.dataset.state;
+    const name = g.dataset.stateName;
+    const data = getLegData(abbr);
+    const billCount = data ? data.totalBills : 0;
+    const passedCount = data ? data.bills.filter(b => b.status === 'Passed').length : 0;
+    const proposedCount = billCount - passedCount;
+    legMapTooltip.innerHTML = `
+      <span class="leg-tooltip-badge">PRIMARY SOURCE</span>
+      <span class="leg-tooltip-name">${escapeHtml(name)}</span>
+      <span class="leg-tooltip-domain"><strong>${escapeHtml(abbr)}</strong> <span class="leg-tooltip-path">/ legislature / ${new Date().getFullYear()} session</span></span>
+      <span class="leg-tooltip-stat">${billCount} active bill${billCount !== 1 ? 's' : ''} · <span class="leg-tooltip-passed">${passedCount} passed</span> · <span class="leg-tooltip-proposed">${proposedCount} proposed</span></span>
+      <span class="leg-tooltip-date">${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>`;
+    legMapTooltip.style.display = '';
+    positionTooltip(e);
+  }
+
+  // TECHNIQUE LAYER 6 — Viewport collision avoidance
+  function positionTooltip(e) {
+    const tx = e.clientX + 16, ty = e.clientY - 8;
+    const tw = legMapTooltip.offsetWidth, th = legMapTooltip.offsetHeight;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    let finalX = tx, finalY = ty;
+    let originX = 'left', originY = 'top';
+    // Flip right → left if overflows right edge
+    if (tx + tw > vw - 16) { finalX = e.clientX - tw - 16; originX = 'right'; }
+    // Flip down → up if overflows bottom edge
+    if (ty + th > vh - 16) { finalY = e.clientY - th - 8; originY = 'bottom'; }
+    legMapTooltip.style.left = finalX + 'px';
+    legMapTooltip.style.top = finalY + 'px';
+    legMapTooltip.style.transformOrigin = `${originX} ${originY}`;
+  }
+
   svg.addEventListener('mouseleave', () => {
+    if (tooltipDwellTimer) { clearTimeout(tooltipDwellTimer); tooltipDwellTimer = null; }
+    tooltipReady = false;
+    lastTooltipAbbr = null;
     legMapTooltip.style.display = 'none';
     clearMapHover();
     updateQuickStat(null);
   });
 
   // ── Channel 2: Map click — selection on both map + sidebar ──
+  // ENHANCEMENT: Click-to-lock (pinned) — second click on same state locks panel
+  let pinnedState = null;
+
   svg.addEventListener('click', (e) => {
     const g = e.target.closest('.leg-state-group');
     if (!g) return;
-    selectState(g.dataset.state, 'map');
+    const abbr = g.dataset.state;
+    if (abbr === pinnedState) {
+      // Already pinned — unpin
+      pinnedState = null;
+      const pinnedPath = g.querySelector('.leg-state-path');
+      if (pinnedPath) pinnedPath.classList.remove('leg-state-path--pinned');
+    } else if (abbr === legMapSelectedState) {
+      // Same state clicked again — pin it
+      pinnedState = abbr;
+      const pinnedPath = g.querySelector('.leg-state-path');
+      if (pinnedPath) pinnedPath.classList.add('leg-state-path--pinned');
+    } else {
+      // New state — clear pin, select new
+      if (pinnedState) {
+        const prevPinned = svg.querySelector(`.leg-state-group[data-state="${pinnedState}"] .leg-state-path`);
+        if (prevPinned) prevPinned.classList.remove('leg-state-path--pinned');
+        pinnedState = null;
+      }
+      selectState(abbr, 'map');
+    }
   });
 
-  // Keyboard: Enter/Space to select (Channel 2)
+  // ENHANCEMENT: Keyboard navigation — Enter/Space to select, Arrow keys for adjacency
   svg.addEventListener('keydown', (e) => {
+    const g = e.target.closest('.leg-state-group');
+    if (!g) return;
+    const abbr = g.dataset.state;
+
     if (e.key === 'Enter' || e.key === ' ') {
-      const g = e.target.closest('.leg-state-group');
-      if (g) { e.preventDefault(); selectState(g.dataset.state, 'map'); }
+      e.preventDefault();
+      selectState(abbr, 'map');
+    } else if (e.key === 'Escape') {
+      // Unpin + clear
+      if (pinnedState) {
+        const prevPinned = svg.querySelector(`.leg-state-group[data-state="${pinnedState}"] .leg-state-path`);
+        if (prevPinned) prevPinned.classList.remove('leg-state-path--pinned');
+        pinnedState = null;
+      }
+    } else if (['ArrowRight','ArrowLeft','ArrowUp','ArrowDown'].includes(e.key)) {
+      e.preventDefault();
+      const neighbors = STATE_ADJACENCY[abbr] || [];
+      if (neighbors.length === 0) return;
+
+      const [cx, cy] = visualCenters[abbr];
+      let best = null, bestScore = -Infinity;
+      for (const nId of neighbors) {
+        if (!visualCenters[nId]) continue;
+        const [nx, ny] = visualCenters[nId];
+        const dx = nx - cx, dy = ny - cy;
+        let score = 0;
+        if (e.key === 'ArrowRight') score = dx - Math.abs(dy) * 0.5;
+        else if (e.key === 'ArrowLeft') score = -dx - Math.abs(dy) * 0.5;
+        else if (e.key === 'ArrowDown') score = dy - Math.abs(dx) * 0.5;
+        else if (e.key === 'ArrowUp') score = -dy - Math.abs(dx) * 0.5;
+        if (score > bestScore) { bestScore = score; best = nId; }
+      }
+      if (best) {
+        const nextG = svg.querySelector(`.leg-state-group[data-state="${best}"]`);
+        if (nextG) {
+          const nextPath = nextG.querySelector('.leg-state-path');
+          if (nextPath) nextPath.focus();
+          selectState(best, 'map');
+          // Announce to screen readers
+          if (ariaLive) ariaLive.textContent = `Now viewing: ${STATE_NAMES[best] || best}`;
+        }
+      }
     }
   });
 }
@@ -2017,15 +2439,34 @@ function renderMapSidebar(sidebar) {
     list.appendChild(li);
   });
 
-  // ── Channel 3: Sidebar search — sidebar-only, NO map effect ──
+  // ── Channel 3: Sidebar search — filters list + highlights matching state on map ──
   const searchInput = sidebar.querySelector('#legStateSearch');
   searchInput.addEventListener('input', () => {
     const q = searchInput.value.trim().toLowerCase();
+    // Clear previous search highlights on map
+    document.querySelectorAll('.leg-state-path--search-match').forEach(p => {
+      p.classList.remove('leg-state-path--search-match');
+    });
+
+    let matchCount = 0;
     list.querySelectorAll('.leg-state-item').forEach((li) => {
       const name = STATE_NAMES[li.dataset.state].toLowerCase();
       const abbr = li.dataset.state.toLowerCase();
       const match = !q || name.includes(q) || abbr.includes(q);
       li.classList.toggle('leg-state-item--hidden', !match);
+
+      // ENHANCEMENT: Search-driven map highlight
+      if (match && q) {
+        matchCount++;
+        const mapPath = document.querySelector(`.leg-state-group[data-state="${li.dataset.state}"] .leg-state-path`);
+        if (mapPath) mapPath.classList.add('leg-state-path--search-match');
+      }
+    });
+  });
+  searchInput.addEventListener('blur', () => {
+    // Clear map highlights on search blur
+    document.querySelectorAll('.leg-state-path--search-match').forEach(p => {
+      p.classList.remove('leg-state-path--search-match');
     });
   });
 

@@ -3111,6 +3111,37 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   to   { opacity: 1; }
 }
 
+/* MAP PRECISION v2 — Search-driven map highlight (pulsing ring) */
+.leg-state-path--search-match {
+  stroke: var(--leg-accent);
+  stroke-width: 1.8;
+  animation: legSearchPulse 1.2s ease-in-out infinite;
+}
+@keyframes legSearchPulse {
+  0%, 100% { stroke-opacity: 0.6; stroke-width: 1.8; }
+  50%      { stroke-opacity: 1;   stroke-width: 2.4; }
+}
+
+/* MAP PRECISION v2 — Pinned state indicator */
+.leg-state-path--pinned {
+  stroke: var(--leg-accent);
+  stroke-width: 2.5;
+  stroke-dasharray: 4 2;
+}
+
+/* MAP PRECISION v2 — Screen-reader-only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ── Map vignette overlay ────────────────────────────────────────────── */
 .leg-map-vignette {
   pointer-events: none;
@@ -4145,6 +4176,13 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 }
 
 /* ── Map + panel responsive ──────────────────────────────────────────── */
+/* MAP PRECISION v2 — Tablet breakpoint */
+@media (max-width: 768px) {
+  .leg-state-label--small { font-size: 7px; }
+  /* Leader line column shifts left on smaller screens */
+}
+
+/* MAP PRECISION v2 — Mobile breakpoint */
 @media (max-width: 640px) {
   .leg-state-label { font-size: 6px; }
   .leg-state-label--small { font-size: 5.5px; }
@@ -4156,6 +4194,25 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   .leg-filter-divider { width: 100%; height: 1px; }
   .leg-panel-search-row { flex-direction: column; }
   .leg-cards-grid { grid-template-columns: 1fr; }
+  /* MAP PRECISION v2 — Mobile bottom-sheet tooltip */
+  .leg-map-tooltip {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    top: auto !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 12px 12px 0 0 !important;
+    border-left: none !important;
+    border-bottom: none !important;
+    transform: translateY(0) !important;
+    animation: legBottomSheetUp 250ms ease-out !important;
+  }
+}
+@keyframes legBottomSheetUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
 }
 
 /* ── Reduced motion ──────────────────────────────────────────────────── */
@@ -4175,6 +4232,9 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   }
   .leg-state-group { transition: none !important; }
   .leg-state-path.leg-state-active { animation: legStateEnter 400ms ease both !important; }
+  /* MAP PRECISION v2 — Reduced motion: disable pulse, bottom-sheet, transitions */
+  .leg-state-path--search-match { animation: none !important; stroke-opacity: 1 !important; }
+  .leg-map-tooltip { animation: none !important; transform: none !important; }
 }
 
 } /* end @layer components */
