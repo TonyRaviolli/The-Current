@@ -3054,8 +3054,37 @@ let fedState = {
   data: { bills: [], orders: [], cases: [] }
 };
 
+function insertFederalSkeletons() {
+  const skeletonHtml = Array.from({ length: 3 }, () =>
+    `<div class="leg-fed-skeleton">
+      <div class="leg-fed-skeleton-line leg-fed-skeleton-line--meta"></div>
+      <div class="leg-fed-skeleton-line leg-fed-skeleton-line--title"></div>
+      <div class="leg-fed-skeleton-line leg-fed-skeleton-line--title-2"></div>
+      <div class="leg-fed-skeleton-line leg-fed-skeleton-line--status"></div>
+      <div class="leg-fed-skeleton-line leg-fed-skeleton-line--summary"></div>
+      <div class="leg-fed-skeleton-line leg-fed-skeleton-line--summary-2"></div>
+    </div>`
+  ).join('');
+  for (const id of ['legColCardsCongress', 'legColCardsExec', 'legColCardsScotus']) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = skeletonHtml;
+  }
+}
+
+function removeFederalSkeletons() {
+  for (const id of ['legColCardsCongress', 'legColCardsExec', 'legColCardsScotus']) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.querySelectorAll('.leg-fed-skeleton').forEach(s => s.remove());
+    }
+  }
+}
+
 export async function renderFederalDashboard() {
   if (fedState.initialized) return;
+
+  // Show skeletons while data loads
+  insertFederalSkeletons();
 
   // Load federal data
   try {
@@ -3068,6 +3097,9 @@ export async function renderFederalDashboard() {
   }
 
   fedState.initialized = true;
+
+  // Remove skeletons
+  removeFederalSkeletons();
 
   // Build ticker
   buildFederalTicker();
@@ -3104,10 +3136,20 @@ function buildFederalTicker() {
   const top = items.slice(0, 5);
   const esc = escapeHtml;
 
-  // Double the content for seamless loop
-  const html = [...top, ...top].map(it => {
+  // Branch color map for separator dots
+  const branchColor = { bill: 'var(--accent-congress)', eo: 'var(--accent-exec)', scotus: 'var(--accent-scotus)' };
+
+  // Double the content for seamless loop, with separator dots between items
+  const doubled = [...top, ...top];
+  const html = doubled.map((it, idx) => {
     const badgeClass = it.type === 'bill' ? 'leg-ticker-badge--bill' : it.type === 'eo' ? 'leg-ticker-badge--eo' : 'leg-ticker-badge--scotus';
-    return `<span class="leg-ticker-item"><span class="leg-ticker-badge ${badgeClass}">${esc(it.label)}</span><span class="leg-ticker-title">${esc(it.title)}</span><span class="leg-ticker-date">${fmtDate(it.date)}</span></span>`;
+    const item = `<span class="leg-ticker-item"><span class="leg-ticker-badge ${badgeClass}">${esc(it.label)}</span><span class="leg-ticker-title">${esc(it.title)}</span><span class="leg-ticker-date">${fmtDate(it.date)}</span></span>`;
+    // Separator dot colored by the NEXT item's branch
+    if (idx < doubled.length - 1) {
+      const nextType = doubled[idx + 1].type;
+      return item + `<span class="leg-ticker-sep" style="background:${branchColor[nextType] || branchColor.bill}"></span>`;
+    }
+    return item;
   }).join('');
 
   track.innerHTML = html;
@@ -3194,13 +3236,13 @@ function renderFederalColumn(type, cardsId, moreId, countId) {
       const card = document.createElement('div');
       card.className = 'leg-fed-card';
       card.setAttribute('tabindex', '0');
-      card.style.animationDelay = `${i * 30}ms`;
+      card.setAttribute('data-branch', 'congress');
+      card.style.setProperty('--card-index', i);
       const isPassed = bill.status === 'passed';
       const badgeClass = isPassed ? 'leg-fed-badge-passed' : 'leg-fed-badge-proposed';
       const badgeLabel = isPassed ? 'PASSED' : 'PROPOSED';
       const dateStr = isPassed && bill.enacted ? fmtDate(bill.enacted) : fmtDate(bill.introduced);
       const summaryShort = bill.summary.length > 140 ? bill.summary.slice(0, 140) + '...' : bill.summary;
-      card.style.setProperty('--fed-accent', isPassed ? 'var(--leg-passed)' : 'var(--leg-proposed)');
       card.innerHTML = `
         <div class="leg-fed-card-top">
           <span class="leg-fed-card-id">${esc(bill.id)}</span>
@@ -3211,7 +3253,8 @@ function renderFederalColumn(type, cardsId, moreId, countId) {
           <span class="leg-fed-card-badge ${badgeClass}">${badgeLabel}</span>
           <span class="leg-fed-card-date">${dateStr}</span>
         </div>
-        <p class="leg-fed-card-summary">${esc(summaryShort)}</p>`;
+        <p class="leg-fed-card-summary">${esc(summaryShort)}</p>
+        <span class="leg-fed-card-details">View details \u2192</span>`;
       cards.appendChild(card);
     });
   } else if (type === 'executive') {
@@ -3219,20 +3262,23 @@ function renderFederalColumn(type, cardsId, moreId, countId) {
       const card = document.createElement('div');
       card.className = 'leg-fed-card';
       card.setAttribute('tabindex', '0');
-      card.style.animationDelay = `${i * 30}ms`;
-      card.style.setProperty('--fed-accent', 'var(--leg-accent)');
+      card.setAttribute('data-branch', 'exec');
+      if (eo.impact === 'High') card.setAttribute('data-impact', 'high');
+      card.style.setProperty('--card-index', i);
       const impactClass = eo.impact === 'High' ? 'leg-fed-impact-high' : 'leg-fed-impact-medium';
       card.innerHTML = `
         <div class="leg-fed-card-top">
           <span class="leg-fed-card-id">${esc(eo.id)}</span>
-          <span class="leg-fed-card-impact ${impactClass}">${esc(eo.impact)} Impact</span>
+          <span class="leg-fed-card-chamber">EO</span>
         </div>
         <h3 class="leg-fed-card-title">${esc(eo.title)}</h3>
         <div class="leg-fed-card-meta">
           <span class="leg-fed-card-badge leg-fed-badge-signed">SIGNED</span>
           <span class="leg-fed-card-date">${fmtDate(eo.signedDate)}</span>
         </div>
-        <p class="leg-fed-card-summary">${esc(eo.summary.length > 140 ? eo.summary.slice(0, 140) + '...' : eo.summary)}</p>`;
+        <p class="leg-fed-card-summary">${esc(eo.summary.length > 140 ? eo.summary.slice(0, 140) + '...' : eo.summary)}</p>
+        <span class="leg-fed-card-impact ${impactClass}">${esc(eo.impact)} Impact</span>
+        <span class="leg-fed-card-details">View details \u2192</span>`;
       cards.appendChild(card);
     });
   } else {
@@ -3241,14 +3287,30 @@ function renderFederalColumn(type, cardsId, moreId, countId) {
       const card = document.createElement('div');
       card.className = 'leg-fed-card';
       card.setAttribute('tabindex', '0');
-      card.style.animationDelay = `${i * 30}ms`;
+      card.setAttribute('data-branch', 'scotus');
+      card.style.setProperty('--card-index', i);
       const isDecided = sc.status === 'decided';
       const isCert = sc.status === 'cert_granted';
       const badgeClass = isDecided ? 'leg-fed-badge-decided' : isCert ? 'leg-fed-badge-cert' : 'leg-fed-badge-pending';
       const badgeLabel = isDecided ? 'DECIDED' : isCert ? 'CERT. GRANTED' : 'PENDING';
-      const accentColor = isDecided ? 'var(--leg-passed)' : isCert ? 'var(--leg-accent-alt)' : 'var(--leg-proposed)';
-      card.style.setProperty('--fed-accent', accentColor);
       const dateStr = sc.decisionDate ? fmtDate(sc.decisionDate) : 'Pending';
+
+      // Vote visualizer: parse "7-2" into majority/dissent dots
+      let voteVizHtml = '';
+      if (sc.voteSplit) {
+        const parts = sc.voteSplit.match(/^(\d+)\s*[-–]\s*(\d+)/);
+        if (parts) {
+          const maj = parseInt(parts[1], 10);
+          const dis = parseInt(parts[2], 10);
+          const dots = [];
+          for (let d = 0; d < maj && d < 9; d++) dots.push('<span class="leg-fed-vote-dot leg-fed-vote-dot--majority"></span>');
+          for (let d = 0; d < dis && dots.length < 9; d++) dots.push('<span class="leg-fed-vote-dot leg-fed-vote-dot--dissent"></span>');
+          voteVizHtml = `<div class="leg-fed-card-vote-viz">${dots.join('')}</div>`;
+        } else {
+          voteVizHtml = `<span class="leg-fed-card-vote">${esc(sc.voteSplit)}</span>`;
+        }
+      }
+
       card.innerHTML = `
         <div class="leg-fed-card-top">
           <span class="leg-fed-card-docket">${esc(sc.docket)}</span>
@@ -3256,11 +3318,12 @@ function renderFederalColumn(type, cardsId, moreId, countId) {
         </div>
         <h3 class="leg-fed-card-case-name">${esc(sc.name)}</h3>
         <div class="leg-fed-card-meta">
-          ${sc.voteSplit ? `<span class="leg-fed-card-vote">${esc(sc.voteSplit)}</span>` : ''}
           <span class="leg-fed-card-date">${dateStr}</span>
         </div>
         <p class="leg-fed-card-summary">${esc(sc.summary.length > 140 ? sc.summary.slice(0, 140) + '...' : sc.summary)}</p>
-        ${sc.opinion ? `<p class="leg-fed-card-opinion">${esc(sc.opinion)}</p>` : ''}`;
+        ${voteVizHtml}
+        ${sc.opinion ? `<p class="leg-fed-card-opinion">${esc(sc.opinion)}</p>` : ''}
+        <span class="leg-fed-card-details">View details \u2192</span>`;
       cards.appendChild(card);
     });
   }

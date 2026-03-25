@@ -68,7 +68,9 @@ let BUILD_HASH = Date.now().toString(36); // fallback: startup timestamp
   try {
     const assetDir = path.join(ROOT, 'assets');
     const files = ['app.js', 'render.js', 'ui.js', 'api.js', 'styles.css'];
+    const fedCss = await readFile(path.join(ROOT, 'styles', 'federal-design-system.css')).catch(() => Buffer.alloc(0));
     const contents = await Promise.all(files.map((f) => readFile(path.join(assetDir, f))));
+    contents.push(fedCss);
     BUILD_HASH = createHash('md5').update(Buffer.concat(contents)).digest('hex').slice(0, 8);
   } catch { /* keep fallback */ }
 })();
@@ -79,7 +81,7 @@ async function loadIndexTemplate() {
     const raw = await readFile(path.join(ROOT, 'index.html'), 'utf8');
     // Inject cache-bust hash into all /assets/ references so stale browser
     // caches are bypassed automatically after each deploy.
-    indexTemplate = raw.replace(/(src|href)="(\/assets\/[^"]+)"/g, `$1="$2?v=${BUILD_HASH}"`);
+    indexTemplate = raw.replace(/(src|href)="(\/(assets|styles)\/[^"]+)"/g, `$1="$2?v=${BUILD_HASH}"`);
   }
   return indexTemplate;
 }
