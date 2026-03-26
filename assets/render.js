@@ -2879,16 +2879,16 @@ function fmtDate(dateStr) {
    ══════════════════════════════════════════════════════════════════════════ */
 
 const TOPIC_CONFIG = {
-  'most-recent':      { label: 'Most Recent',       color: 'hsl(48,85%,75%)',  dark: 'hsl(48,75%,35%)',  svg: '<polyline points="18 6 11 14 7 10 2 15" stroke-linecap="round"/><polyline points="14 6 18 6 18 10" stroke-linecap="round"/>' },
-  'Economy & Taxes':  { label: 'Economy & Fiscal',  color: 'hsl(45,80%,72%)',  dark: 'hsl(45,70%,35%)',  svg: '<circle cx="10" cy="10" r="7"/><path d="M10 6v8M8 8h4M8 12h4"/>' },
-  'Healthcare':       { label: 'Healthcare',         color: 'hsl(160,55%,68%)', dark: 'hsl(160,50%,30%)', svg: '<path d="M7 3h6v4h4v6h-4v4H7v-4H3V7h4z"/>' },
-  'Public Safety':    { label: 'Defense & Safety',   color: 'hsl(220,60%,72%)', dark: 'hsl(220,55%,35%)', svg: '<path d="M10 2L3 6v5c0 4.5 3 8 7 9 4-1 7-4.5 7-9V6z"/>' },
-  'Environment':      { label: 'Environment',        color: 'hsl(140,50%,65%)', dark: 'hsl(140,45%,30%)', svg: '<path d="M10 18V9M6 13c0-4 4-9 4-9s4 5 4 9-2 4-4 4-4 0-4-4z"/>' },
-  'Education':        { label: 'Education',          color: 'hsl(25,70%,72%)',  dark: 'hsl(25,60%,35%)',  svg: '<path d="M2 8l8-4 8 4-8 4z"/><path d="M5 10v4l5 3 5-3v-4"/>' },
-  'Civil Rights':     { label: 'Civil Rights',       color: 'hsl(190,55%,70%)', dark: 'hsl(190,50%,30%)', svg: '<path d="M10 2v16M6 6l-3 4h14l-3-4"/><rect x="4" y="14" width="12" height="2" rx="1"/>' },
-  'Criminal Justice': { label: 'Criminal Justice',   color: 'hsl(0,45%,72%)',   dark: 'hsl(0,40%,35%)',   svg: '<rect x="5" y="8" width="10" height="8" rx="2"/><path d="M8 8V6a2 2 0 0 1 4 0v2"/>' },
-  'Infrastructure':   { label: 'Infrastructure',     color: 'hsl(35,55%,70%)',  dark: 'hsl(35,50%,35%)',  svg: '<path d="M2 16h16M4 16V8l6-4 6 4v8"/><rect x="8" y="11" width="4" height="5"/>' },
-  'Law':              { label: 'Law',                color: 'hsl(260,45%,72%)', dark: 'hsl(260,40%,35%)', svg: '<path d="M4 2h9l3 3v13H4z"/><path d="M13 2v3h3"/><line x1="7" y1="8" x2="13" y2="8"/><line x1="7" y1="11" x2="13" y2="11"/>' },
+  'most-recent':      { label: 'Most Recent',       color: 'oklch(0.62 0.15 75)',  dark: 'oklch(0.30 0.08 75)',  glow: 'oklch(0.62 0.18 75 / 0.25)',  svg: '<polyline points="18 6 11 14 7 10 2 15" stroke-linecap="round"/><polyline points="14 6 18 6 18 10" stroke-linecap="round"/>' },
+  'Economy & Taxes':  { label: 'Economy & Fiscal',  color: 'oklch(0.62 0.15 75)',  dark: 'oklch(0.30 0.08 75)',  glow: 'oklch(0.62 0.18 75 / 0.25)',  svg: '<circle cx="10" cy="10" r="7"/><path d="M10 6v8M8 8h4M8 12h4"/>' },
+  'Healthcare':       { label: 'Healthcare',         color: 'oklch(0.62 0.17 150)', dark: 'oklch(0.30 0.08 150)', glow: 'oklch(0.62 0.18 150 / 0.25)', svg: '<path d="M7 3h6v4h4v6h-4v4H7v-4H3V7h4z"/>' },
+  'Public Safety':    { label: 'Defense & Safety',   color: 'oklch(0.62 0.14 250)', dark: 'oklch(0.30 0.08 250)', glow: 'oklch(0.62 0.18 250 / 0.25)', svg: '<path d="M10 2L3 6v5c0 4.5 3 8 7 9 4-1 7-4.5 7-9V6z"/>' },
+  'Environment':      { label: 'Environment',        color: 'oklch(0.62 0.16 165)', dark: 'oklch(0.30 0.08 165)', glow: 'oklch(0.62 0.18 165 / 0.25)', svg: '<path d="M10 18V9M6 13c0-4 4-9 4-9s4 5 4 9-2 4-4 4-4 0-4-4z"/>' },
+  'Education':        { label: 'Education',          color: 'oklch(0.62 0.14 290)', dark: 'oklch(0.30 0.08 290)', glow: 'oklch(0.62 0.18 290 / 0.25)', svg: '<path d="M2 8l8-4 8 4-8 4z"/><path d="M5 10v4l5 3 5-3v-4"/>' },
+  'Civil Rights':     { label: 'Civil Rights',       color: 'oklch(0.62 0.16 27)',  dark: 'oklch(0.30 0.08 27)',  glow: 'oklch(0.62 0.18 27 / 0.25)',  svg: '<path d="M10 2v16M6 6l-3 4h14l-3-4"/><rect x="4" y="14" width="12" height="2" rx="1"/>' },
+  'Criminal Justice': { label: 'Criminal Justice',   color: 'oklch(0.62 0.13 55)',  dark: 'oklch(0.30 0.08 55)',  glow: 'oklch(0.62 0.18 55 / 0.25)',  svg: '<rect x="5" y="8" width="10" height="8" rx="2"/><path d="M8 8V6a2 2 0 0 1 4 0v2"/>' },
+  'Infrastructure':   { label: 'Infrastructure',     color: 'oklch(0.62 0.12 210)', dark: 'oklch(0.30 0.08 210)', glow: 'oklch(0.62 0.18 210 / 0.25)', svg: '<path d="M2 16h16M4 16V8l6-4 6 4v8"/><rect x="8" y="11" width="4" height="5"/>' },
+  'Law':              { label: 'Law',                color: 'oklch(0.62 0.14 250)', dark: 'oklch(0.30 0.08 250)', glow: 'oklch(0.62 0.18 250 / 0.25)', svg: '<path d="M4 2h9l3 3v13H4z"/><path d="M13 2v3h3"/><line x1="7" y1="8" x2="13" y2="8"/><line x1="7" y1="11" x2="13" y2="11"/>' },
 };
 
 let fedState = {
@@ -3051,10 +3051,11 @@ function buildTopicTiles() {
 
 function buildTile(key, cfg, count, isActive) {
   const esc = escapeHtml;
+  const glow = cfg.glow || 'oklch(0 0 0 / 0.2)';
   return `<button type="button"
     class="ltg-tile"
     data-topic="${esc(key)}"
-    style="--tile-color:${cfg.color};--tile-color-dark:${cfg.dark};--tile-glass-bg:${cfg.color.replace(')', ',0.12)')};--tile-glass-inset:${cfg.color.replace(')', ',0.08)')}"
+    style="--tile-color:${cfg.color};--tile-color-dark:${cfg.dark};--tile-cat-glow:${glow}"
     aria-pressed="${isActive}"
     aria-label="${esc(cfg.label)}: ${count} items">
     <svg class="ltg-tile-icon" viewBox="0 0 20 20" aria-hidden="true">${cfg.svg}</svg>
@@ -3082,11 +3083,12 @@ function buildMostRecentPanel() {
   top10.forEach((item, i) => {
     const dateStr = item.date ? dtf.format(new Date(item.date + 'T12:00:00')) : '';
     const topicCfg = TOPIC_CONFIG[item.category];
-    const color = topicCfg?.color || 'hsl(0,0%,80%)';
+    const color = topicCfg?.color || 'oklch(0.5 0 0)';
+    const glow = topicCfg?.glow || 'oklch(0.5 0 0 / 0.15)';
     const badgeClass = getStatusBadgeClass(item.status);
     const typeLabel = item.type === 'bill' ? (item.chamber || 'Bill') : item.type === 'eo' ? 'Exec. Order' : 'SCOTUS';
 
-    html += `<div class="ltg-rank-row" role="listitem" tabindex="0" style="--row-index:${i};--row-accent:${color};--row-hover-bg:${color.replace(')', ',0.06)')}"${item.url ? ` data-href="${esc(item.url)}"` : ''}>
+    html += `<div class="ltg-rank-row" role="listitem" tabindex="0" style="--row-index:${i};--row-accent:${color};--row-hover-bg:${glow}"${item.url ? ` data-href="${esc(item.url)}"` : ''}>
       <span class="ltg-rank-num">${i + 1}</span>
       <div class="ltg-rank-content">
         <span class="ltg-rank-bill">${esc(typeLabel)}</span>
@@ -3147,16 +3149,16 @@ function renderCardGrid() {
   let html = '';
   items.forEach((item, i) => {
     const topicCfg = TOPIC_CONFIG[item.category];
-    const color = topicCfg?.color || 'hsl(0,0%,80%)';
-    const dark = topicCfg?.dark || 'hsl(0,0%,40%)';
+    const color = topicCfg?.color || 'oklch(0.5 0 0)';
+    const glow = topicCfg?.glow || 'oklch(0.5 0 0 / 0.15)';
     const dateStr = item.date ? dtf.format(new Date(item.date + 'T12:00:00')) : '';
     const badgeClass = getStatusBadgeClass(item.status);
     const typeLabel = item.type === 'bill' ? (item.chamber || 'Bill') : item.type === 'eo' ? 'Executive Order' : 'SCOTUS Case';
     const summaryShort = item.summary.length > 180 ? item.summary.slice(0, 180) + '\u2026' : item.summary;
 
     const cardTitleId = `ltg-card-title-${i}`;
-    html += `<article class="ltg-card" style="--card-index:${i};--card-topic-color:${color};--card-glass-wash:${color.replace(')', ',0.03)')}" tabindex="0" aria-labelledby="${cardTitleId}" data-category="${esc(item.category)}"${item.url ? ` data-href="${esc(item.url)}"` : ''}>
-      <span class="ltg-card-category" style="color:${dark}">${esc(topicCfg?.label || item.category)}</span>
+    html += `<article class="ltg-card" style="--card-index:${i};--card-topic-color:${color};--card-glass-wash:${glow}" tabindex="0" aria-labelledby="${cardTitleId}" data-category="${esc(item.category)}"${item.url ? ` data-href="${esc(item.url)}"` : ''}>
+      <span class="ltg-card-category" style="color:${color}">${esc(topicCfg?.label || item.category)}</span>
       <h3 class="ltg-card-title" id="${cardTitleId}">${esc(item.title)}</h3>
       <p class="ltg-card-summary">${esc(summaryShort)}</p>
       <div class="ltg-card-badges">
@@ -3165,7 +3167,7 @@ function renderCardGrid() {
       </div>
       <div class="ltg-card-footer">
         <span class="ltg-card-date">${dateStr}</span>
-        <span class="ltg-card-more" style="color:${dark}">Read More <svg class="ltg-card-more-arrow" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></span>
+        <span class="ltg-card-more" style="color:${color}">Read More <svg class="ltg-card-more-arrow" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></span>
       </div>
     </article>`;
   });
