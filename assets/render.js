@@ -2945,9 +2945,6 @@ export async function renderFederalDashboard() {
   // Build topic tiles
   buildTopicTiles();
 
-  // Build "Most Recent" ranked list
-  buildMostRecentPanel();
-
   // Render card grid
   renderCardGrid();
   initCardRevealObserver();
@@ -3057,14 +3054,8 @@ function buildTile(key, cfg, count, isActive) {
     data-topic="${esc(key)}"
     style="--tile-color:${cfg.color};--tile-color-dark:${cfg.dark};--tile-cat-glow:${glow}"
     aria-pressed="${isActive}"
-    aria-label="${esc(cfg.label)}: ${count} items">
-    <svg class="ltg-tile-icon" viewBox="0 0 20 20" aria-hidden="true">${cfg.svg}</svg>
+    aria-label="${esc(cfg.label)}">
     <span class="ltg-tile-name">${esc(cfg.label)}</span>
-    <div class="ltg-tile-footer">
-      <span class="ltg-tile-count">${count}</span>
-      <svg class="ltg-tile-chevron" viewBox="0 0 12 12" aria-hidden="true"><polyline points="4 2 8 6 4 10"/></svg>
-    </div>
-    <span class="ltg-tile-check" aria-hidden="true"><svg viewBox="0 0 10 10"><polyline points="2 5 4.5 7.5 8 3"/></svg></span>
   </button>`;
 }
 
@@ -3266,56 +3257,6 @@ function wireFederalEvents() {
     });
   }
 
-  // "Most Recent" details panel
-  const details = document.getElementById('ltgRecent');
-  const closeBtn = document.getElementById('ltgRecentClose');
-
-  if (details) {
-    details.addEventListener('toggle', () => {
-      fedState.recentOpen = details.open;
-    });
-  }
-
-  if (closeBtn && details) {
-    closeBtn.addEventListener('click', () => {
-      details.open = false;
-    });
-  }
-
-  // Escape key closes Most Recent panel when focused within it
-  if (details) {
-    details.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && details.open) {
-        details.open = false;
-        details.querySelector('.ltg-recent-summary')?.focus();
-      }
-    });
-  }
-
-  // Empty state CTA → open Most Recent panel
-  const emptyCta = document.getElementById('ltgEmptyCta');
-  if (emptyCta && details) {
-    emptyCta.addEventListener('click', () => {
-      details.open = true;
-      details.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  }
-
-  // Rank row clicks → navigate to URL if available
-  const panel = document.getElementById('ltgRecentPanel');
-  if (panel) {
-    panel.addEventListener('click', (e) => {
-      const row = e.target.closest('.ltg-rank-row[data-href]');
-      if (row) window.open(row.dataset.href, '_blank', 'noopener');
-    });
-    panel.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        const row = e.target.closest('.ltg-rank-row[data-href]');
-        if (row) { e.preventDefault(); window.open(row.dataset.href, '_blank', 'noopener'); }
-      }
-    });
-  }
-
   // Card clicks → navigate to URL if available
   const cardGrid = document.getElementById('ltgCardGrid');
   if (cardGrid) {
@@ -3328,6 +3269,18 @@ function wireFederalEvents() {
         const card = e.target.closest('.ltg-card[data-href]');
         if (card) { e.preventDefault(); window.open(card.dataset.href, '_blank', 'noopener'); }
       }
+    });
+  }
+
+  // Empty state CTA — clear all topic filters
+  const emptyCta = document.getElementById('ltgEmptyCta');
+  if (emptyCta) {
+    emptyCta.addEventListener('click', () => {
+      fedState.activeTopics.clear();
+      buildTopicTiles();
+      renderCardGrid();
+      initCardRevealObserver();
+      syncToUrl();
     });
   }
 

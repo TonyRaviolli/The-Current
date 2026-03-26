@@ -420,29 +420,15 @@ body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-dee
         <!-- Topic category tile grid -->
         <div class="ltg-tile-grid" id="ltgTileGrid" role="group" aria-label="Filter by policy topic"></div>
 
-        <!-- Most Recent expanding ranked list -->
-        <details class="ltg-recent" id="ltgRecent">
-          <summary class="ltg-recent-summary">
-            <span class="ltg-recent-icon" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-            </span>
-            <span class="ltg-recent-label">Most Recent</span>
-            <span class="ltg-recent-sub">Latest 10 bills</span>
-            <span class="ltg-recent-chevron" aria-hidden="true">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </span>
-          </summary>
-          <div class="ltg-recent-panel" id="ltgRecentPanel" role="list"></div>
-          <div class="ltg-recent-close-wrap"><button type="button" class="ltg-recent-close" id="ltgRecentClose" aria-label="Close most recent panel">&times; Close</button></div>
-        </details>
-
         <!-- Legislation card grid -->
         <section class="ltg-cards-section" aria-label="Legislation items">
+          <div class="ltg-latest-label">Latest</div>
+          <hr class="ltg-latest-rule" aria-hidden="true">
           <div class="ltg-card-grid" id="ltgCardGrid"></div>
           <div class="ltg-empty" id="ltgEmpty" hidden>
             <svg class="ltg-empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
             <p class="ltg-empty-text">No legislation tracked for this topic</p>
-            <button type="button" class="ltg-empty-cta" id="ltgEmptyCta">View Most Recent</button>
+            <button type="button" class="ltg-empty-cta" id="ltgEmptyCta">Clear Filters</button>
           </div>
         </section>
 
