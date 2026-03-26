@@ -3141,24 +3141,29 @@ function renderCardGrid() {
   items.forEach((item, i) => {
     const topicCfg = TOPIC_CONFIG[item.category];
     const color = topicCfg?.color || 'oklch(0.5 0 0)';
+    const dark = topicCfg?.dark || 'oklch(0.30 0.08 250)';
     const glow = topicCfg?.glow || 'oklch(0.5 0 0 / 0.15)';
     const dateStr = item.date ? dtf.format(new Date(item.date + 'T12:00:00')) : '';
     const badgeClass = getStatusBadgeClass(item.status);
-    const typeLabel = item.type === 'bill' ? (item.chamber || 'Bill') : item.type === 'eo' ? 'Executive Order' : 'SCOTUS Case';
+    const statusText = item.status.replace('_', ' ').toUpperCase();
     const summaryShort = item.summary.length > 180 ? item.summary.slice(0, 180) + '\u2026' : item.summary;
 
     const cardTitleId = `ltg-card-title-${i}`;
-    html += `<article class="ltg-card" style="--card-index:${i};--card-topic-color:${color};--card-glass-wash:${glow}" tabindex="0" aria-labelledby="${cardTitleId}" data-category="${esc(item.category)}"${item.url ? ` data-href="${esc(item.url)}"` : ''}>
-      <span class="ltg-card-category" style="color:${color}">${esc(topicCfg?.label || item.category)}</span>
-      <h3 class="ltg-card-title" id="${cardTitleId}">${esc(item.title)}</h3>
-      <p class="ltg-card-summary">${esc(summaryShort)}</p>
-      <div class="ltg-card-badges">
-        <span class="ltg-badge ${badgeClass}" aria-label="Bill status: ${esc(item.status)}">${esc(item.status.replace('_', ' ').toUpperCase())}</span>
-        ${item.chamber ? `<span class="ltg-badge ltg-badge--chamber">${esc(item.chamber)}</span>` : ''}
+    html += `<article class="ltg-card" style="--card-index:${i};--card-topic-color:${color};--card-topic-dark:${dark};--card-topic-glow:${glow}" tabindex="0" aria-labelledby="${cardTitleId}" data-category="${esc(item.category)}"${item.url ? ` data-href="${esc(item.url)}"` : ''}>
+      <div class="ltg-card-header" style="background:${color}">
+        <span class="ltg-card-category">${esc(topicCfg?.label || item.category)}</span>
+        <div class="ltg-card-badges">
+          <span class="ltg-badge ${badgeClass}" aria-label="Status: ${esc(statusText)}">${esc(statusText)}</span>
+          ${item.chamber ? `<span class="ltg-badge ltg-badge--chamber">${esc(item.chamber)}</span>` : ''}
+        </div>
       </div>
-      <div class="ltg-card-footer">
-        <span class="ltg-card-date">${dateStr}</span>
-        <span class="ltg-card-more" style="color:${color}">Read More <svg class="ltg-card-more-arrow" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></span>
+      <div class="ltg-card-body" style="background:${dark}">
+        <h3 class="ltg-card-title" id="${cardTitleId}">${esc(item.title)}</h3>
+        <p class="ltg-card-summary">${esc(summaryShort)}</p>
+        <div class="ltg-card-footer">
+          <span class="ltg-card-date">${dateStr}</span>
+          <span class="ltg-card-more" style="color:${color}">Read More <svg class="ltg-card-more-arrow" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></span>
+        </div>
       </div>
     </article>`;
   });
@@ -3176,14 +3181,16 @@ function insertCardSkeletons() {
   let html = '';
   for (let i = 0; i < 6; i++) {
     html += `<div class="ltg-card-skeleton" aria-hidden="true">
-      <div class="ltg-skel-line ltg-skel-line--accent"></div>
-      <div class="ltg-skel-line ltg-skel-line--label"></div>
-      <div class="ltg-skel-line ltg-skel-line--title"></div>
-      <div class="ltg-skel-line ltg-skel-line--title2"></div>
-      <div class="ltg-skel-line ltg-skel-line--body"></div>
-      <div class="ltg-skel-line ltg-skel-line--body2"></div>
-      <div class="ltg-skel-line ltg-skel-line--badge"></div>
-      <div class="ltg-skel-line ltg-skel-line--footer"></div>
+      <div class="ltg-skel-header">
+        <div class="ltg-skel-line ltg-skel-line--label"></div>
+        <div class="ltg-skel-line ltg-skel-line--badge"></div>
+      </div>
+      <div class="ltg-skel-body">
+        <div class="ltg-skel-line ltg-skel-line--title"></div>
+        <div class="ltg-skel-line ltg-skel-line--title2"></div>
+        <div class="ltg-skel-line ltg-skel-line--body"></div>
+        <div class="ltg-skel-line ltg-skel-line--footer"></div>
+      </div>
     </div>`;
   }
   grid.innerHTML = html;
