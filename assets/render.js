@@ -1671,11 +1671,11 @@ function renderArticleJsonLd(article) {
 // ── Adjacency-safe 4-color assignment (backtracking solver, no bordering states share a tone) ──
 // Tones: 1 = sandy beige, 2 = warm stone, 3 = dusty sage, 4 = warm clay
 const STATE_COLOR_MAP = {
-  AK:1,AL:3,AR:3,AZ:3,CA:1,CO:1,CT:3,DC:3,DE:3,FL:2,GA:1,HI:1,
-  IA:2,ID:1,IL:4,IN:1,KS:4,KY:3,LA:2,MA:1,MD:2,ME:1,MI:3,MN:3,
-  MO:1,MS:1,MT:2,NC:3,ND:4,NE:3,NH:2,NJ:4,NM:4,NV:4,NY:2,OH:2,
-  OK:2,OR:2,PA:1,RI:2,SC:2,SD:1,TN:2,TX:1,UT:2,VA:1,VT:3,WA:3,
-  WI:1,WV:4,WY:4
+  AK:1,AL:3,AR:5,AZ:4,CA:1,CO:6,CT:5,DC:3,DE:6,FL:2,GA:5,HI:1,
+  IA:4,ID:5,IL:6,IN:1,KS:2,KY:5,LA:4,MA:1,MD:4,ME:3,MI:5,MN:3,
+  MO:1,MS:6,MT:2,NC:1,ND:6,NE:3,NH:2,NJ:4,NM:2,NV:3,NY:2,OH:2,
+  OK:6,OR:4,PA:3,RI:6,SC:2,SD:1,TN:4,TX:3,UT:1,VA:6,VT:4,WA:5,
+  WI:2,WV:4,WY:3
 };
 
 // ── Polylabel algorithm (MIT, mapbox/polylabel) — finds visual center of polygon ──
@@ -1901,11 +1901,11 @@ export function renderUSMap(container) {
 
   // Radial gradient background glow (::before pseudo handled in CSS)
 
-  // Ocean water background — soft blue behind all land
+  // Ocean background — dark editorial gradient (matches CSS container)
   const ocean = document.createElementNS(svgNS, 'rect');
   ocean.setAttribute('width', '960');
   ocean.setAttribute('height', '600');
-  ocean.setAttribute('fill', 'hsl(205, 45%, 78%)');
+  ocean.setAttribute('fill', 'oklch(0.17 0.025 240)');
   ocean.setAttribute('rx', '0');
   ocean.style.pointerEvents = 'none';
   svg.appendChild(ocean);
@@ -1918,10 +1918,10 @@ export function renderUSMap(container) {
   oceanGrad.setAttribute('r', '65%');
   const stop1 = document.createElementNS(svgNS, 'stop');
   stop1.setAttribute('offset', '0%');
-  stop1.setAttribute('stop-color', 'hsl(205, 40%, 82%)');
+  stop1.setAttribute('stop-color', 'oklch(0.20 0.030 235)');
   const stop2 = document.createElementNS(svgNS, 'stop');
   stop2.setAttribute('offset', '100%');
-  stop2.setAttribute('stop-color', 'hsl(205, 50%, 72%)');
+  stop2.setAttribute('stop-color', 'oklch(0.14 0.020 250)');
   oceanGrad.appendChild(stop1);
   oceanGrad.appendChild(stop2);
   // Append to defs (will be created below)
@@ -1948,13 +1948,13 @@ export function renderUSMap(container) {
   const defs = document.createElementNS(svgNS, 'defs');
   defs.innerHTML = `
     <filter id="stateShadow" x="-5%" y="-5%" width="115%" height="120%">
-      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#1a1a1a" flood-opacity="0.12"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#000" flood-opacity="0.25"/>
     </filter>
-    <filter id="stateShadowHover" x="-8%" y="-8%" width="120%" height="125%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1a1a1a" flood-opacity="0.2"/>
+    <filter id="stateShadowHover" x="-10%" y="-10%" width="125%" height="130%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#c8a23a" flood-opacity="0.35"/>
     </filter>
     <pattern id="mapGrid" width="48" height="48" patternUnits="userSpaceOnUse">
-      <path d="M 48 0 L 0 0 0 48" fill="none" stroke="rgba(255,255,255,0.018)" stroke-width="0.5"/>
+      <path d="M 48 0 L 0 0 0 48" fill="none" stroke="rgba(255,255,255,0.025)" stroke-width="0.5"/>
     </pattern>`;
   defs.appendChild(oceanGrad);
   svg.appendChild(defs);
@@ -3296,10 +3296,13 @@ function wireFederalEvents() {
 }
 
 /**
- * Intersection Observer — staggered reveal on scroll for cards
+ * Intersection Observer — staggered reveal on scroll for cards & tiles
  */
 function initCardRevealObserver() {
   if (typeof IntersectionObserver === 'undefined') return;
+
+  // Respect prefers-reduced-motion
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
@@ -3309,14 +3312,33 @@ function initCardRevealObserver() {
       }
     });
   }, {
-    threshold: 0.15,
-    rootMargin: '0px 0px -50px 0px',
+    threshold: 0.1,
+    rootMargin: '0px 0px -40px 0px',
   });
 
-  // Observe all cards in the grid
+  // Observe all cards in the grid with stagger delay
   const cards = document.querySelectorAll('#ltgCardGrid .ltg-card');
-  cards.forEach((card) => {
+  cards.forEach((card, i) => {
+    if (reducedMotion) {
+      card.style.opacity = '1';
+      card.style.transform = 'none';
+      return;
+    }
     card.setAttribute('data-reveal', '');
+    card.style.transitionDelay = `${Math.min(i, 6) * 60}ms`;
     observer.observe(card);
+  });
+
+  // Observe all tiles with stagger delay
+  const tiles = document.querySelectorAll('.ltg-tile-grid .ltg-tile');
+  tiles.forEach((tile, i) => {
+    if (reducedMotion) {
+      tile.style.opacity = '1';
+      tile.style.transform = 'none';
+      return;
+    }
+    tile.setAttribute('data-reveal', '');
+    tile.style.transitionDelay = `${Math.min(i, 6) * 60}ms`;
+    observer.observe(tile);
   });
 }

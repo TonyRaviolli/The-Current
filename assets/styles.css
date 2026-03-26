@@ -2996,14 +2996,21 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   .leg-map-section { grid-template-columns: 1fr; }
 }
 
-/* ── US Map — container aligned to page palette ──────────────────── */
+/* ── US Map — dark editorial ocean container ─────────────────────── */
 .leg-map-container {
   position: relative;
-  padding: var(--sp-4);
-  border: 1px solid var(--leg-border);
-  border-radius: 12px;
-  background: hsl(205, 45%, 82%);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  padding: 24px;
+  border: 1px solid oklch(1 0 0 / 0.06);
+  border-radius: 14px;
+  background: linear-gradient(
+    135deg,
+    oklch(0.16 0.025 240) 0%,
+    oklch(0.20 0.030 230) 50%,
+    oklch(0.14 0.020 250) 100%
+  );
+  box-shadow:
+    inset 0 0 80px oklch(0 0 0 / 0.3),
+    0 4px 24px oklch(0 0 0 / 0.25);
   overflow: hidden;
 }
 .leg-map-svg {
@@ -3014,21 +3021,24 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   display: block;
 }
 .leg-map-divider {
-  stroke: var(--leg-border);
+  stroke: oklch(1 0 0 / 0.1);
   stroke-width: 0.5;
   stroke-dasharray: 4 3;
 }
 
-/* ── Warm Topo fill palette (4-tone, four-color theorem) ─────────── */
+/* ── Dark Jewel fill palette (6-tone, adjacency-safe) ────────────── */
 .leg-page {
-  --map-state-1: hsl(140, 35%, 70%);     /* sage */
-  --map-state-2: hsl(35, 55%, 65%);      /* sandstone */
-  --map-state-3: hsl(175, 30%, 68%);     /* dusty teal */
-  --map-state-4: hsl(25, 30%, 72%);      /* warm taupe */
-  --map-border: rgba(255,255,255,0.6);    /* white state borders */
-  --map-border-outer: hsl(25, 20%, 45%); /* darker country outline */
-  --map-selected: hsl(20, 70%, 50%);     /* warm rust for selection */
-  --map-hover-stroke: hsl(25, 60%, 45%); /* warm brown-orange hover */
+  --map-fill-1: oklch(0.38 0.06 250);   /* deep sapphire */
+  --map-fill-2: oklch(0.36 0.06 160);   /* dark emerald */
+  --map-fill-3: oklch(0.37 0.05 30);    /* muted garnet */
+  --map-fill-4: oklch(0.38 0.05 75);    /* dark amber */
+  --map-fill-5: oklch(0.36 0.06 210);   /* deep teal */
+  --map-fill-6: oklch(0.37 0.05 310);   /* twilight plum */
+  --map-border: oklch(1 0 0 / 0.12);
+  --map-hover-fill: oklch(0.55 0.14 75);
+  --map-hover-stroke: oklch(0.65 0.16 55);
+  --map-selected-fill: oklch(0.58 0.18 75);
+  --map-selected-stroke: oklch(0.65 0.20 65);
 }
 
 /* ── State groups (3D shadow via filter on <g>) ──────────────────────── */
@@ -3037,40 +3047,44 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 }
 /* noise overlay removed — clean state fills */
 
-/* ── State paths — page-consistent borders ────────────────────────── */
+/* ── State paths — ghostly white borders on dark jewel fills ───────── */
 .leg-state-path {
   stroke: var(--map-border);
-  stroke-width: 1;
+  stroke-width: 0.8px;
   cursor: pointer;
-  transition: filter 200ms ease, stroke 200ms ease, stroke-width 200ms ease;
+  transition: fill 180ms ease, stroke 180ms ease, stroke-width 180ms ease, filter 180ms ease;
   animation: legStateEnter 400ms ease both;
   outline: none;
 }
-.leg-state-c1 { fill: var(--map-state-1); }
-.leg-state-c2 { fill: var(--map-state-2); }
-.leg-state-c3 { fill: var(--map-state-3); }
-.leg-state-c4 { fill: var(--map-state-4); }
+.leg-state-c1 { fill: var(--map-fill-1); }
+.leg-state-c2 { fill: var(--map-fill-2); }
+.leg-state-c3 { fill: var(--map-fill-3); }
+.leg-state-c4 { fill: var(--map-fill-4); }
+.leg-state-c5 { fill: var(--map-fill-5); }
+.leg-state-c6 { fill: var(--map-fill-6); }
 
-/* Channel 1: Map hover — warm stroke + subtle brightness lift, no scale/transform */
+/* Channel 1: Map hover — warm amber lift with drop shadow */
 .leg-state-path--hovered {
+  fill: var(--map-hover-fill);
   stroke: var(--map-hover-stroke);
-  stroke-width: 2;
-  filter: brightness(1.1) drop-shadow(0 2px 6px rgba(0,0,0,0.2));
+  stroke-width: 1.8px;
+  filter: drop-shadow(0 0 12px oklch(0.55 0.16 75 / 0.4));
 }
 .leg-state-path:focus-visible {
   outline: 2px solid var(--map-hover-stroke);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 
-/* Channels 2 & 3: Map selection — warm rust ring + soft glow */
+/* Channels 2 & 3: Map selection — full gold with stronger glow */
 .leg-state-path--selected {
-  stroke: var(--map-selected);
-  stroke-width: 2.5;
-  filter: drop-shadow(0 0 8px rgba(180,90,40,0.35));
+  fill: var(--map-selected-fill);
+  stroke: var(--map-selected-stroke);
+  stroke-width: 2.2px;
+  filter: drop-shadow(0 0 16px oklch(0.58 0.20 75 / 0.45));
 }
-/* Both can coexist: selected + hovered keeps selection glow with brightness lift */
+/* Both can coexist: selected + hovered keeps gold glow with brightness lift */
 .leg-state-path--selected.leg-state-path--hovered {
-  filter: brightness(1.08) drop-shadow(0 0 8px rgba(180,90,40,0.35));
+  filter: brightness(1.08) drop-shadow(0 0 16px oklch(0.58 0.20 75 / 0.45));
 }
 
 /* Active/live-data: same border as all states */
@@ -3087,7 +3101,7 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 
 /* MAP PRECISION v2 — Search-driven map highlight (pulsing ring) */
 .leg-state-path--search-match {
-  stroke: var(--leg-accent);
+  stroke: oklch(0.58 0.18 75);
   stroke-width: 1.8;
   animation: legSearchPulse 1.2s ease-in-out infinite;
 }
@@ -3098,7 +3112,7 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 
 /* MAP PRECISION v2 — Pinned state indicator */
 .leg-state-path--pinned {
-  stroke: var(--leg-accent);
+  stroke: oklch(0.58 0.18 75);
   stroke-width: 2.5;
   stroke-dasharray: 4 2;
 }
@@ -3136,11 +3150,11 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   flex-direction: column;
   gap: 5px;
   padding: 12px 16px 12px 18px;
-  background: var(--leg-surface, #161921);
-  border: 1px solid var(--leg-border, #252932);
-  border-left: 3px solid var(--leg-text-secondary);
+  background: oklch(0.15 0.012 255);
+  border: 1px solid oklch(1 0 0 / 0.08);
+  border-left: 3px solid oklch(0.58 0.18 75);
   border-radius: 6px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+  box-shadow: 0 8px 32px oklch(0 0 0 / 0.5), 0 2px 8px oklch(0 0 0 / 0.3);
   max-width: 280px;
   transition: border-left-width 150ms ease, transform 150ms ease, box-shadow 150ms ease;
 }
@@ -3185,8 +3199,8 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   color: var(--leg-text-secondary, #7a8190);
   letter-spacing: 0.03em;
 }
-.leg-tooltip-passed { color: var(--leg-passed); }
-.leg-tooltip-proposed { color: var(--leg-proposed); }
+.leg-tooltip-passed { color: oklch(0.62 0.17 150); }
+.leg-tooltip-proposed { color: oklch(0.62 0.14 250); }
 .leg-tooltip-date {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.6rem;
@@ -3224,8 +3238,8 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
   box-sizing: border-box;
 }
 .leg-search-input:focus {
-  border-color: var(--leg-accent-alt);
-  box-shadow: 0 0 0 2px rgba(74,158,255,0.2);
+  border-color: oklch(0.55 0.14 75);
+  box-shadow: 0 0 0 2px oklch(0.55 0.14 75 / 0.2);
 }
 .leg-search-input::placeholder { color: var(--leg-text-secondary); opacity: 0.6; }
 
@@ -3261,24 +3275,24 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 }
 /* Channel 3: native CSS hover on sidebar list items (sidebar-only, no map effect) */
 .leg-state-item:hover {
-  background: rgba(74,158,255,0.08);
+  background: oklch(0.55 0.14 75 / 0.08);
   color: var(--leg-text-primary);
-  border-left-color: var(--leg-accent-alt);
+  border-left-color: oklch(0.55 0.14 75);
 }
 .leg-state-item:focus-visible {
-  outline: 2px solid var(--leg-accent-alt);
+  outline: 2px solid oklch(0.55 0.14 75);
   outline-offset: -2px;
 }
 /* Channel 3: search match highlight (sidebar-only) */
 .leg-state-item--search-match {
-  background: rgba(74,158,255,0.06);
+  background: oklch(0.55 0.14 75 / 0.06);
   color: var(--leg-text-primary);
 }
 /* Channels 2 & 3: persistent selection (set by click from map or sidebar) */
 .leg-state-item--selected {
-  background: rgba(200,169,110,0.12);
-  border-left-color: var(--leg-accent);
-  color: var(--leg-accent);
+  background: oklch(0.58 0.18 75 / 0.12);
+  border-left-color: oklch(0.58 0.18 75);
+  color: oklch(0.58 0.18 75);
 }
 .leg-state-item--hidden {
   max-height: 0;
