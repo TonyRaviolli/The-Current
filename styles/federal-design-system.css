@@ -457,7 +457,7 @@
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: oklch(1 0 0 / 0.4);
+  color: oklch(1 0 0 / 0.5);
   text-align: left;
   margin-bottom: 16px;
 }
@@ -671,7 +671,7 @@
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: oklch(1 0 0 / 0.85);
+  color: oklch(1 0 0);
   margin: 0;
 }
 
@@ -711,7 +711,7 @@
 .ltg-card-summary {
   font-family: var(--ltg-font-body);
   font-size: 12.5px;
-  color: oklch(1 0 0 / 0.6);
+  color: oklch(1 0 0 / 0.75);
   line-height: 1.45;
   margin: 0;
   display: -webkit-box;
@@ -732,7 +732,7 @@
 .ltg-card-date {
   font-family: var(--ltg-font-mono);
   font-size: 10.5px;
-  color: oklch(1 0 0 / 0.4);
+  color: oklch(1 0 0 / 0.55);
 }
 .ltg-card-more {
   font-family: var(--ltg-font-ui);
@@ -744,10 +744,6 @@
   align-items: center;
   gap: 4px;
 }
-.ltg-card-more-arrow {
-  transition: transform 200ms ease;
-}
-
 /* ── Card Hover ──────────────────────────────────────────────────────── */
 .ltg-card:hover {
   transform: translateY(-3px);
@@ -755,21 +751,6 @@
 }
 .ltg-card:hover .ltg-card-header {
   filter: brightness(1.08);
-}
-.ltg-card:hover .ltg-card-more-arrow {
-  transform: translateX(4px);
-}
-
-/* Focus */
-.ltg-card:focus-visible {
-  outline: 2px solid var(--card-topic-color, oklch(0.62 0.14 250));
-  outline-offset: 2px;
-}
-
-/* Spotlight effect — dim siblings */
-.ltg-card-grid:has(.ltg-card:hover) .ltg-card:not(:hover) {
-  opacity: 0.85;
-  transition: opacity 0.25s ease;
 }
 
 /* ── Expanded card spans full grid width ─────────────────────────────── */
@@ -1194,10 +1175,20 @@
    §18  READABILITY GUARANTEES — Gradient Editorial (Dark)
    ══════════════════════════════════════════════════════════════════════════
    Contrast on dark canvas oklch(0.13–0.17):
-   - Primary   oklch(0.95) → ~13:1 on dark surface ✓
-   - Secondary oklch(0.78) → ~8:1 ✓
-   - Muted     oklch(0.65) → ~5.5:1 ✓ (body text minimum)
-   - Faint     oklch(0.50) → ~3.2:1 (decorative/labels only)
-   - Jewel tones L=0.62 → ~4.8:1 on dark bg ✓ (WCAG AA large text)
-   - Category colors never sole info carrier — always paired with text labels
+   - Primary   oklch(0.95)       → ~13:1 on dark surface ✓
+   - Secondary oklch(0.78)       → ~8:1 ✓
+   - Muted     oklch(0.65)       → ~5.5:1 ✓ (body text minimum)
+   - Faint     oklch(0.50)       → ~3.2:1 (decorative/labels only)
+
+   Contrast on card bodies oklch(0.30):
+   - Card title  oklch(1 0 0/0.95) → ~5.7:1 ✓ (WCAG AA)
+   - Card summary oklch(1 0 0/0.75) → ~4.7:1 ✓ (WCAG AA)
+   - Card date   oklch(1 0 0/0.55) → ~3.5:1 (mono UI, decorative)
+
+   On category headers (L=0.62):
+   - Category label oklch(1 0 0) → ~2.5:1 (11px 600wt uppercase)
+   - White text on vivid color: contrast supplemented by semantic
+     redundancy — category always repeated in tile selection + tooltip
+
+   Category colors never sole info carrier — always paired with text labels
    ══════════════════════════════════════════════════════════════════════════ */

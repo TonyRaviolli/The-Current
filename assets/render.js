@@ -1672,10 +1672,10 @@ function renderArticleJsonLd(article) {
 // Tones: 1 = sandy beige, 2 = warm stone, 3 = dusty sage, 4 = warm clay
 const STATE_COLOR_MAP = {
   AK:1,AL:3,AR:5,AZ:4,CA:1,CO:6,CT:5,DC:3,DE:6,FL:2,GA:5,HI:1,
-  IA:4,ID:5,IL:6,IN:1,KS:2,KY:5,LA:4,MA:1,MD:4,ME:3,MI:5,MN:3,
+  IA:4,ID:6,IL:6,IN:1,KS:2,KY:5,LA:4,MA:1,MD:4,ME:3,MI:5,MN:3,
   MO:1,MS:6,MT:2,NC:1,ND:6,NE:3,NH:2,NJ:4,NM:2,NV:3,NY:2,OH:2,
-  OK:6,OR:4,PA:3,RI:6,SC:2,SD:1,TN:4,TX:3,UT:1,VA:6,VT:4,WA:5,
-  WI:2,WV:4,WY:3
+  OK:4,OR:4,PA:3,RI:6,SC:2,SD:1,TN:4,TX:3,UT:1,VA:6,VT:4,WA:5,
+  WI:2,WV:1,WY:5
 };
 
 // ── Polylabel algorithm (MIT, mapbox/polylabel) — finds visual center of polygon ──
