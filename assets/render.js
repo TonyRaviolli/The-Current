@@ -3048,11 +3048,9 @@ function buildTopicTiles() {
 
 function buildTile(key, cfg, count, isActive) {
   const esc = escapeHtml;
-  const glow = cfg.glow || 'oklch(0 0 0 / 0.2)';
   return `<button type="button"
     class="ltg-tile"
     data-topic="${esc(key)}"
-    style="--tile-color:${cfg.color};--tile-color-dark:${cfg.dark};--tile-cat-glow:${glow}"
     aria-pressed="${isActive}"
     aria-label="${esc(cfg.label)}">
     <span class="ltg-tile-name">${esc(cfg.label)}</span>
@@ -3137,36 +3135,70 @@ function renderCardGrid() {
   const esc = escapeHtml;
   const dtf = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-  let html = '';
-  items.forEach((item, i) => {
+  // Build card HTML for a single item
+  function buildCard(item, i) {
     const topicCfg = TOPIC_CONFIG[item.category];
     const color = topicCfg?.color || 'oklch(0.5 0 0)';
     const dark = topicCfg?.dark || 'oklch(0.30 0.08 250)';
-    const glow = topicCfg?.glow || 'oklch(0.5 0 0 / 0.15)';
     const dateStr = item.date ? dtf.format(new Date(item.date + 'T12:00:00')) : '';
     const badgeClass = getStatusBadgeClass(item.status);
     const statusText = item.status.replace('_', ' ').toUpperCase();
-    const summaryShort = item.summary.length > 180 ? item.summary.slice(0, 180) + '\u2026' : item.summary;
-
+    const summaryShort = item.summary.length > 220 ? item.summary.slice(0, 220) + '\u2026' : item.summary;
     const cardTitleId = `ltg-card-title-${i}`;
-    html += `<article class="ltg-card" style="--card-index:${i};--card-topic-color:${color};--card-topic-dark:${dark};--card-topic-glow:${glow}" tabindex="0" aria-labelledby="${cardTitleId}" data-category="${esc(item.category)}"${item.url ? ` data-href="${esc(item.url)}"` : ''}>
+
+    // Type label based on item type
+    const typeLabel = item.type === 'bill'
+      ? 'THE STORIES BEHIND THE BILLS:'
+      : item.type === 'eo'
+        ? 'EXECUTIVE ACTION:'
+        : 'SUPREME COURT:';
+
+    // CTA text based on type
+    const ctaText = item.type === 'bill'
+      ? 'Read Full Analysis'
+      : item.type === 'eo'
+        ? 'Read Executive Order'
+        : 'Read Opinion';
+
+    // SVG topic illustration for image zone
+    const iconSvg = topicCfg?.svg || '';
+    const illustration = `<svg class="ltg-card-illustration" viewBox="0 0 20 20" fill="none" stroke="oklch(1 0 0 / 0.15)" stroke-width="1.2" aria-hidden="true">${iconSvg}</svg>`;
+
+    return `<article class="ltg-card" style="--card-index:${i}" tabindex="0" aria-labelledby="${cardTitleId}" data-category="${esc(item.category)}"${item.url ? ` data-href="${esc(item.url)}"` : ''}>
       <div class="ltg-card-header" style="background:${color}">
-        <span class="ltg-card-category">${esc(topicCfg?.label || item.category)}</span>
+        ${illustration}
         <div class="ltg-card-badges">
           <span class="ltg-badge ${badgeClass}" aria-label="Status: ${esc(statusText)}">${esc(statusText)}</span>
           ${item.chamber ? `<span class="ltg-badge ltg-badge--chamber">${esc(item.chamber)}</span>` : ''}
         </div>
       </div>
-      <div class="ltg-card-body" style="background:${dark}">
+      <div class="ltg-card-body">
+        <span class="ltg-card-type-label">${typeLabel}</span>
         <h3 class="ltg-card-title" id="${cardTitleId}">${esc(item.title)}</h3>
         <p class="ltg-card-summary">${esc(summaryShort)}</p>
         <div class="ltg-card-footer">
-          <span class="ltg-card-date">${dateStr}</span>
-          <span class="ltg-card-more" style="color:${color}">Read More <svg class="ltg-card-more-arrow" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></span>
+          <span class="ltg-card-more">${esc(ctaText)} <svg class="ltg-card-more-arrow" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></span>
         </div>
       </div>
     </article>`;
-  });
+  }
+
+  // Hero row: first 2 items in asymmetric 7fr/5fr grid
+  let html = '<div class="ltg-card-hero-row">';
+  const heroCount = Math.min(items.length, 2);
+  for (let i = 0; i < heroCount; i++) {
+    html += buildCard(items[i], i);
+  }
+  html += '</div>';
+
+  // Remaining items: 3-column grid
+  if (items.length > 2) {
+    html += '<div class="ltg-card-flow-grid">';
+    for (let i = 2; i < items.length; i++) {
+      html += buildCard(items[i], i);
+    }
+    html += '</div>';
+  }
 
   grid.innerHTML = html;
 }
