@@ -26,7 +26,7 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
 import { US_STATES } from './us-states.js';
-import { US_STATES_TOPO, MAP_VIEWBOX } from './us-states-topo.js';
+import { US_STATES_SVG_PATHS, US_STATES_SVG_VIEWBOX } from './us-states-svg.js';
 
 // ── Feed size caps (adjust here to change across all tier sections) ───────────
 const FEED_MAX_STORIES = 10; // total articles shown across Tier 1/2/3 on briefing tab
@@ -1902,7 +1902,7 @@ export function renderUSMap(container) {
   legMapSelectedState = null;
 
   // Populate name lookup from canonical US_STATES (for selectState + panel)
-  US_STATES_TOPO.forEach((s) => { STATE_NAMES[s.id] = s.name; });
+  US_STATES_SVG_PATHS.forEach((s) => { STATE_NAMES[s.id] = s.name; });
 
   // Shared tooltip singleton
   if (!legMapTooltip) {
@@ -1913,24 +1913,26 @@ export function renderUSMap(container) {
   }
   legMapTooltip.style.display = 'none';
 
-  // Build transparent SVG overlay matching the PNG aspect
+  // Build inline SVG map — hit paths ARE the rendered state borders
+  // (no separate background image; overlay/background cannot drift).
   const svgNS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('viewBox', `0 0 ${MAP_VIEWBOX.w} ${MAP_VIEWBOX.h}`);
+  const vb = US_STATES_SVG_VIEWBOX;
+  svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-  svg.setAttribute('class', 'leg-map-svg leg-map-svg--overlay');
+  svg.setAttribute('class', 'leg-map-svg');
   svg.setAttribute('role', 'img');
   svg.setAttribute('aria-label', 'Interactive map of the United States — select a state');
 
-  // Per-state hit polygons (transparent by default; CSS tints on interaction)
-  US_STATES_TOPO.forEach((state) => {
+  // One path per state — single layer, single source of truth.
+  US_STATES_SVG_PATHS.forEach((state) => {
     const g = document.createElementNS(svgNS, 'g');
     g.setAttribute('class', 'leg-state-group');
     g.setAttribute('data-state', state.id);
     g.setAttribute('data-state-name', state.name);
 
     const path = document.createElementNS(svgNS, 'path');
-    path.setAttribute('d', state.path);
+    path.setAttribute('d', state.d);
     path.setAttribute('class', 'leg-state-hit');
     path.setAttribute('aria-label', state.name);
     path.setAttribute('role', 'button');
@@ -2066,7 +2068,7 @@ function wireUpMapSearch(svg) {
     clearSearchHighlights();
     if (!q) return [];
     const matches = [];
-    US_STATES_TOPO.forEach((s) => {
+    US_STATES_SVG_PATHS.forEach((s) => {
       const hay = (s.name + ' ' + s.id).toLowerCase();
       if (hay.includes(q)) {
         matches.push(s.id);
@@ -2538,7 +2540,6 @@ const TOPIC_CONFIG = {
 
 let fedState = {
   initialized: false,
-  data: { bills: [], orders: [], cases: [] },
   allItems: [],
   activeTopics: new Set(),
   recentOpen: false,
@@ -2565,24 +2566,96 @@ function slugToTopic(slug) {
 
 /* ── Topic-Grid Federal Dashboard ────────────────────────────── */
 
+// Federal source IDs (from config/sources.json) → dashboard item type.
+// `bill` covers bills/rules/announcements; `eo` covers White House press/EOs;
+// `scotus` covers Supreme Court opinions.
+const FEDERAL_SOURCE_TYPE = {
+  'federal-register-api': 'bill',
+  'congress-bills-api': 'bill',
+  'govinfo-bills-api': 'bill',
+  'federal-reserve': 'bill',
+  'whitehouse-briefing': 'eo',
+  'whitehouse-archive': 'eo',
+  'supreme-court-opinions': 'scotus',
+};
+
+// Canonical feed topic → TOPIC_CONFIG category (priority: first match wins).
+const FEED_TOPIC_TO_CATEGORY = [
+  ['health', 'Healthcare'],
+  ['healthcare', 'Healthcare'],
+  ['education', 'Education'],
+  ['labor', 'Economy & Taxes'],
+  ['housing', 'Infrastructure'],
+  ['infrastructure', 'Infrastructure'],
+  ['energy', 'Environment'],
+  ['climate', 'Environment'],
+  ['defense', 'Public Safety'],
+  ['cyber', 'Public Safety'],
+  ['finance', 'Economy & Taxes'],
+  ['banking', 'Economy & Taxes'],
+  ['macroeconomics', 'Economy & Taxes'],
+  ['economy', 'Economy & Taxes'],
+  ['global_trade', 'Economy & Taxes'],
+  ['law', 'Law'],
+  ['elections', 'Civil Rights'],
+  ['uspolitics', 'Law'],
+];
+
+function articleCategory(article) {
+  const topics = Array.isArray(article.topics) ? article.topics : [];
+  for (const [feedTopic, cat] of FEED_TOPIC_TO_CATEGORY) {
+    if (topics.includes(feedTopic)) return cat;
+  }
+  return 'Law';
+}
+
+async function loadFederalData() {
+  try {
+    const res = await fetch('/api/feed');
+    if (!res.ok) throw new Error('feed fetch failed');
+    const payload = await res.json();
+    const articles = payload.articles || payload.items || payload.stories || [];
+    const items = [];
+    for (const a of articles) {
+      const type = FEDERAL_SOURCE_TYPE[a.sourceId];
+      if (!type) continue;
+      items.push({
+        type,
+        id: a.id,
+        title: a.title,
+        summary: a.summary || '',
+        category: articleCategory(a),
+        status: type === 'scotus' ? 'pending' : type === 'eo' ? 'signed' : 'proposed',
+        date: a.publishedAt ? String(a.publishedAt).slice(0, 10) : null,
+        sponsor: a.source || '',
+        chamber: null,
+        impact: null,
+        voteSplit: null,
+        opinion: null,
+        url: a.url || null,
+      });
+    }
+    items.sort((a, b) => {
+      if (!a.date && !b.date) return 0;
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return new Date(b.date) - new Date(a.date);
+    });
+    return items;
+  } catch {
+    return [];
+  }
+}
+
 export async function renderFederalDashboard() {
   if (fedState.initialized) return;
 
   // Show skeleton loaders
   insertCardSkeletons();
 
-  // Load federal data
-  try {
-    const mod = await import('./legislation.js');
-    fedState.data.bills = mod.FEDERAL_BILLS || [];
-    fedState.data.orders = mod.EXECUTIVE_ORDERS || [];
-    fedState.data.cases = mod.SCOTUS_CASES || [];
-  } catch {
-    fedState.data = { bills: [], orders: [], cases: [] };
-  }
-
+  // Load federal data live from /api/feed (filters 7 federal source IDs).
+  fedState.allItems = await loadFederalData();
   fedState.initialized = true;
-  fedState.allItems = normalizeAllItems();
 
   // Sync from URL params
   syncFromUrl();
@@ -2603,67 +2676,6 @@ export async function renderFederalDashboard() {
 
   // Wire all events
   wireFederalEvents();
-}
-
-/**
- * Flatten bills, EOs, and SCOTUS cases into a single sorted array
- */
-function normalizeAllItems() {
-  const items = [];
-  const esc = escapeHtml;
-
-  for (const bill of fedState.data.bills) {
-    items.push({
-      type: 'bill',
-      id: bill.id,
-      title: bill.title,
-      summary: bill.summary,
-      category: bill.category || 'Law',
-      status: bill.status || 'proposed',
-      date: bill.enacted || bill.introduced,
-      chamber: bill.chamber,
-      sponsor: bill.sponsor || '',
-      url: bill.fullTextUrl || null,
-    });
-  }
-
-  for (const eo of fedState.data.orders) {
-    items.push({
-      type: 'eo',
-      id: eo.id,
-      title: eo.title,
-      summary: eo.summary,
-      category: eo.category || 'Law',
-      status: 'signed',
-      date: eo.signedDate,
-      impact: eo.impact,
-      url: eo.federalRegisterUrl || null,
-    });
-  }
-
-  for (const sc of fedState.data.cases) {
-    items.push({
-      type: 'scotus',
-      id: sc.docket,
-      title: sc.name,
-      summary: sc.summary,
-      category: sc.category || 'Law',
-      status: sc.status || 'pending',
-      date: sc.decisionDate || null,
-      voteSplit: sc.voteSplit || null,
-      opinion: sc.opinion || null,
-    });
-  }
-
-  // Sort by date descending (null dates go last)
-  items.sort((a, b) => {
-    if (!a.date && !b.date) return 0;
-    if (!a.date) return 1;
-    if (!b.date) return -1;
-    return new Date(b.date) - new Date(a.date);
-  });
-
-  return items;
 }
 
 /**
