@@ -1,21 +1,13 @@
-// legislation.js — Mock US state legislation data for all 50 states + DC
+// legislation.js — US state legislation data for all 50 states + DC
+// Statuses: passed | in_process | proposed
 // Categories: Healthcare, Education, Environment, Criminal Justice, Economy & Taxes, Civil Rights, Infrastructure, Public Safety, Other
 
-export const STATE_FIPS = {
-  AL: '01', AK: '02', AZ: '04', AR: '05', CA: '06', CO: '08', CT: '09',
-  DE: '10', DC: '11', FL: '12', GA: '13', HI: '15', ID: '16', IL: '17',
-  IN: '18', IA: '19', KS: '20', KY: '21', LA: '22', ME: '23', MD: '24',
-  MA: '25', MI: '26', MN: '27', MS: '28', MO: '29', MT: '30', NE: '31',
-  NV: '32', NH: '33', NJ: '34', NM: '35', NY: '36', NC: '37', ND: '38',
-  OH: '39', OK: '40', OR: '41', PA: '42', RI: '44', SC: '45', SD: '46',
-  TN: '47', TX: '48', UT: '49', VT: '50', VA: '51', WA: '53', WV: '54',
-  WI: '55', WY: '56'
-};
+export const STATE_FIPS = {AL: "01", AK: "02", AZ: "04", AR: "05", CA: "06", CO: "08", CT: "09", DE: "10", DC: "11", FL: "12", GA: "13", HI: "15", ID: "16", IL: "17", IN: "18", IA: "19", KS: "20", KY: "21", LA: "22", ME: "23", MD: "24", MA: "25", MI: "26", MN: "27", MS: "28", MO: "29", MT: "30", NE: "31", NV: "32", NH: "33", NJ: "34", NM: "35", NY: "36", NC: "37", ND: "38", OH: "39", OK: "40", OR: "41", PA: "42", RI: "44", SC: "45", SD: "46", TN: "47", TX: "48", UT: "49", VT: "50", VA: "51", WA: "53", WV: "54", WI: "55", WY: "56"};
 
 export const STATE_LEGISLATION = {
 
   // ──────────────────────────────────────────────
-  // CALIFORNIA — 10 bills
+  // CALIFORNIA
   // ──────────────────────────────────────────────
   CA: {
     state: "California",
@@ -23,7 +15,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 10,
     passed: 5,
-    proposed: 5,
+    inProcess: 2,
+    proposed: 3,
     topCategory: "Environment",
     bills: [
       {
@@ -90,8 +83,9 @@ export const STATE_LEGISLATION = {
         id: "AB-1589",
         title: "Prescription Drug Price Transparency Act",
         category: "Healthcare",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-22",
+        lastActionDate: "2025-02-24",
         enacted: null,
         summary: "Requires pharmaceutical manufacturers to justify price increases exceeding 10% annually and submit cost breakdowns to the state Office of Health Care Affordability for public review.",
         keyProvisions: ["10% price increase threshold trigger", "Cost breakdown disclosure", "Public review via OHCA"],
@@ -138,8 +132,9 @@ export const STATE_LEGISLATION = {
         id: "AB-2750",
         title: "Mental Health Crisis Response Diversion Act",
         category: "Public Safety",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-03-10",
+        lastActionDate: "2025-05-02",
         enacted: null,
         summary: "Funds mobile mental health crisis teams as first responders to non-violent 911 calls involving behavioral health emergencies. Diverts $180 million from county jail budgets to crisis services.",
         keyProvisions: ["Mobile crisis team deployment", "$180M budget reallocation", "Non-violent call diversion protocol"],
@@ -150,7 +145,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // TEXAS — 10 bills
+  // TEXAS
   // ──────────────────────────────────────────────
   TX: {
     state: "Texas",
@@ -158,7 +153,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 10,
     passed: 4,
-    proposed: 6,
+    inProcess: 2,
+    proposed: 4,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -201,8 +197,9 @@ export const STATE_LEGISLATION = {
         id: "HB-2789",
         title: "Rural Healthcare Access Expansion Act",
         category: "Healthcare",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-02-03",
+        lastActionDate: "2025-03-24",
         enacted: null,
         summary: "Establishes telehealth reimbursement parity for rural providers and creates a loan forgiveness program for physicians who practice in medically underserved counties for at least five years.",
         keyProvisions: ["Telehealth reimbursement parity", "Physician loan forgiveness", "Five-year rural practice commitment"],
@@ -225,8 +222,9 @@ export const STATE_LEGISLATION = {
         id: "HB-3456",
         title: "School Safety and Mental Health Act",
         category: "Education",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-02-20",
+        lastActionDate: "2025-03-16",
         enacted: null,
         summary: "Mandates armed security officers at every public school campus and funds school-based mental health counselors at a ratio of one per 250 students in districts above 5,000 enrollment.",
         keyProvisions: ["Armed campus security mandate", "1:250 counselor-to-student ratio", "Mental health screening protocols"],
@@ -285,7 +283,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // NEW YORK — 10 bills
+  // NEW YORK
   // ──────────────────────────────────────────────
   NY: {
     state: "New York",
@@ -293,7 +291,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 10,
     passed: 5,
-    proposed: 5,
+    inProcess: 2,
+    proposed: 3,
     topCategory: "Healthcare",
     bills: [
       {
@@ -336,8 +335,9 @@ export const STATE_LEGISLATION = {
         id: "AB-1234",
         title: "Congestion Pricing Revenue Allocation Act",
         category: "Infrastructure",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-10",
+        lastActionDate: "2025-01-31",
         enacted: null,
         summary: "Directs 60% of congestion pricing revenue to MTA subway modernization and 25% to bus rapid transit expansion. Mandates annual independent audits of toll revenue expenditures.",
         keyProvisions: ["60% to subway modernization", "25% to bus rapid transit", "Annual independent audits"],
@@ -408,8 +408,9 @@ export const STATE_LEGISLATION = {
         id: "AB-3378",
         title: "Ghost Gun Prohibition and Traceability Act",
         category: "Public Safety",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-03-12",
+        lastActionDate: "2025-04-08",
         enacted: null,
         summary: "Bans the sale and possession of unserialized firearms and unfinished frames or receivers. Requires all firearms in New York to have traceable serial numbers registered with state police.",
         keyProvisions: ["Unserialized firearm ban", "Unfinished receiver prohibition", "State police serial registration"],
@@ -420,7 +421,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // FLORIDA — 10 bills
+  // FLORIDA
   // ──────────────────────────────────────────────
   FL: {
     state: "Florida",
@@ -428,7 +429,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 10,
     passed: 5,
-    proposed: 5,
+    inProcess: 2,
+    proposed: 3,
     topCategory: "Public Safety",
     bills: [
       {
@@ -495,8 +497,9 @@ export const STATE_LEGISLATION = {
         id: "HB-3090",
         title: "Illegal Street Racing Enforcement Act",
         category: "Public Safety",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-02-01",
+        lastActionDate: "2025-03-31",
         enacted: null,
         summary: "Makes participation in organized street racing a third-degree felony on second offense. Authorizes vehicle seizure and forfeiture for repeat offenders and spectator accountability measures.",
         keyProvisions: ["Third-degree felony on second offense", "Vehicle seizure authority", "Spectator accountability"],
@@ -519,8 +522,9 @@ export const STATE_LEGISLATION = {
         id: "HB-4455",
         title: "Telehealth Expansion and Access Act",
         category: "Healthcare",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-02-28",
+        lastActionDate: "2025-03-16",
         enacted: null,
         summary: "Permanently authorizes telehealth visits for all Medicaid-covered services and requires private insurers to cover virtual visits at in-person reimbursement rates across all specialties.",
         keyProvisions: ["Permanent Medicaid telehealth coverage", "Reimbursement parity mandate", "All-specialty virtual visit coverage"],
@@ -555,7 +559,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // ILLINOIS — 10 bills
+  // ILLINOIS
   // ──────────────────────────────────────────────
   IL: {
     state: "Illinois",
@@ -563,7 +567,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 10,
     passed: 4,
-    proposed: 6,
+    inProcess: 2,
+    proposed: 4,
     topCategory: "Criminal Justice",
     bills: [
       {
@@ -582,8 +587,9 @@ export const STATE_LEGISLATION = {
         id: "HB-2340",
         title: "Chicago Transit Modernization Act",
         category: "Infrastructure",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-25",
+        lastActionDate: "2025-02-14",
         enacted: null,
         summary: "Authorizes $4.5 billion in bonds for CTA Red Line extension to 130th Street, Blue Line O'Hare modernization, and systemwide accessibility upgrades for ADA compliance by 2030.",
         keyProvisions: ["$4.5B transit bond authorization", "Red Line extension to 130th", "ADA compliance by 2030"],
@@ -678,8 +684,9 @@ export const STATE_LEGISLATION = {
         id: "HB-3210",
         title: "Police Accountability and Transparency Act",
         category: "Criminal Justice",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-03-12",
+        lastActionDate: "2025-04-21",
         enacted: null,
         summary: "Requires all law enforcement agencies to publish use-of-force data quarterly and creates an independent civilian oversight board with subpoena power for investigating police misconduct.",
         keyProvisions: ["Quarterly use-of-force reporting", "Independent civilian oversight board", "Subpoena power for investigations"],
@@ -690,7 +697,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // ALABAMA — 4 bills
+  // ALABAMA
   // ──────────────────────────────────────────────
   AL: {
     state: "Alabama",
@@ -698,7 +705,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Education",
     bills: [
       {
@@ -717,8 +725,9 @@ export const STATE_LEGISLATION = {
         id: "HB-230",
         title: "Rural Broadband Expansion Act",
         category: "Infrastructure",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-20",
+        lastActionDate: "2025-02-21",
         enacted: null,
         summary: "Allocates $300 million in federal matching funds for broadband deployment in unserved rural areas. Requires ISPs to offer affordable tiers under $30 per month in subsidized service areas.",
         keyProvisions: ["$300M broadband deployment fund", "$30/month affordable tier", "Federal matching requirement"],
@@ -753,7 +762,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // ALASKA — 4 bills
+  // ALASKA
   // ──────────────────────────────────────────────
   AK: {
     state: "Alaska",
@@ -761,7 +770,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -780,8 +790,9 @@ export const STATE_LEGISLATION = {
         id: "HB-118",
         title: "Arctic Infrastructure Resilience Act",
         category: "Infrastructure",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-15",
+        lastActionDate: "2025-03-07",
         enacted: null,
         summary: "Funds permafrost monitoring systems and adapts road and building foundations in communities experiencing accelerated thaw. Allocates $180 million for infrastructure climate adaptation.",
         keyProvisions: ["$180M adaptation funding", "Permafrost monitoring systems", "Foundation retrofit programs"],
@@ -816,7 +827,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // ARIZONA — 4 bills
+  // ARIZONA
   // ──────────────────────────────────────────────
   AZ: {
     state: "Arizona",
@@ -824,7 +835,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Infrastructure",
     bills: [
       {
@@ -843,8 +855,9 @@ export const STATE_LEGISLATION = {
         id: "HB-2345",
         title: "Border Community Safety Enhancement Act",
         category: "Public Safety",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-28",
+        lastActionDate: "2025-02-22",
         enacted: null,
         summary: "Provides $200 million for DPS border operations, surveillance cameras, and communication equipment. Establishes mutual aid agreements with county sheriffs along the international boundary.",
         keyProvisions: ["$200M DPS border funding", "Surveillance infrastructure", "Mutual aid agreements"],
@@ -879,7 +892,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // ARKANSAS — 4 bills
+  // ARKANSAS
   // ──────────────────────────────────────────────
   AR: {
     state: "Arkansas",
@@ -887,7 +900,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -906,8 +920,9 @@ export const STATE_LEGISLATION = {
         id: "HB-1345",
         title: "LEARNS Act Implementation Enhancement",
         category: "Education",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-22",
+        lastActionDate: "2025-02-23",
         enacted: null,
         summary: "Expands the LEARNS Act school voucher program with additional accountability measures for participating private schools including standardized testing and financial transparency requirements.",
         keyProvisions: ["Private school testing mandates", "Financial transparency rules", "Voucher program expansion"],
@@ -942,7 +957,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // COLORADO — 4 bills
+  // COLORADO
   // ──────────────────────────────────────────────
   CO: {
     state: "Colorado",
@@ -950,7 +965,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Environment",
     bills: [
       {
@@ -981,8 +997,9 @@ export const STATE_LEGISLATION = {
         id: "SB-25-190",
         title: "Wildfire Risk Reduction and Insurance Act",
         category: "Environment",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-02-18",
+        lastActionDate: "2025-03-15",
         enacted: null,
         summary: "Requires insurance companies to offer premium discounts for homes meeting Firewise community standards. Funds $150 million in community wildfire preparedness and forest management projects.",
         keyProvisions: ["Firewise premium discounts", "$150M preparedness funding", "Forest management expansion"],
@@ -1005,7 +1022,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // CONNECTICUT — 4 bills
+  // CONNECTICUT
   // ──────────────────────────────────────────────
   CT: {
     state: "Connecticut",
@@ -1013,7 +1030,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -1032,8 +1050,9 @@ export const STATE_LEGISLATION = {
         id: "HB-6890",
         title: "Gun Violence Prevention and Community Safety Act",
         category: "Public Safety",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-18",
+        lastActionDate: "2025-02-04",
         enacted: null,
         summary: "Funds community violence intervention programs in Hartford, New Haven, and Bridgeport. Requires safe storage of firearms in homes with minors and expands the ghost gun ban statewide.",
         keyProvisions: ["CVI program funding", "Safe storage mandate", "Ghost gun ban expansion"],
@@ -1068,7 +1087,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // DELAWARE — 4 bills
+  // DELAWARE
   // ──────────────────────────────────────────────
   DE: {
     state: "Delaware",
@@ -1076,7 +1095,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -1095,8 +1115,9 @@ export const STATE_LEGISLATION = {
         id: "HB-190",
         title: "Coastal Resilience and Sea Level Adaptation Act",
         category: "Environment",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-28",
+        lastActionDate: "2025-03-25",
         enacted: null,
         summary: "Establishes a $150 million fund for beach nourishment, wetland restoration, and relocation assistance for properties in high-risk flood zones along Delaware's 28 miles of coastline.",
         keyProvisions: ["$150M coastal fund", "Beach nourishment programs", "Flood zone relocation assistance"],
@@ -1131,7 +1152,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // DISTRICT OF COLUMBIA — 4 bills
+  // DISTRICT OF COLUMBIA
   // ──────────────────────────────────────────────
   DC: {
     state: "District of Columbia",
@@ -1139,15 +1160,17 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Civil Rights",
     bills: [
       {
         id: "B25-0102",
         title: "DC Statehood Advocacy and Preparation Act",
         category: "Civil Rights",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-15",
+        lastActionDate: "2025-02-07",
         enacted: null,
         summary: "Funds a national advocacy campaign for DC statehood and prepares administrative frameworks for transitioning to state governance including draft tax codes and judicial reorganization plans.",
         keyProvisions: ["National advocacy campaign", "Administrative transition planning", "Draft state governance frameworks"],
@@ -1194,7 +1217,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // GEORGIA — 4 bills
+  // GEORGIA
   // ──────────────────────────────────────────────
   GA: {
     state: "Georgia",
@@ -1202,7 +1225,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -1221,8 +1245,9 @@ export const STATE_LEGISLATION = {
         id: "HB-567",
         title: "Election Integrity and Access Act",
         category: "Civil Rights",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-02-01",
+        lastActionDate: "2025-03-27",
         enacted: null,
         summary: "Modifies early voting provisions to require a minimum of three weeks of early voting including two Saturdays. Standardizes drop box placement at one per 30,000 registered voters per county.",
         keyProvisions: ["Three-week early voting minimum", "Saturday voting mandate", "Standardized drop box ratios"],
@@ -1257,7 +1282,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // HAWAII — 4 bills
+  // HAWAII
   // ──────────────────────────────────────────────
   HI: {
     state: "Hawaii",
@@ -1265,7 +1290,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Environment",
     bills: [
       {
@@ -1308,8 +1334,9 @@ export const STATE_LEGISLATION = {
         id: "HB-901",
         title: "Coral Reef Protection and Restoration Act",
         category: "Environment",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-02-20",
+        lastActionDate: "2025-04-01",
         enacted: null,
         summary: "Bans reef-toxic sunscreens statewide and funds $40 million in coral nursery and restoration projects. Establishes marine protected area buffer zones around all major reef systems.",
         keyProvisions: ["Reef-toxic sunscreen ban", "$40M coral restoration funding", "Marine buffer zone expansion"],
@@ -1320,7 +1347,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // IDAHO — 4 bills
+  // IDAHO
   // ──────────────────────────────────────────────
   ID: {
     state: "Idaho",
@@ -1328,7 +1355,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -1347,8 +1375,9 @@ export const STATE_LEGISLATION = {
         id: "HB-234",
         title: "Public Lands Access Protection Act",
         category: "Other",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-18",
+        lastActionDate: "2025-02-23",
         enacted: null,
         summary: "Protects public access to state and federal lands by prohibiting private enclosure of traditional access routes. Establishes easement acquisition programs for landlocked public parcels.",
         keyProvisions: ["Access route protection", "Easement acquisition programs", "Landlocked parcel access"],
@@ -1383,7 +1412,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // INDIANA — 4 bills
+  // INDIANA
   // ──────────────────────────────────────────────
   IN: {
     state: "Indiana",
@@ -1391,7 +1420,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -1410,8 +1440,9 @@ export const STATE_LEGISLATION = {
         id: "HB-1234",
         title: "Maternal Mortality Prevention Act",
         category: "Healthcare",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-22",
+        lastActionDate: "2025-02-17",
         enacted: null,
         summary: "Extends postpartum Medicaid coverage to 12 months and mandates implicit bias training for obstetric providers. Establishes maternal mortality review committees in all Indiana hospital regions.",
         keyProvisions: ["12-month postpartum Medicaid", "Provider bias training", "Regional mortality review"],
@@ -1446,7 +1477,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // IOWA — 4 bills
+  // IOWA
   // ──────────────────────────────────────────────
   IA: {
     state: "Iowa",
@@ -1454,7 +1485,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Education",
     bills: [
       {
@@ -1473,8 +1505,9 @@ export const STATE_LEGISLATION = {
         id: "HF-678",
         title: "Iowa Water Quality Protection Act",
         category: "Environment",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-30",
+        lastActionDate: "2025-03-09",
         enacted: null,
         summary: "Establishes nutrient reduction targets for agricultural operations exceeding 500 acres and funds cover crop incentive payments to reduce nitrate runoff into the Des Moines and Raccoon rivers.",
         keyProvisions: ["Nutrient reduction targets", "Cover crop incentive payments", "Large operation requirements"],
@@ -1509,7 +1542,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // KANSAS — 4 bills
+  // KANSAS
   // ──────────────────────────────────────────────
   KS: {
     state: "Kansas",
@@ -1517,7 +1550,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -1536,8 +1570,9 @@ export const STATE_LEGISLATION = {
         id: "HB-2345",
         title: "Kansas Medicaid Expansion Act",
         category: "Healthcare",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-18",
+        lastActionDate: "2025-02-12",
         enacted: null,
         summary: "Expands Medicaid eligibility to adults earning up to 138% of the federal poverty level. Estimated to cover 150,000 uninsured Kansans and draw $1.5 billion in federal matching funds.",
         keyProvisions: ["138% FPL eligibility expansion", "150,000 newly covered residents", "$1.5B federal matching"],
@@ -1572,7 +1607,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // KENTUCKY — 4 bills
+  // KENTUCKY
   // ──────────────────────────────────────────────
   KY: {
     state: "Kentucky",
@@ -1580,7 +1615,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -1623,8 +1659,9 @@ export const STATE_LEGISLATION = {
         id: "HB-678",
         title: "Appalachian Health Workforce Pipeline Act",
         category: "Healthcare",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-02-10",
+        lastActionDate: "2025-04-11",
         enacted: null,
         summary: "Creates scholarship and loan forgiveness programs for healthcare workers who commit to practicing in Appalachian Kentucky for five years. Partners with regional universities and community colleges.",
         keyProvisions: ["Healthcare worker scholarships", "Five-year practice commitment", "Regional university partnerships"],
@@ -1635,7 +1672,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // LOUISIANA — 4 bills
+  // LOUISIANA
   // ──────────────────────────────────────────────
   LA: {
     state: "Louisiana",
@@ -1643,7 +1680,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Criminal Justice",
     bills: [
       {
@@ -1662,8 +1700,9 @@ export const STATE_LEGISLATION = {
         id: "HB-234",
         title: "Juvenile Justice Reform and Diversion Act",
         category: "Criminal Justice",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-20",
+        lastActionDate: "2025-02-25",
         enacted: null,
         summary: "Creates diversion programs for non-violent juvenile offenders as alternatives to detention. Funds community-based rehabilitation centers and raises the age of juvenile jurisdiction to 18.",
         keyProvisions: ["Non-violent diversion programs", "Community rehabilitation centers", "Juvenile age raised to 18"],
@@ -1698,7 +1737,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // MAINE — 4 bills
+  // MAINE
   // ──────────────────────────────────────────────
   ME: {
     state: "Maine",
@@ -1706,7 +1745,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Healthcare",
     bills: [
       {
@@ -1725,8 +1765,9 @@ export const STATE_LEGISLATION = {
         id: "LD-890",
         title: "Offshore Wind Economic Development Act",
         category: "Economy & Taxes",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-28",
+        lastActionDate: "2025-03-12",
         enacted: null,
         summary: "Streamlines permitting for floating offshore wind projects in the Gulf of Maine and establishes port infrastructure grants for communities positioned to support the emerging wind industry.",
         keyProvisions: ["Offshore wind permit streamlining", "Port infrastructure grants", "Floating wind technology focus"],
@@ -1761,7 +1802,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // MARYLAND — 4 bills
+  // MARYLAND
   // ──────────────────────────────────────────────
   MD: {
     state: "Maryland",
@@ -1769,7 +1810,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Environment",
     bills: [
       {
@@ -1788,8 +1830,9 @@ export const STATE_LEGISLATION = {
         id: "HB-567",
         title: "Community Violence Intervention Investment Act",
         category: "Public Safety",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-25",
+        lastActionDate: "2025-03-20",
         enacted: null,
         summary: "Invests $150 million over three years in evidence-based violence intervention programs in Baltimore City, Prince George's County, and other high-crime jurisdictions across the state.",
         keyProvisions: ["$150M three-year investment", "Evidence-based programs", "Baltimore City and PG County focus"],
@@ -1824,7 +1867,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // MASSACHUSETTS — 4 bills
+  // MASSACHUSETTS
   // ──────────────────────────────────────────────
   MA: {
     state: "Massachusetts",
@@ -1832,7 +1875,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Healthcare",
     bills: [
       {
@@ -1875,8 +1919,9 @@ export const STATE_LEGISLATION = {
         id: "HB-2100",
         title: "Clean Energy Siting Reform Act",
         category: "Environment",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-02-20",
+        lastActionDate: "2025-04-03",
         enacted: null,
         summary: "Streamlines permitting for solar, wind, and battery storage projects by establishing a centralized state siting board with authority to override local zoning restrictions for clean energy facilities.",
         keyProvisions: ["Centralized siting board", "Local zoning override authority", "Streamlined clean energy permits"],
@@ -1887,7 +1932,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // MICHIGAN — 4 bills
+  // MICHIGAN
   // ──────────────────────────────────────────────
   MI: {
     state: "Michigan",
@@ -1895,7 +1940,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Infrastructure",
     bills: [
       {
@@ -1938,8 +1984,9 @@ export const STATE_LEGISLATION = {
         id: "HB-1200",
         title: "Reproductive Freedom Implementation Act",
         category: "Civil Rights",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-02-15",
+        lastActionDate: "2025-03-10",
         enacted: null,
         summary: "Implements the voter-approved reproductive freedom constitutional amendment by repealing conflicting statutes and establishing clinic licensing standards consistent with medical best practices.",
         keyProvisions: ["Conflicting statute repeal", "Clinic licensing standards", "Medical best practice alignment"],
@@ -1950,7 +1997,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // MINNESOTA — 4 bills
+  // MINNESOTA
   // ──────────────────────────────────────────────
   MN: {
     state: "Minnesota",
@@ -1958,7 +2005,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Education",
     bills: [
       {
@@ -1977,8 +2025,9 @@ export const STATE_LEGISLATION = {
         id: "HF-567",
         title: "Paid Family Leave Implementation Act",
         category: "Civil Rights",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-18",
+        lastActionDate: "2025-02-19",
         enacted: null,
         summary: "Implements the voter-approved paid family and medical leave program beginning January 2026. Establishes premium rates, benefit calculations, and employer compliance requirements.",
         keyProvisions: ["January 2026 implementation", "Premium rate establishment", "Employer compliance framework"],
@@ -2013,7 +2062,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // MISSISSIPPI — 4 bills
+  // MISSISSIPPI
   // ──────────────────────────────────────────────
   MS: {
     state: "Mississippi",
@@ -2021,7 +2070,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Infrastructure",
     bills: [
       {
@@ -2064,8 +2114,9 @@ export const STATE_LEGISLATION = {
         id: "HB-890",
         title: "Rural Broadband Last-Mile Connectivity Act",
         category: "Infrastructure",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-02-12",
+        lastActionDate: "2025-02-27",
         enacted: null,
         summary: "Provides $180 million in grants for last-mile broadband connections in the Mississippi Delta and other underserved rural areas. Requires grantees to offer $25/month low-income service tiers.",
         keyProvisions: ["$180M last-mile grants", "Delta region priority", "$25/month low-income tier"],
@@ -2076,7 +2127,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // MISSOURI — 4 bills
+  // MISSOURI
   // ──────────────────────────────────────────────
   MO: {
     state: "Missouri",
@@ -2084,7 +2135,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Criminal Justice",
     bills: [
       {
@@ -2103,8 +2155,9 @@ export const STATE_LEGISLATION = {
         id: "HB-456",
         title: "Missouri Childcare Accessibility Act",
         category: "Education",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-22",
+        lastActionDate: "2025-03-11",
         enacted: null,
         summary: "Provides tax credits to employers who offer on-site childcare or childcare subsidies to employees. Increases state childcare subsidy eligibility to 200% of the federal poverty level.",
         keyProvisions: ["Employer childcare tax credits", "200% FPL subsidy eligibility", "On-site childcare incentives"],
@@ -2139,7 +2192,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // MONTANA — 4 bills
+  // MONTANA
   // ──────────────────────────────────────────────
   MT: {
     state: "Montana",
@@ -2147,7 +2200,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Environment",
     bills: [
       {
@@ -2166,8 +2220,9 @@ export const STATE_LEGISLATION = {
         id: "HB-345",
         title: "Montana Housing Affordability Act",
         category: "Infrastructure",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-28",
+        lastActionDate: "2025-03-11",
         enacted: null,
         summary: "Reforms local zoning to allow accessory dwelling units statewide and provides $100 million in workforce housing grants for resort and gateway communities near Glacier and Yellowstone.",
         keyProvisions: ["Statewide ADU allowance", "$100M workforce housing grants", "Resort community targeting"],
@@ -2202,7 +2257,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // NEBRASKA — 4 bills
+  // NEBRASKA
   // ──────────────────────────────────────────────
   NE: {
     state: "Nebraska",
@@ -2210,7 +2265,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -2241,8 +2297,9 @@ export const STATE_LEGISLATION = {
         id: "LB-890",
         title: "SNAP Benefits Expansion for Working Families Act",
         category: "Healthcare",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-02-10",
+        lastActionDate: "2025-03-14",
         enacted: null,
         summary: "Raises the gross income eligibility for SNAP benefits to 185% of the federal poverty level for working families with children. Simplifies recertification and reduces paperwork burdens.",
         keyProvisions: ["185% FPL eligibility expansion", "Simplified recertification", "Working family focus"],
@@ -2265,7 +2322,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // NEVADA — 4 bills
+  // NEVADA
   // ──────────────────────────────────────────────
   NV: {
     state: "Nevada",
@@ -2273,7 +2330,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -2292,8 +2350,9 @@ export const STATE_LEGISLATION = {
         id: "AB-345",
         title: "Nevada Water Conservation and Drought Response Act",
         category: "Environment",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-18",
+        lastActionDate: "2025-02-24",
         enacted: null,
         summary: "Bans non-functional turf in commercial properties statewide and funds $200 million in water recycling infrastructure to reduce Nevada's dependence on Colorado River allocations.",
         keyProvisions: ["Commercial non-functional turf ban", "$200M water recycling investment", "Colorado River dependence reduction"],
@@ -2328,7 +2387,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // NEW HAMPSHIRE — 4 bills
+  // NEW HAMPSHIRE
   // ──────────────────────────────────────────────
   NH: {
     state: "New Hampshire",
@@ -2336,7 +2395,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Education",
     bills: [
       {
@@ -2355,8 +2415,9 @@ export const STATE_LEGISLATION = {
         id: "HB-567",
         title: "Education Freedom Account Enhancement Act",
         category: "Education",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-22",
+        lastActionDate: "2025-03-17",
         enacted: null,
         summary: "Expands Education Freedom Account eligibility to 500% of the federal poverty level and increases per-student funding. Adds accountability measures for participating private schools.",
         keyProvisions: ["500% FPL eligibility expansion", "Per-student funding increase", "Private school accountability"],
@@ -2391,7 +2452,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // NEW JERSEY — 4 bills
+  // NEW JERSEY
   // ──────────────────────────────────────────────
   NJ: {
     state: "New Jersey",
@@ -2399,7 +2460,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -2442,8 +2504,9 @@ export const STATE_LEGISLATION = {
         id: "AB-1234",
         title: "Cannabis Social Equity Enhancement Act",
         category: "Civil Rights",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-02-15",
+        lastActionDate: "2025-03-08",
         enacted: null,
         summary: "Increases the percentage of cannabis licenses reserved for social equity applicants to 40% and provides low-interest loans and technical assistance for applicants from impacted communities.",
         keyProvisions: ["40% social equity license reservation", "Low-interest loan programs", "Technical assistance provision"],
@@ -2454,7 +2517,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // NEW MEXICO — 4 bills
+  // NEW MEXICO
   // ──────────────────────────────────────────────
   NM: {
     state: "New Mexico",
@@ -2462,7 +2525,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Education",
     bills: [
       {
@@ -2481,8 +2545,9 @@ export const STATE_LEGISLATION = {
         id: "HB-345",
         title: "Produced Water Treatment and Reuse Act",
         category: "Environment",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-18",
+        lastActionDate: "2025-03-01",
         enacted: null,
         summary: "Regulates the treatment and beneficial reuse of produced water from oil and gas operations in the Permian Basin. Requires advanced treatment standards before agricultural or industrial reuse.",
         keyProvisions: ["Produced water treatment standards", "Beneficial reuse regulations", "Permian Basin focus"],
@@ -2517,7 +2582,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // NORTH CAROLINA — 4 bills
+  // NORTH CAROLINA
   // ──────────────────────────────────────────────
   NC: {
     state: "North Carolina",
@@ -2525,7 +2590,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -2568,8 +2634,9 @@ export const STATE_LEGISLATION = {
         id: "HB-890",
         title: "Opportunity Scholarship Program Expansion Act",
         category: "Education",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-02-12",
+        lastActionDate: "2025-02-27",
         enacted: null,
         summary: "Removes the waitlist for the Opportunity Scholarship voucher program by providing full funding for all eligible applicants. Increases per-student awards to $7,500 for high school students.",
         keyProvisions: ["Waitlist elimination", "Full funding mandate", "$7,500 high school awards"],
@@ -2580,7 +2647,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // NORTH DAKOTA — 4 bills
+  // NORTH DAKOTA
   // ──────────────────────────────────────────────
   ND: {
     state: "North Dakota",
@@ -2588,7 +2655,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -2607,8 +2675,9 @@ export const STATE_LEGISLATION = {
         id: "HB-1234",
         title: "Carbon Capture and Storage Regulatory Act",
         category: "Environment",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-20",
+        lastActionDate: "2025-02-15",
         enacted: null,
         summary: "Establishes the regulatory framework for Class VI carbon injection wells in North Dakota and streamlines state primacy authority over CO2 sequestration projects in the Williston Basin.",
         keyProvisions: ["Class VI well regulations", "State primacy authority", "Williston Basin focus"],
@@ -2643,7 +2712,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // OHIO — 4 bills
+  // OHIO
   // ──────────────────────────────────────────────
   OH: {
     state: "Ohio",
@@ -2651,7 +2720,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -2670,8 +2740,9 @@ export const STATE_LEGISLATION = {
         id: "HB-345",
         title: "Ohio Reproductive Rights Implementation Act",
         category: "Civil Rights",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-22",
+        lastActionDate: "2025-03-05",
         enacted: null,
         summary: "Implements the voter-approved reproductive freedom amendment by repealing conflicting statutes including the six-week heartbeat bill and establishing clinical standards for abortion providers.",
         keyProvisions: ["Heartbeat bill repeal", "Provider clinical standards", "Amendment implementation"],
@@ -2706,7 +2777,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // OKLAHOMA — 4 bills
+  // OKLAHOMA
   // ──────────────────────────────────────────────
   OK: {
     state: "Oklahoma",
@@ -2714,7 +2785,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Education",
     bills: [
       {
@@ -2733,8 +2805,9 @@ export const STATE_LEGISLATION = {
         id: "HB-2345",
         title: "Tribal-State Compact Renewal and Gaming Act",
         category: "Economy & Taxes",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-28",
+        lastActionDate: "2025-02-22",
         enacted: null,
         summary: "Establishes the framework for tribal gaming compact renewals and authorizes commercial gaming at horse racing tracks to increase state revenue for education and infrastructure.",
         keyProvisions: ["Compact renewal framework", "Commercial gaming at racetracks", "Education revenue allocation"],
@@ -2769,7 +2842,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // OREGON — 4 bills
+  // OREGON
   // ──────────────────────────────────────────────
   OR: {
     state: "Oregon",
@@ -2777,7 +2850,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Environment",
     bills: [
       {
@@ -2820,8 +2894,9 @@ export const STATE_LEGISLATION = {
         id: "HB-1200",
         title: "Drug Recriminalization and Treatment Act",
         category: "Criminal Justice",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-02-18",
+        lastActionDate: "2025-03-13",
         enacted: null,
         summary: "Following voter reversal of Measure 110, implements the recriminalization framework for hard drug possession while maintaining expanded treatment funding and deflection-first policies.",
         keyProvisions: ["Possession recriminalization framework", "Treatment funding preservation", "Deflection-first policies"],
@@ -2832,7 +2907,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // PENNSYLVANIA — 4 bills
+  // PENNSYLVANIA
   // ──────────────────────────────────────────────
   PA: {
     state: "Pennsylvania",
@@ -2840,7 +2915,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Education",
     bills: [
       {
@@ -2883,8 +2959,9 @@ export const STATE_LEGISLATION = {
         id: "HB-1200",
         title: "Lifeline Scholarship Act",
         category: "Education",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-02-15",
+        lastActionDate: "2025-03-10",
         enacted: null,
         summary: "Creates education savings accounts for students in the lowest-performing 15% of public schools, allowing families to redirect per-pupil funding to private schools or tutoring services.",
         keyProvisions: ["ESAs for low-performing school students", "Per-pupil funding portability", "Private school and tutoring options"],
@@ -2895,7 +2972,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // RHODE ISLAND — 4 bills
+  // RHODE ISLAND
   // ──────────────────────────────────────────────
   RI: {
     state: "Rhode Island",
@@ -2903,7 +2980,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Environment",
     bills: [
       {
@@ -2922,8 +3000,9 @@ export const STATE_LEGISLATION = {
         id: "HB-567",
         title: "Rhode Island Housing Production Act",
         category: "Infrastructure",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-25",
+        lastActionDate: "2025-03-20",
         enacted: null,
         summary: "Overrides local zoning for affordable housing projects near transit and mandates that all municipalities allow accessory dwelling units by right. Creates a $100 million state housing fund.",
         keyProvisions: ["Transit-area zoning override", "Statewide ADU allowance", "$100M housing fund"],
@@ -2958,7 +3037,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // SOUTH CAROLINA — 4 bills
+  // SOUTH CAROLINA
   // ──────────────────────────────────────────────
   SC: {
     state: "South Carolina",
@@ -2966,7 +3045,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -2985,8 +3065,9 @@ export const STATE_LEGISLATION = {
         id: "HB-456",
         title: "Hurricane and Flood Resilience Building Code Act",
         category: "Infrastructure",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-20",
+        lastActionDate: "2025-03-09",
         enacted: null,
         summary: "Adopts statewide building codes requiring hurricane-resistant construction standards for all new residential buildings in coastal and inland flood-prone counties within 100 miles of the coast.",
         keyProvisions: ["Hurricane-resistant building codes", "Coastal county mandates", "100-mile inland zone coverage"],
@@ -3021,7 +3102,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // SOUTH DAKOTA — 4 bills
+  // SOUTH DAKOTA
   // ──────────────────────────────────────────────
   SD: {
     state: "South Dakota",
@@ -3029,7 +3110,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -3048,8 +3130,9 @@ export const STATE_LEGISLATION = {
         id: "HB-1234",
         title: "South Dakota Workforce Housing Incentive Act",
         category: "Infrastructure",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-22",
+        lastActionDate: "2025-02-17",
         enacted: null,
         summary: "Creates tax incentives for developers building workforce housing in communities with employment growth exceeding 5% annually. Targets Sioux Falls, Rapid City, and Black Hills communities.",
         keyProvisions: ["Developer tax incentives", "5% employment growth threshold", "Three-city focus"],
@@ -3084,7 +3167,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // TENNESSEE — 4 bills
+  // TENNESSEE
   // ──────────────────────────────────────────────
   TN: {
     state: "Tennessee",
@@ -3092,7 +3175,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Public Safety",
     bills: [
       {
@@ -3135,8 +3219,9 @@ export const STATE_LEGISLATION = {
         id: "HB-1200",
         title: "East Tennessee Broadband and Connectivity Act",
         category: "Infrastructure",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-02-15",
+        lastActionDate: "2025-03-10",
         enacted: null,
         summary: "Allocates $250 million from federal broadband funds for fiber deployment in Appalachian Tennessee counties with less than 50% broadband access. Partners with TVA for infrastructure corridors.",
         keyProvisions: ["$250M fiber deployment", "Appalachian county priority", "TVA corridor partnerships"],
@@ -3147,7 +3232,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // UTAH — 4 bills
+  // UTAH
   // ──────────────────────────────────────────────
   UT: {
     state: "Utah",
@@ -3155,7 +3240,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Infrastructure",
     bills: [
       {
@@ -3174,8 +3260,9 @@ export const STATE_LEGISLATION = {
         id: "HB-345",
         title: "Utah Transit Expansion and Funding Act",
         category: "Infrastructure",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-22",
+        lastActionDate: "2025-03-05",
         enacted: null,
         summary: "Authorizes $3 billion in bonds for TRAX light rail expansion along the Point of the Mountain corridor and funds bus rapid transit connecting Provo, Orem, and Salt Lake City.",
         keyProvisions: ["$3B transit bond authorization", "TRAX corridor expansion", "BRT connections"],
@@ -3210,7 +3297,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // VERMONT — 4 bills
+  // VERMONT
   // ──────────────────────────────────────────────
   VT: {
     state: "Vermont",
@@ -3218,7 +3305,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Environment",
     bills: [
       {
@@ -3237,8 +3325,9 @@ export const STATE_LEGISLATION = {
         id: "HB-345",
         title: "Vermont Housing Supply and Affordability Act",
         category: "Infrastructure",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-18",
+        lastActionDate: "2025-03-01",
         enacted: null,
         summary: "Reforms Act 250 environmental review to streamline housing approvals in designated growth centers. Creates a $75 million housing investment fund targeting communities with vacancy rates below 1%.",
         keyProvisions: ["Act 250 reform for housing", "$75M housing investment fund", "Growth center targeting"],
@@ -3273,7 +3362,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // VIRGINIA — 4 bills
+  // VIRGINIA
   // ──────────────────────────────────────────────
   VA: {
     state: "Virginia",
@@ -3281,7 +3370,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -3300,8 +3390,9 @@ export const STATE_LEGISLATION = {
         id: "HB-567",
         title: "Virginia Clean Economy Act Enhancement",
         category: "Environment",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-22",
+        lastActionDate: "2025-03-17",
         enacted: null,
         summary: "Accelerates the Virginia Clean Economy Act timeline for Dominion Energy and Appalachian Power to achieve 100% carbon-free electricity by 2040 instead of 2050 with interim milestones.",
         keyProvisions: ["2040 carbon-free target", "Accelerated timeline", "Utility-specific milestones"],
@@ -3336,7 +3427,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // WASHINGTON — 4 bills
+  // WASHINGTON
   // ──────────────────────────────────────────────
   WA: {
     state: "Washington",
@@ -3344,7 +3435,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Environment",
     bills: [
       {
@@ -3363,8 +3455,9 @@ export const STATE_LEGISLATION = {
         id: "HB-1567",
         title: "Washington Behavioral Health Crisis System Act",
         category: "Healthcare",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-25",
+        lastActionDate: "2025-03-10",
         enacted: null,
         summary: "Creates a statewide behavioral health crisis response system with 988 co-responder teams in every county. Funds 10 new crisis stabilization centers and 23-hour observation beds.",
         keyProvisions: ["Statewide 988 co-responder teams", "10 crisis stabilization centers", "23-hour observation beds"],
@@ -3399,7 +3492,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // WEST VIRGINIA — 4 bills
+  // WEST VIRGINIA
   // ──────────────────────────────────────────────
   WV: {
     state: "West Virginia",
@@ -3407,7 +3500,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Infrastructure",
     bills: [
       {
@@ -3426,8 +3520,9 @@ export const STATE_LEGISLATION = {
         id: "HB-345",
         title: "Abandoned Mine Land Economic Revitalization Act",
         category: "Infrastructure",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-20",
+        lastActionDate: "2025-03-03",
         enacted: null,
         summary: "Leverages $300 million in federal AML funds for economic development on reclaimed mine lands including solar farms, industrial parks, and outdoor recreation destinations in southern coalfields.",
         keyProvisions: ["$300M AML fund leveraging", "Reclaimed land solar farms", "Outdoor recreation development"],
@@ -3462,7 +3557,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // WISCONSIN — 4 bills
+  // WISCONSIN
   // ──────────────────────────────────────────────
   WI: {
     state: "Wisconsin",
@@ -3470,7 +3565,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Education",
     bills: [
       {
@@ -3513,8 +3609,9 @@ export const STATE_LEGISLATION = {
         id: "AB-1200",
         title: "Childcare Access and Workforce Support Act",
         category: "Education",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-02-15",
+        lastActionDate: "2025-03-11",
         enacted: null,
         summary: "Increases childcare subsidy eligibility to 200% of the federal poverty level and provides $2,000 annual retention bonuses for licensed childcare providers in Wisconsin childcare deserts.",
         keyProvisions: ["200% FPL subsidy eligibility", "$2K provider retention bonuses", "Childcare desert targeting"],
@@ -3525,7 +3622,7 @@ export const STATE_LEGISLATION = {
   },
 
   // ──────────────────────────────────────────────
-  // WYOMING — 4 bills
+  // WYOMING
   // ──────────────────────────────────────────────
   WY: {
     state: "Wyoming",
@@ -3533,7 +3630,8 @@ export const STATE_LEGISLATION = {
     session: "2025",
     totalBills: 4,
     passed: 2,
-    proposed: 2,
+    inProcess: 1,
+    proposed: 1,
     topCategory: "Economy & Taxes",
     bills: [
       {
@@ -3552,8 +3650,9 @@ export const STATE_LEGISLATION = {
         id: "HB-234",
         title: "Wyoming Nuclear Energy Development Act",
         category: "Environment",
-        status: "proposed",
+        status: "in_process",
         introduced: "2025-01-22",
+        lastActionDate: "2025-02-27",
         enacted: null,
         summary: "Creates the regulatory framework for small modular nuclear reactors in Wyoming and provides tax incentives for the Kemmerer advanced reactor project. Addresses spent fuel storage provisions.",
         keyProvisions: ["SMR regulatory framework", "Kemmerer project incentives", "Spent fuel storage provisions"],
@@ -3586,366 +3685,4 @@ export const STATE_LEGISLATION = {
       }
     ]
   }
-
 };
-
-// ══════════════════════════════════════════════════════════════════════════
-// FEDERAL LEGISLATION — Mock data for Stage 4 Federal Dashboard
-// ══════════════════════════════════════════════════════════════════════════
-
-export const FEDERAL_BILLS = [
-  {
-    id: "HR-4521",
-    title: "National Infrastructure Modernization Act",
-    chamber: "House",
-    category: "Infrastructure",
-    status: "passed",
-    introduced: "2025-01-08",
-    enacted: "2025-03-12",
-    summary: "Authorizes $180 billion in federal funding for bridge, highway, and broadband infrastructure upgrades across all 50 states, prioritizing rural communities with aging infrastructure graded D+ or below by ASCE.",
-    keyProvisions: ["$180B infrastructure authorization", "Rural broadband priority funding", "ASCE-guided project prioritization"],
-    sponsor: "Rep. David Valadao (R-CA)",
-    cosponsors: 47,
-    committee: "Transportation and Infrastructure",
-    fullTextUrl: "https://www.congress.gov/"
-  },
-  {
-    id: "S-2314",
-    title: "Federal Data Privacy and Protection Act",
-    chamber: "Senate",
-    category: "Civil Rights",
-    status: "passed",
-    introduced: "2024-11-19",
-    enacted: "2025-02-28",
-    summary: "Establishes comprehensive federal data privacy standards, requiring opt-in consent for collection of sensitive personal data and creating a private right of action for data breaches affecting 100,000+ individuals.",
-    keyProvisions: ["Opt-in consent for sensitive data", "Private right of action for breaches", "FTC enforcement authority expansion"],
-    sponsor: "Sen. Maria Cantwell (D-WA)",
-    cosponsors: 32,
-    committee: "Commerce, Science, and Transportation",
-    fullTextUrl: "https://www.congress.gov/"
-  },
-  {
-    id: "HR-1187",
-    title: "AI Transparency and Accountability Act",
-    chamber: "House",
-    category: "Economy & Taxes",
-    status: "proposed",
-    introduced: "2025-02-14",
-    enacted: null,
-    summary: "Requires all federal agencies to conduct algorithmic impact assessments before deploying AI systems affecting public benefits, employment, or criminal justice decisions. Creates an AI Audit Office within GAO.",
-    keyProvisions: ["Algorithmic impact assessments", "AI Audit Office under GAO", "Public AI deployment registry"],
-    sponsor: "Rep. Ted Lieu (D-CA)",
-    cosponsors: 28,
-    committee: "Science, Space, and Technology",
-    fullTextUrl: "https://www.congress.gov/"
-  },
-  {
-    id: "S-891",
-    title: "Clean Water Infrastructure Resilience Act",
-    chamber: "Senate",
-    category: "Environment",
-    status: "passed",
-    introduced: "2024-12-03",
-    enacted: "2025-03-05",
-    summary: "Allocates $45 billion to replace aging water treatment facilities and lead service lines in communities with populations under 100,000, with accelerated timelines for environmental justice communities.",
-    keyProvisions: ["$45B water infrastructure fund", "Lead pipe replacement mandate", "EJ community acceleration"],
-    sponsor: "Sen. Tammy Duckworth (D-IL)",
-    cosponsors: 21,
-    committee: "Environment and Public Works",
-    fullTextUrl: "https://www.congress.gov/"
-  },
-  {
-    id: "HR-3892",
-    title: "Prescription Drug Pricing Reform Act",
-    chamber: "House",
-    category: "Healthcare",
-    status: "proposed",
-    introduced: "2025-01-22",
-    enacted: null,
-    summary: "Expands Medicare drug price negotiation authority to 50 additional drugs annually, caps insulin at $35 per month for all insured Americans, and creates a drug pricing transparency portal.",
-    keyProvisions: ["50 additional drugs for negotiation", "$35 insulin cap for all insured", "Drug pricing transparency portal"],
-    sponsor: "Rep. Frank Pallone (D-NJ)",
-    cosponsors: 55,
-    committee: "Energy and Commerce",
-    fullTextUrl: "https://www.congress.gov/"
-  },
-  {
-    id: "S-1456",
-    title: "Cybersecurity Critical Infrastructure Protection Act",
-    chamber: "Senate",
-    category: "Public Safety",
-    status: "proposed",
-    introduced: "2025-02-05",
-    enacted: null,
-    summary: "Mandates CISA-developed cybersecurity standards for all operators of critical infrastructure including energy, water, and financial systems, with 24-hour breach reporting requirements.",
-    keyProvisions: ["CISA cybersecurity standards mandate", "24-hour breach reporting", "Critical infrastructure classification update"],
-    sponsor: "Sen. Gary Peters (D-MI)",
-    cosponsors: 18,
-    committee: "Homeland Security and Governmental Affairs",
-    fullTextUrl: "https://www.congress.gov/"
-  },
-  {
-    id: "HR-2201",
-    title: "National Teacher Recruitment and Retention Act",
-    chamber: "House",
-    category: "Education",
-    status: "passed",
-    introduced: "2024-10-15",
-    enacted: "2025-01-30",
-    summary: "Creates a federal student loan forgiveness pathway for teachers in Title I schools after 5 years of service, provides $10,000 annual retention bonuses funded through the Department of Education.",
-    keyProvisions: ["5-year loan forgiveness pathway", "$10K annual retention bonus", "Title I school priority"],
-    sponsor: "Rep. Frederica Wilson (D-FL)",
-    cosponsors: 38,
-    committee: "Education and the Workforce",
-    fullTextUrl: "https://www.congress.gov/"
-  },
-  {
-    id: "S-3104",
-    title: "Federal Sentencing Reform and Rehabilitation Act",
-    chamber: "Senate",
-    category: "Criminal Justice",
-    status: "proposed",
-    introduced: "2025-03-01",
-    enacted: null,
-    summary: "Reduces mandatory minimum sentences for nonviolent federal drug offenses by 40%, expands earned-time credit programs, and creates a $2B reentry services fund for formerly incarcerated individuals.",
-    keyProvisions: ["40% mandatory minimum reduction", "Expanded earned-time credits", "$2B reentry services fund"],
-    sponsor: "Sen. Cory Booker (D-NJ)",
-    cosponsors: 15,
-    committee: "Judiciary",
-    fullTextUrl: "https://www.congress.gov/"
-  },
-  {
-    id: "HR-5567",
-    title: "Small Business Innovation Accelerator Act",
-    chamber: "House",
-    category: "Economy & Taxes",
-    status: "proposed",
-    introduced: "2025-02-20",
-    enacted: null,
-    summary: "Doubles SBIR/STTR funding allocations, creates a streamlined federal grant application portal, and provides 15% tax credits for R&D spending by businesses with fewer than 100 employees.",
-    keyProvisions: ["Double SBIR/STTR funding", "Unified grant portal", "15% R&D tax credit for small biz"],
-    sponsor: "Rep. Young Kim (R-CA)",
-    cosponsors: 42,
-    committee: "Small Business",
-    fullTextUrl: "https://www.congress.gov/"
-  },
-  {
-    id: "S-2780",
-    title: "National Wildfire Prevention and Response Act",
-    chamber: "Senate",
-    category: "Environment",
-    status: "passed",
-    introduced: "2024-11-28",
-    enacted: "2025-02-14",
-    summary: "Authorizes $12 billion over 5 years for wildfire prevention including prescribed burns, defensible space enforcement, and aerial firefighting fleet modernization across western states.",
-    keyProvisions: ["$12B five-year authorization", "Prescribed burn expansion", "Aerial fleet modernization"],
-    sponsor: "Sen. Ron Wyden (D-OR)",
-    cosponsors: 24,
-    committee: "Energy and Natural Resources",
-    fullTextUrl: "https://www.congress.gov/"
-  },
-  {
-    id: "HR-6120",
-    title: "Veterans Mental Health Access Expansion Act",
-    chamber: "House",
-    category: "Healthcare",
-    status: "passed",
-    introduced: "2024-12-10",
-    enacted: "2025-03-18",
-    summary: "Expands VA mental health services eligibility to include veterans with Other-Than-Honorable discharges, funds 200 new community-based outpatient clinics, and mandates telehealth options for all VA mental health services.",
-    keyProvisions: ["OTH discharge eligibility", "200 new outpatient clinics", "Telehealth mandate"],
-    sponsor: "Rep. Mike Bost (R-IL)",
-    cosponsors: 61,
-    committee: "Veterans' Affairs",
-    fullTextUrl: "https://www.congress.gov/"
-  },
-  {
-    id: "S-4201",
-    title: "Housing Affordability and Supply Act",
-    chamber: "Senate",
-    category: "Infrastructure",
-    status: "proposed",
-    introduced: "2025-03-10",
-    enacted: null,
-    summary: "Provides $30 billion in grants to state and local governments that reform zoning to allow higher-density housing near transit, with bonus funding for communities eliminating single-family-only zoning.",
-    keyProvisions: ["$30B zoning reform grants", "Transit-oriented density incentives", "Single-family zoning reform bonuses"],
-    sponsor: "Sen. Brian Schatz (D-HI)",
-    cosponsors: 12,
-    committee: "Banking, Housing, and Urban Affairs",
-    fullTextUrl: "https://www.congress.gov/"
-  }
-];
-
-export const EXECUTIVE_ORDERS = [
-  {
-    id: "EO-14178",
-    title: "Establishing the Federal AI Safety Board",
-    category: "Economy & Taxes",
-    status: "signed",
-    signedDate: "2025-03-15",
-    summary: "Creates an interagency AI Safety Board within the Executive Office of the President to coordinate federal AI policy, conduct risk assessments of frontier AI models, and establish voluntary safety commitments with leading AI companies.",
-    federalRegisterUrl: "https://www.federalregister.gov/",
-    impact: "High"
-  },
-  {
-    id: "EO-14177",
-    title: "Strengthening Critical Mineral Supply Chains",
-    category: "Economy & Taxes",
-    status: "signed",
-    signedDate: "2025-03-08",
-    summary: "Invokes the Defense Production Act to accelerate domestic production of lithium, cobalt, and rare earth elements essential for defense and clean energy technologies, with $6 billion in DPA Title III funding.",
-    federalRegisterUrl: "https://www.federalregister.gov/",
-    impact: "High"
-  },
-  {
-    id: "EO-14176",
-    title: "Modernizing Federal Cybersecurity Standards",
-    category: "Public Safety",
-    status: "signed",
-    signedDate: "2025-02-22",
-    summary: "Mandates zero-trust architecture adoption across all federal civilian agencies by December 2026, requires CISA-approved endpoint detection on all federal networks, and establishes a Federal Cyber Workforce Academy.",
-    federalRegisterUrl: "https://www.federalregister.gov/",
-    impact: "High"
-  },
-  {
-    id: "EO-14175",
-    title: "Expanding Access to Federal Lands for Renewable Energy",
-    category: "Environment",
-    status: "signed",
-    signedDate: "2025-02-10",
-    summary: "Directs BLM and USFS to expedite permitting for solar and wind installations on federal lands, targeting 50 GW of new capacity by 2030 with streamlined NEPA review for projects under 200 MW.",
-    federalRegisterUrl: "https://www.federalregister.gov/",
-    impact: "Medium"
-  },
-  {
-    id: "EO-14174",
-    title: "Protecting Federal Workers from Workplace Retaliation",
-    category: "Civil Rights",
-    status: "signed",
-    signedDate: "2025-01-28",
-    summary: "Strengthens whistleblower protections for federal employees and contractors, creates an independent ombudsman office, and prohibits retaliation against workers who report waste, fraud, or safety violations.",
-    federalRegisterUrl: "https://www.federalregister.gov/",
-    impact: "Medium"
-  },
-  {
-    id: "EO-14173",
-    title: "Emergency Measures for Southwest Border Water Security",
-    category: "Environment",
-    status: "signed",
-    signedDate: "2025-01-15",
-    summary: "Declares a water emergency along the Colorado River basin, activates federal coordination mechanisms for drought response, and allocates $3 billion in emergency conservation and desalination funding.",
-    federalRegisterUrl: "https://www.federalregister.gov/",
-    impact: "High"
-  },
-  {
-    id: "EO-14172",
-    title: "Reducing Prescription Drug Costs for Federal Employees",
-    category: "Healthcare",
-    status: "signed",
-    signedDate: "2025-01-05",
-    summary: "Directs OPM to negotiate lower prescription drug prices for FEHB plans, mandates transparency in pharmacy benefit manager contracts, and caps out-of-pocket costs for specialty drugs at $250/month.",
-    federalRegisterUrl: "https://www.federalregister.gov/",
-    impact: "Medium"
-  },
-  {
-    id: "EO-14171",
-    title: "Establishing the National Climate Adaptation Strategy",
-    category: "Environment",
-    status: "signed",
-    signedDate: "2024-12-20",
-    summary: "Directs all federal agencies to develop climate adaptation plans within 180 days, establishes a $5 billion Climate Resilience Fund, and creates mandatory climate risk disclosure for federal contractors.",
-    federalRegisterUrl: "https://www.federalregister.gov/",
-    impact: "High"
-  }
-];
-
-export const SCOTUS_CASES = [
-  {
-    id: "23-726",
-    name: "United States v. Rahimi",
-    docket: "No. 23-726",
-    status: "decided",
-    decisionDate: "2025-03-18",
-    voteSplit: "7–2",
-    summary: "Upheld the constitutionality of 18 U.S.C. § 922(g)(8), which prohibits firearm possession by individuals subject to domestic violence restraining orders, finding it consistent with the Second Amendment's historical tradition of disarming dangerous individuals.",
-    opinion: "Roberts, C.J., delivered the opinion of the Court.",
-    category: "Criminal Justice"
-  },
-  {
-    id: "24-108",
-    name: "Gonzalez v. Google LLC",
-    docket: "No. 24-108",
-    status: "decided",
-    decisionDate: "2025-03-05",
-    voteSplit: "6–3",
-    summary: "Narrowed the scope of Section 230 immunity for algorithmic recommendation systems, holding that targeted content amplification through recommendation algorithms constitutes publisher conduct outside Section 230's safe harbor.",
-    opinion: "Thomas, J., delivered the opinion of the Court.",
-    category: "Civil Rights"
-  },
-  {
-    id: "24-356",
-    name: "EPA v. State of Texas",
-    docket: "No. 24-356",
-    status: "decided",
-    decisionDate: "2025-02-20",
-    voteSplit: "5–4",
-    summary: "Affirmed EPA authority to set interstate air pollution standards under the Good Neighbor provision of the Clean Air Act, rejecting Texas's argument that the 2024 rule exceeded statutory authority.",
-    opinion: "Kagan, J., delivered the opinion of the Court.",
-    category: "Environment"
-  },
-  {
-    id: "24-501",
-    name: "National Student Loan Servicers Assn. v. Department of Education",
-    docket: "No. 24-501",
-    status: "pending",
-    decisionDate: null,
-    voteSplit: null,
-    summary: "Challenges the Department of Education's SAVE repayment plan as exceeding the Secretary's statutory authority under the Higher Education Act, with potential implications for $150 billion in projected loan forgiveness.",
-    opinion: null,
-    category: "Education"
-  },
-  {
-    id: "24-612",
-    name: "TikTok Inc. v. Garland",
-    docket: "No. 24-612",
-    status: "pending",
-    decisionDate: null,
-    voteSplit: null,
-    summary: "Considers whether the Protecting Americans from Foreign Adversary Controlled Applications Act's forced divestiture requirement violates the First Amendment rights of TikTok and its 170 million U.S. users.",
-    opinion: null,
-    category: "Civil Rights"
-  },
-  {
-    id: "24-289",
-    name: "Moore v. United States",
-    docket: "No. 24-289",
-    status: "decided",
-    decisionDate: "2025-01-15",
-    voteSplit: "9–0",
-    summary: "Unanimously held that the Mandatory Repatriation Tax under the 2017 Tax Cuts and Jobs Act does not violate the Sixteenth Amendment, declining to broadly rule on whether the Constitution requires realization for income taxation.",
-    opinion: "Barrett, J., delivered the opinion of the Court.",
-    category: "Economy & Taxes"
-  },
-  {
-    id: "24-743",
-    name: "Amazon.com v. NLRB",
-    docket: "No. 24-743",
-    status: "cert_granted",
-    decisionDate: null,
-    voteSplit: null,
-    summary: "Granted certiorari to resolve a circuit split on whether warehouse workers at Amazon fulfillment centers are joint employees of Amazon and temporary staffing agencies for purposes of the National Labor Relations Act.",
-    opinion: null,
-    category: "Economy & Taxes"
-  },
-  {
-    id: "24-890",
-    name: "Dobbs Revisited: June Medical Services v. Gee",
-    docket: "No. 24-890",
-    status: "cert_granted",
-    decisionDate: null,
-    voteSplit: null,
-    summary: "Granted certiorari to consider whether EMTALA preempts state laws that prohibit emergency abortions in cases where the pregnant patient's life is endangered but fetal cardiac activity is still detectable.",
-    opinion: null,
-    category: "Healthcare"
-  }
-];

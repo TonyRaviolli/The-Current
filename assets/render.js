@@ -26,6 +26,7 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
 import { US_STATES } from './us-states.js';
+import { US_STATES_TOPO, MAP_VIEWBOX } from './us-states-topo.js';
 
 // ── Feed size caps (adjust here to change across all tier sections) ───────────
 const FEED_MAX_STORIES = 10; // total articles shown across Tier 1/2/3 on briefing tab
@@ -1003,7 +1004,7 @@ export function renderTopics(store) {
       ${clusterIntro}
       <div class="topic-preview">
         <ul class="topic-preview-list">
-          ${topic.items.slice(0, 3).map((s) => `<li class="topic-preview-item"><a href="/story/${escapeHtml(s.slug || '')}" data-open-story="${escapeHtml(s.slug || '')}">${escapeHtml(s.headline || s.title || '')}</a><span class="topic-preview-source">${escapeHtml(s.sources?.[0]?.name || s.source || '')}</span></li>`).join('')}
+          ${topic.items.slice(0, 3).map((s) => `<li class="topic-preview-item"><span class="topic-preview-score">${s.score != null ? scoreOutOfTen(s.score) : '--'}</span><a href="/story/${escapeHtml(s.slug || '')}" data-open-story="${escapeHtml(s.slug || '')}">${escapeHtml(s.headline || s.title || '')}</a><span class="topic-preview-source">${escapeHtml(s.sources?.[0]?.name || s.source || '')}</span></li>`).join('')}
         </ul>
         ${todayCount > 0 ? `<button class="topic-expand-btn" data-expand-topic="${escapeHtml(topic.topic)}" type="button">Browse all ${todayCount} stories \u2192</button>` : '<span class="topic-expand-empty">No stories today</span>'}
       </div>
@@ -1506,7 +1507,7 @@ export function renderStoryPage(story) {
 /**
  * Render the historical archive from the /api/archive response format.
  * Each entry is { date, count, stories[] }.
- * Renders a date-chip nav strip + a per-day section with a card grid.
+ * Groups days by month for scalable navigation, with collapsible month sections.
  */
 export function renderArchiveDays(days = []) {
   const container = document.getElementById('archiveContent');
@@ -1516,17 +1517,27 @@ export function renderArchiveDays(days = []) {
     return;
   }
 
-  // Date chip strip — clicking scrolls to the section for that date
-  const chipNav = `<nav class="archive-date-nav" aria-label="Jump to date">${days.slice(0, 14).map((day, i) => {
-    const label = formatArchiveDate(day.date);
-    const short = day.date ? new Date(day.date + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : label;
-    return `<button class="archive-date-chip${i === 0 ? ' active' : ''}" data-date-target="${escapeHtml(day.date || '')}" type="button" title="${escapeHtml(label)}">${escapeHtml(short)}</button>`;
+  // ── Group days by month (YYYY-MM), sorted newest first ──
+  const monthMap = new Map();
+  for (const day of days) {
+    const key = day.date ? day.date.slice(0, 7) : 'unknown';
+    if (!monthMap.has(key)) monthMap.set(key, []);
+    monthMap.get(key).push(day);
+  }
+  const months = Array.from(monthMap.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+
+  // ── Month chip nav ──
+  const monthChipNav = `<nav class="archive-month-nav" aria-label="Jump to month">${months.map(([key, monthDays], i) => {
+    const totalStories = monthDays.reduce((sum, d) => sum + (d.stories?.length || 0), 0);
+    const monthLabel = key !== 'unknown'
+      ? new Date(key + '-15T12:00:00Z').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+      : 'Unknown';
+    return `<button class="archive-month-chip${i === 0 ? ' active' : ''}" data-month-target="${escapeHtml(key)}" type="button">${escapeHtml(monthLabel)} <span class="archive-month-chip-count">&middot; ${totalStories}</span></button>`;
   }).join('')}</nav>`;
 
-  // Per-day sections with card grid
-  const sections = days.map((day) => {
+  // ── Build per-day card HTML (reusable helper) ──
+  function buildDaySection(day) {
     const stories = (day.stories || []).slice().sort((a, b) => (b.score || 0) - (a.score || 0));
-
     const label = formatArchiveDate(day.date);
     const dateStr = day.date ? new Date(day.date + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : label;
 
@@ -1574,19 +1585,28 @@ export function renderArchiveDays(days = []) {
       <div class="archive-grid">${cardList.join('') || '<p class="archive-empty">No stories for this date.</p>'}</div>
       ${showMoreBtn}
     </section>`;
+  }
+
+  // ── Month sections — each wraps its day sections ──
+  const monthSections = months.map(([key, monthDays], i) => {
+    const totalStories = monthDays.reduce((sum, d) => sum + (d.stories?.length || 0), 0);
+    const monthTitle = key !== 'unknown'
+      ? new Date(key + '-15T12:00:00Z').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      : 'Unknown Date';
+    const collapsed = i > 0;
+    const daySections = monthDays.map(buildDaySection).join('');
+
+    return `<div class="archive-month-section${collapsed ? ' archive-month--collapsed' : ''}" data-month="${escapeHtml(key)}">
+      <div class="archive-month-header" data-toggle-month="${escapeHtml(key)}">
+        <h2 class="archive-month-title">${escapeHtml(monthTitle)}</h2>
+        <span class="archive-month-count">${totalStories} stor${totalStories === 1 ? 'y' : 'ies'} &middot; ${monthDays.length} day${monthDays.length === 1 ? '' : 's'}</span>
+        <span class="archive-month-chevron" aria-hidden="true">&#9662;</span>
+      </div>
+      <div class="archive-month-body">${daySections}</div>
+    </div>`;
   }).join('');
 
-  container.innerHTML = chipNav + sections;
-
-  // Chip click — smooth-scroll to the target section and mark active chip
-  container.parentElement.addEventListener('click', (e) => {
-    const chip = e.target.closest('.archive-date-chip');
-    if (!chip) return;
-    const target = document.getElementById(`archive-day-${chip.dataset.dateTarget}`);
-    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    container.querySelectorAll('.archive-date-chip').forEach((c) => c.classList.remove('active'));
-    chip.classList.add('active');
-  }, { passive: true });
+  container.innerHTML = monthChipNav + monthSections;
 }
 
 function formatArchiveDate(isoDate) {
@@ -1881,7 +1901,10 @@ export function renderUSMap(container) {
   container.innerHTML = '';
   legMapSelectedState = null;
 
-  // Create tooltip (shared singleton)
+  // Populate name lookup from canonical US_STATES (for selectState + panel)
+  US_STATES_TOPO.forEach((s) => { STATE_NAMES[s.id] = s.name; });
+
+  // Shared tooltip singleton
   if (!legMapTooltip) {
     legMapTooltip = document.createElement('div');
     legMapTooltip.className = 'leg-map-tooltip';
@@ -1890,168 +1913,35 @@ export function renderUSMap(container) {
   }
   legMapTooltip.style.display = 'none';
 
-  // Build SVG
+  // Build transparent SVG overlay matching the PNG aspect
   const svgNS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('viewBox', '0 0 960 600');
+  svg.setAttribute('viewBox', `0 0 ${MAP_VIEWBOX.w} ${MAP_VIEWBOX.h}`);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-  svg.setAttribute('class', 'leg-map-svg');
+  svg.setAttribute('class', 'leg-map-svg leg-map-svg--overlay');
   svg.setAttribute('role', 'img');
-  svg.setAttribute('aria-label', 'Interactive map of the United States');
+  svg.setAttribute('aria-label', 'Interactive map of the United States — select a state');
 
-  // Radial gradient background glow (::before pseudo handled in CSS)
-
-  // Ocean background — dark editorial gradient (matches CSS container)
-  const ocean = document.createElementNS(svgNS, 'rect');
-  ocean.setAttribute('width', '960');
-  ocean.setAttribute('height', '600');
-  ocean.setAttribute('fill', 'oklch(0.17 0.025 240)');
-  ocean.setAttribute('rx', '0');
-  ocean.style.pointerEvents = 'none';
-  svg.appendChild(ocean);
-
-  // Subtle radial gradient overlay on ocean (lighter near center, deeper at edges)
-  const oceanGrad = document.createElementNS(svgNS, 'radialGradient');
-  oceanGrad.id = 'oceanDepth';
-  oceanGrad.setAttribute('cx', '50%');
-  oceanGrad.setAttribute('cy', '45%');
-  oceanGrad.setAttribute('r', '65%');
-  const stop1 = document.createElementNS(svgNS, 'stop');
-  stop1.setAttribute('offset', '0%');
-  stop1.setAttribute('stop-color', 'oklch(0.20 0.030 235)');
-  const stop2 = document.createElementNS(svgNS, 'stop');
-  stop2.setAttribute('offset', '100%');
-  stop2.setAttribute('stop-color', 'oklch(0.14 0.020 250)');
-  oceanGrad.appendChild(stop1);
-  oceanGrad.appendChild(stop2);
-  // Append to defs (will be created below)
-
-  // Inset divider line (separates AK/HI from continental US)
-  const divider = document.createElementNS(svgNS, 'line');
-  divider.setAttribute('x1', '30'); divider.setAttribute('y1', '510');
-  divider.setAttribute('x2', '380'); divider.setAttribute('y2', '510');
-  divider.setAttribute('class', 'leg-map-divider');
-  svg.appendChild(divider);
-
-  // State paths group
-  const pathsGroup = document.createElementNS(svgNS, 'g');
-  pathsGroup.setAttribute('class', 'leg-map-paths');
-
-  // Build name lookup
-  US_STATES.forEach((s) => {
-    STATE_NAMES[s.id] = s.name;
-    if (!STATE_LIST_ORDER.includes(s.id)) STATE_LIST_ORDER.push(s.id);
-  });
-  STATE_LIST_ORDER.sort((a, b) => STATE_NAMES[a].localeCompare(STATE_NAMES[b]));
-
-  // ── SVG filter definitions ──
-  const defs = document.createElementNS(svgNS, 'defs');
-  defs.innerHTML = `
-    <filter id="stateShadow" x="-5%" y="-5%" width="115%" height="120%">
-      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#000" flood-opacity="0.25"/>
-    </filter>
-    <filter id="stateShadowHover" x="-10%" y="-10%" width="125%" height="130%">
-      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#c8a23a" flood-opacity="0.35"/>
-    </filter>
-    <pattern id="mapGrid" width="48" height="48" patternUnits="userSpaceOnUse">
-      <path d="M 48 0 L 0 0 0 48" fill="none" stroke="rgba(255,255,255,0.025)" stroke-width="0.5"/>
-    </pattern>`;
-  defs.appendChild(oceanGrad);
-  svg.appendChild(defs);
-
-  // Apply ocean gradient overlay
-  const oceanOverlay = document.createElementNS(svgNS, 'rect');
-  oceanOverlay.setAttribute('width', '960');
-  oceanOverlay.setAttribute('height', '600');
-  oceanOverlay.setAttribute('fill', 'url(#oceanDepth)');
-  oceanOverlay.style.pointerEvents = 'none';
-  svg.appendChild(oceanOverlay);
-
-  // Grid overlay (subtle intelligence/cartographic feel)
-  const grid = document.createElementNS(svgNS, 'rect');
-  grid.setAttribute('width', '960'); grid.setAttribute('height', '600');
-  grid.setAttribute('fill', 'url(#mapGrid)');
-  grid.style.pointerEvents = 'none';
-  svg.appendChild(grid);
-
-  // ── Create per-state <g> groups ──
-  const stateGroups = {};
-  US_STATES.forEach((state, index) => {
+  // Per-state hit polygons (transparent by default; CSS tints on interaction)
+  US_STATES_TOPO.forEach((state) => {
     const g = document.createElementNS(svgNS, 'g');
     g.setAttribute('class', 'leg-state-group');
     g.setAttribute('data-state', state.id);
     g.setAttribute('data-state-name', state.name);
-    g.setAttribute('filter', 'url(#stateShadow)');
-    g.style.transition = 'filter 0.2s ease';
 
     const path = document.createElementNS(svgNS, 'path');
     path.setAttribute('d', state.path);
-    const colorIdx = STATE_COLOR_MAP[state.id] || 1;
-    const hasData = !!getLegData(state.id);
-    path.setAttribute('class', `leg-state-path leg-state-c${colorIdx}${hasData ? ' leg-state-active' : ''}`);
+    path.setAttribute('class', 'leg-state-hit');
     path.setAttribute('aria-label', state.name);
     path.setAttribute('role', 'button');
     path.setAttribute('tabindex', '0');
-    path.style.animationDelay = `${index * 12}ms`;
     g.appendChild(path);
-
-    pathsGroup.appendChild(g);
-    stateGroups[state.id] = { g, path };
+    svg.appendChild(g);
   });
 
-  svg.appendChild(pathsGroup);
   container.appendChild(svg);
 
-  // ══════════════════════════════════════════════════════════════════════
-  // TECHNIQUE LAYER 1 — Polylabel visual center algorithm
-  // Paths are now in the DOM so we can extract their d="" data
-  // ══════════════════════════════════════════════════════════════════════
-  const visualCenters = {};
-  const stateAreas = {};
-  const inscribedRadii = {};
-
-  US_STATES.forEach((state) => {
-    const pathEl = stateGroups[state.id].path;
-    let bbox;
-    try { bbox = pathEl.getBBox(); } catch (_) { bbox = { x: 0, y: 0, width: 0, height: 0 }; }
-    stateAreas[state.id] = bbox.width * bbox.height;
-
-    // Parse path d="" into polygon rings
-    const d = state.path;
-    const rings = pathToRings(d);
-    if (rings.length === 0) {
-      visualCenters[state.id] = [bbox.x + bbox.width / 2, bbox.y + bbox.height / 2];
-      inscribedRadii[state.id] = 0;
-      return;
-    }
-
-    // For multi-polygon states (HI, MI, AK), use the largest polygon
-    const primary = largestRing(rings);
-    try {
-      const result = polylabel([primary], 1.0);
-      const cx = result[0], cy = result[1];
-      inscribedRadii[state.id] = result[2];
-      visualCenters[state.id] = [cx, cy];
-    } catch (_) {
-      visualCenters[state.id] = [bbox.x + bbox.width / 2, bbox.y + bbox.height / 2];
-      inscribedRadii[state.id] = 0;
-    }
-
-    // Store polylabel result on the group element for ResizeObserver
-    const g = stateGroups[state.id].g;
-    g.setAttribute('data-label-x', visualCenters[state.id][0]);
-    g.setAttribute('data-label-y', visualCenters[state.id][1]);
-  });
-
-  // Set transform-origin on each group now that we have centers
-  US_STATES.forEach((state) => {
-    const [vcx, vcy] = visualCenters[state.id];
-    stateGroups[state.id].g.style.transformOrigin = `${vcx}px ${vcy}px`;
-  });
-
-  // (Labels and leader lines removed — map shows state shapes only)
-
-  // ── Aria live region for keyboard state announcements ──
+  // Screen-reader announcer
   let ariaLive = document.getElementById('legMapAriaLive');
   if (!ariaLive) {
     ariaLive = document.createElement('div');
@@ -2062,19 +1952,7 @@ export function renderUSMap(container) {
     document.body.appendChild(ariaLive);
   }
 
-  // ── Render sidebar ──
-  const sidebar = document.getElementById('legSidebar');
-  if (sidebar) renderMapSidebar(sidebar);
-
-  // ══════════════════════════════════════════════════════════════════════
-  // SVG Event handlers — 3-channel architecture
-  // Channel 1: Map hover (map-only visual + tooltip, NO sidebar effect)
-  // Channel 2: Map click / keyboard (selection on BOTH map + sidebar)
-  // Channel 3: Sidebar click / search (sidebar-initiated, see renderMapSidebar)
-  // ══════════════════════════════════════════════════════════════════════
-
-  // ── Channel 1: Map hover — map-only, ephemeral ──
-  // TECHNIQUE LAYER 6 — Tooltip with 200ms dwell delay + viewport collision avoidance
+  // ── Hover (tooltip + tint on polygon) ──
   let lastHoveredGroup = null;
   let tooltipDwellTimer = null;
   let tooltipReady = false;
@@ -2088,27 +1966,15 @@ export function renderUSMap(container) {
       tooltipReady = false;
       lastTooltipAbbr = null;
       legMapTooltip.style.display = 'none';
-      updateQuickStat(null);
       return;
     }
     const abbr = g.dataset.state;
-
-    // Quick stat panel (map-only, doesn't touch sidebar list)
-    updateQuickStat(abbr);
-
-    // Map hover visual — ONLY on map path, NO sidebar class changes
     if (g !== lastHoveredGroup) {
       clearMapHover();
-      // Re-append to end of parent for SVG paint order (renders on top)
-      const parent = g.parentNode;
-      if (parent) parent.appendChild(g);
-      g.setAttribute('filter', 'url(#stateShadowHover)');
-      const hovPath = g.querySelector('.leg-state-path');
-      if (hovPath) hovPath.classList.add('leg-state-path--hovered');
+      const hovPath = g.querySelector('.leg-state-hit');
+      if (hovPath) hovPath.classList.add('leg-state-hit--hovered');
       lastHoveredGroup = g;
     }
-
-    // 200ms dwell delay before showing tooltip (prevents flicker on small states)
     if (abbr !== lastTooltipAbbr) {
       lastTooltipAbbr = abbr;
       tooltipReady = false;
@@ -2117,9 +1983,8 @@ export function renderUSMap(container) {
       tooltipDwellTimer = setTimeout(() => {
         tooltipReady = true;
         showMapTooltip(g, e);
-      }, 200);
+      }, 180);
     } else if (tooltipReady) {
-      // Already dwelling — update position only
       positionTooltip(e);
     }
   });
@@ -2128,33 +1993,29 @@ export function renderUSMap(container) {
     const abbr = g.dataset.state;
     const name = g.dataset.stateName;
     const data = getLegData(abbr);
-    const billCount = data ? data.totalBills : 0;
-    const passedCount = data ? data.bills.filter(b => b.status === 'Passed').length : 0;
-    const proposedCount = billCount - passedCount;
+    const total = data ? (data.totalBills || 0) : 0;
+    const passed = data ? (data.passed || 0) : 0;
+    const inProcess = data ? (data.inProcess || 0) : 0;
+    const proposed = data ? (data.proposed || 0) : 0;
     legMapTooltip.innerHTML = `
-      <span class="leg-tooltip-badge">PRIMARY SOURCE</span>
       <span class="leg-tooltip-name">${escapeHtml(name)}</span>
-      <span class="leg-tooltip-domain"><strong>${escapeHtml(abbr)}</strong> <span class="leg-tooltip-path">/ legislature / ${new Date().getFullYear()} session</span></span>
-      <span class="leg-tooltip-stat">${billCount} active bill${billCount !== 1 ? 's' : ''} · <span class="leg-tooltip-passed">${passedCount} passed</span> · <span class="leg-tooltip-proposed">${proposedCount} proposed</span></span>
-      <span class="leg-tooltip-date">${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>`;
+      <span class="leg-tooltip-domain"><strong>${escapeHtml(abbr)}</strong> <span class="leg-tooltip-path">${new Date().getFullYear()} session</span></span>
+      ${data
+        ? `<span class="leg-tooltip-stat">${total} bill${total !== 1 ? 's' : ''} · <span class="leg-tooltip-passed">${passed} passed</span> · <span class="leg-tooltip-inprocess">${inProcess} in process</span> · <span class="leg-tooltip-proposed">${proposed} proposed</span></span>`
+        : `<span class="leg-tooltip-stat leg-tooltip-empty">No tracked legislation</span>`}`;
     legMapTooltip.style.display = '';
     positionTooltip(e);
   }
 
-  // TECHNIQUE LAYER 6 — Viewport collision avoidance
   function positionTooltip(e) {
     const tx = e.clientX + 16, ty = e.clientY - 8;
     const tw = legMapTooltip.offsetWidth, th = legMapTooltip.offsetHeight;
     const vw = window.innerWidth, vh = window.innerHeight;
     let finalX = tx, finalY = ty;
-    let originX = 'left', originY = 'top';
-    // Flip right → left if overflows right edge
-    if (tx + tw > vw - 16) { finalX = e.clientX - tw - 16; originX = 'right'; }
-    // Flip down → up if overflows bottom edge
-    if (ty + th > vh - 16) { finalY = e.clientY - th - 8; originY = 'bottom'; }
+    if (tx + tw > vw - 16) finalX = e.clientX - tw - 16;
+    if (ty + th > vh - 16) finalY = e.clientY - th - 8;
     legMapTooltip.style.left = finalX + 'px';
     legMapTooltip.style.top = finalY + 'px';
-    legMapTooltip.style.transformOrigin = `${originX} ${originY}`;
   }
 
   svg.addEventListener('mouseleave', () => {
@@ -2163,204 +2024,78 @@ export function renderUSMap(container) {
     lastTooltipAbbr = null;
     legMapTooltip.style.display = 'none';
     clearMapHover();
-    updateQuickStat(null);
   });
 
-  // ── Channel 2: Map click — selection on both map + sidebar ──
-  // ENHANCEMENT: Click-to-lock (pinned) — second click on same state locks panel
-  let pinnedState = null;
-
+  // ── Click → select state ──
   svg.addEventListener('click', (e) => {
     const g = e.target.closest('.leg-state-group');
     if (!g) return;
-    const abbr = g.dataset.state;
-    if (abbr === pinnedState) {
-      // Already pinned — unpin
-      pinnedState = null;
-      const pinnedPath = g.querySelector('.leg-state-path');
-      if (pinnedPath) pinnedPath.classList.remove('leg-state-path--pinned');
-    } else if (abbr === legMapSelectedState) {
-      // Same state clicked again — pin it
-      pinnedState = abbr;
-      const pinnedPath = g.querySelector('.leg-state-path');
-      if (pinnedPath) pinnedPath.classList.add('leg-state-path--pinned');
-    } else {
-      // New state — clear pin, select new
-      if (pinnedState) {
-        const prevPinned = svg.querySelector(`.leg-state-group[data-state="${pinnedState}"] .leg-state-path`);
-        if (prevPinned) prevPinned.classList.remove('leg-state-path--pinned');
-        pinnedState = null;
-      }
-      selectState(abbr, 'map');
-    }
+    selectState(g.dataset.state, 'map');
   });
 
-  // ENHANCEMENT: Keyboard navigation — Enter/Space to select, Arrow keys for adjacency
+  // ── Keyboard activation ──
   svg.addEventListener('keydown', (e) => {
     const g = e.target.closest('.leg-state-group');
     if (!g) return;
-    const abbr = g.dataset.state;
-
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      selectState(abbr, 'map');
+      selectState(g.dataset.state, 'map');
+      if (ariaLive) ariaLive.textContent = `Selected: ${STATE_NAMES[g.dataset.state] || g.dataset.state}`;
+    }
+  });
+
+  // ── Floating Atlantic-side search bar ──
+  wireUpMapSearch(svg);
+}
+
+// ── Search bar wiring ──
+function wireUpMapSearch(svg) {
+  const input = document.getElementById('legStateSearch');
+  if (!input) return;
+
+  function clearSearchHighlights() {
+    document.querySelectorAll('.leg-state-hit--search-match').forEach((p) => {
+      p.classList.remove('leg-state-hit--search-match');
+    });
+  }
+
+  function applySearch(q) {
+    clearSearchHighlights();
+    if (!q) return [];
+    const matches = [];
+    US_STATES_TOPO.forEach((s) => {
+      const hay = (s.name + ' ' + s.id).toLowerCase();
+      if (hay.includes(q)) {
+        matches.push(s.id);
+        const path = svg.querySelector(`.leg-state-group[data-state="${s.id}"] .leg-state-hit`);
+        if (path) path.classList.add('leg-state-hit--search-match');
+      }
+    });
+    return matches;
+  }
+
+  input.addEventListener('input', () => {
+    applySearch(input.value.trim().toLowerCase());
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const matches = applySearch(input.value.trim().toLowerCase());
+      if (matches.length > 0) selectState(matches[0], 'search');
     } else if (e.key === 'Escape') {
-      // Unpin + clear
-      if (pinnedState) {
-        const prevPinned = svg.querySelector(`.leg-state-group[data-state="${pinnedState}"] .leg-state-path`);
-        if (prevPinned) prevPinned.classList.remove('leg-state-path--pinned');
-        pinnedState = null;
-      }
-    } else if (['ArrowRight','ArrowLeft','ArrowUp','ArrowDown'].includes(e.key)) {
-      e.preventDefault();
-      const neighbors = STATE_ADJACENCY[abbr] || [];
-      if (neighbors.length === 0) return;
-
-      const [cx, cy] = visualCenters[abbr];
-      let best = null, bestScore = -Infinity;
-      for (const nId of neighbors) {
-        if (!visualCenters[nId]) continue;
-        const [nx, ny] = visualCenters[nId];
-        const dx = nx - cx, dy = ny - cy;
-        let score = 0;
-        if (e.key === 'ArrowRight') score = dx - Math.abs(dy) * 0.5;
-        else if (e.key === 'ArrowLeft') score = -dx - Math.abs(dy) * 0.5;
-        else if (e.key === 'ArrowDown') score = dy - Math.abs(dx) * 0.5;
-        else if (e.key === 'ArrowUp') score = -dy - Math.abs(dx) * 0.5;
-        if (score > bestScore) { bestScore = score; best = nId; }
-      }
-      if (best) {
-        const nextG = svg.querySelector(`.leg-state-group[data-state="${best}"]`);
-        if (nextG) {
-          const nextPath = nextG.querySelector('.leg-state-path');
-          if (nextPath) nextPath.focus();
-          selectState(best, 'map');
-          // Announce to screen readers
-          if (ariaLive) ariaLive.textContent = `Now viewing: ${STATE_NAMES[best] || best}`;
-        }
-      }
+      input.value = '';
+      clearSearchHighlights();
+      input.blur();
     }
   });
 }
 
-// ── Sidebar rendering ──
-function renderMapSidebar(sidebar) {
-  sidebar.innerHTML = `
-    <div class="leg-search-wrap">
-      <svg class="leg-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-      <input type="text" class="leg-search-input" id="legStateSearch" placeholder="Search a state..." autocomplete="off" spellcheck="false">
-    </div>
-    <ul class="leg-state-list" id="legStateList" role="listbox" aria-label="State list"></ul>
-    <div class="leg-quick-stat" id="legQuickStat">
-      <div class="leg-quick-stat-empty">Hover a state to preview</div>
-    </div>
-  `;
-
-  const list = sidebar.querySelector('#legStateList');
-  STATE_LIST_ORDER.forEach((abbr) => {
-    const name = STATE_NAMES[abbr];
-    const li = document.createElement('li');
-    li.className = 'leg-state-item';
-    li.dataset.state = abbr;
-    li.setAttribute('tabindex', '0');
-    li.setAttribute('role', 'option');
-    li.setAttribute('aria-selected', 'false');
-    li.setAttribute('aria-label', `View legislation for ${name}`);
-    li.innerHTML = `<span class="leg-state-item-name">${name}</span><span class="leg-state-item-abbr">${abbr}</span>`;
-    list.appendChild(li);
-  });
-
-  // ── Channel 3: Sidebar search — filters list + highlights matching state on map ──
-  const searchInput = sidebar.querySelector('#legStateSearch');
-  searchInput.addEventListener('input', () => {
-    const q = searchInput.value.trim().toLowerCase();
-    // Clear previous search highlights on map
-    document.querySelectorAll('.leg-state-path--search-match').forEach(p => {
-      p.classList.remove('leg-state-path--search-match');
-    });
-
-    let matchCount = 0;
-    list.querySelectorAll('.leg-state-item').forEach((li) => {
-      const name = STATE_NAMES[li.dataset.state].toLowerCase();
-      const abbr = li.dataset.state.toLowerCase();
-      const match = !q || name.includes(q) || abbr.includes(q);
-      li.classList.toggle('leg-state-item--hidden', !match);
-
-      // ENHANCEMENT: Search-driven map highlight
-      if (match && q) {
-        matchCount++;
-        const mapPath = document.querySelector(`.leg-state-group[data-state="${li.dataset.state}"] .leg-state-path`);
-        if (mapPath) mapPath.classList.add('leg-state-path--search-match');
-      }
-    });
-  });
-  searchInput.addEventListener('blur', () => {
-    // Clear map highlights on search blur
-    document.querySelectorAll('.leg-state-path--search-match').forEach(p => {
-      p.classList.remove('leg-state-path--search-match');
-    });
-  });
-
-  // ── Channel 3: List item click → select state (sidebar-initiated) ──
-  list.addEventListener('click', (e) => {
-    const li = e.target.closest('.leg-state-item');
-    if (li) selectState(li.dataset.state, 'sidebar');
-  });
-
-  // ── Channel 3: List item keyboard activation ──
-  list.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      const li = e.target.closest('.leg-state-item');
-      if (li) { e.preventDefault(); selectState(li.dataset.state, 'sidebar'); }
-    }
-  });
-
-  // List item hover — sidebar-only quick stat, NO map hover effect
-  list.addEventListener('mouseover', (e) => {
-    const li = e.target.closest('.leg-state-item');
-    if (li) updateQuickStat(li.dataset.state);
-  });
-  list.addEventListener('mouseleave', () => {
-    updateQuickStat(null);
-  });
-}
-
-// ── Channel 1: Clear map hover (map-only, never touches sidebar) ──
+// ── Clear hover tint ──
 function clearMapHover() {
-  const prev = document.querySelector('.leg-state-path--hovered');
-  if (prev) {
-    prev.classList.remove('leg-state-path--hovered');
-    const g = prev.closest('.leg-state-group');
-    if (g) {
-      g.setAttribute('filter', 'url(#stateShadow)');
-    }
-  }
+  document.querySelectorAll('.leg-state-hit--hovered').forEach((p) => {
+    p.classList.remove('leg-state-hit--hovered');
+  });
 }
-
-// ── Quick-stat panel ──
-function updateQuickStat(abbr) {
-  const el = document.getElementById('legQuickStat');
-  if (!el) return;
-  if (!abbr) {
-    el.innerHTML = '<div class="leg-quick-stat-empty">Hover a state to preview</div>';
-    return;
-  }
-  const data = getLegData(abbr);
-  const name = STATE_NAMES[abbr] || abbr;
-  if (!data) {
-    el.innerHTML = `<div class="leg-quick-stat-content"><strong>${name}</strong> (${abbr})<br><span class="leg-qs-dim">No data available</span></div>`;
-    return;
-  }
-  el.innerHTML = `
-    <div class="leg-quick-stat-content">
-      <div class="leg-qs-name">${name} <span class="leg-qs-abbr">${abbr}</span></div>
-      <div class="leg-qs-row"><span class="leg-qs-label">Total Bills This Session:</span><span class="leg-qs-val">${data.totalBills}</span></div>
-      <div class="leg-qs-row"><span class="leg-qs-label">Passed:</span><span class="leg-qs-val leg-qs-passed">${data.passed}</span><span class="leg-qs-sep">|</span><span class="leg-qs-label">Proposed:</span><span class="leg-qs-val leg-qs-proposed">${data.proposed}</span></div>
-      <div class="leg-qs-row"><span class="leg-qs-label">Most Active Category:</span><span class="leg-qs-val">${data.topCategory}</span></div>
-    </div>`;
-}
-// clearQuickStat removed — updateQuickStat(null) handles clearing
-
 // ── Lazy-load legislation data ──
 let _legDataModule = null;
 async function loadLegData() {
@@ -2438,18 +2173,15 @@ export function clearMapSelection() {
 }
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  §L.3  STATE LEGISLATION PANEL                                         ║
+// ║  §L.3  STATE LEGISLATION PANEL — 3-bucket (Passed / In Process / Proposed)
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
-const LEG_CATEGORIES = ['All','Healthcare','Education','Environment','Criminal Justice','Economy & Taxes','Civil Rights','Infrastructure','Public Safety','Other'];
-const LEG_STATUSES = ['All','Proposed','Passed'];
-const LEG_SORTS = [
-  { value: 'newest', label: 'Newest First' },
-  { value: 'oldest', label: 'Oldest First' },
-  { value: 'category', label: 'Category A–Z' },
-  { value: 'status', label: 'Status' }
+const LEG_BUCKET_CAP = 10;
+const LEG_BUCKETS = [
+  { key: 'passed',     label: 'Passed',       dateKey: 'enacted',         fallbackDate: 'introduced' },
+  { key: 'in_process', label: 'In Process',   dateKey: 'lastActionDate',  fallbackDate: 'introduced' },
+  { key: 'proposed',   label: 'Proposed',     dateKey: 'introduced',      fallbackDate: 'introduced' }
 ];
-const LEG_PAGE_SIZE = 20;
 
 async function renderLegislationPanel(stateId) {
   const panel = document.getElementById('legStatePanel');
@@ -2460,386 +2192,195 @@ async function renderLegislationPanel(stateId) {
   const name = STATE_NAMES[stateId] || stateId;
 
   if (!stateData) {
-    panel.innerHTML = `<div class="leg-panel-empty"><div class="leg-panel-empty-icon">&#9878;</div><p class="leg-panel-empty-heading">No data available for ${name}</p></div>`;
+    panel.innerHTML = `
+      <div class="leg-panel-inner">
+        <header class="leg-panel-header">
+          <h2 class="leg-panel-state-name">${escapeHtml(name)}</h2>
+          <button class="leg-panel-close" type="button" data-leg-back aria-label="Close panel">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </header>
+        <div class="leg-panel-empty">
+          <p class="leg-panel-empty-heading">No tracked legislation for ${escapeHtml(name)}</p>
+          <p class="leg-panel-empty-sub">This state's bill data is not yet in our archive.</p>
+        </div>
+      </div>`;
+    wirePanelCloseHandlers(panel);
     panel.classList.add('leg-panel-active');
     return;
   }
 
-  // Reset filter state
-  legPanelState = {
-    stateId,
-    categories: new Set(),
-    status: 'All',
-    sort: 'newest',
-    search: '',
-    page: 1,
-    expanded: new Set()
-  };
+  legPanelState = { stateId, search: '', expanded: new Set() };
 
   const isNewPanel = !panel.classList.contains('leg-panel-active');
   const stateCode = stateId.toLowerCase();
   const flagUrl = `https://flagcdn.com/w40/us-${stateCode}.png`;
+  const totalBills = (stateData.bills || []).length;
+  const countPassed = stateData.passed ?? 0;
+  const countInProcess = stateData.inProcess ?? 0;
+  const countProposed = stateData.proposed ?? 0;
 
   panel.innerHTML = `
-    <div class="leg-panel-header">
-      <div class="leg-panel-header-top">
+    <div class="leg-panel-inner">
+      <header class="leg-panel-header">
         <div class="leg-panel-state-info">
-          <img src="${flagUrl}" alt="${escapeHtml(name)} flag" width="40" height="30" loading="lazy" class="leg-panel-flag" data-hide-on-error>
-          <h2 class="leg-panel-state-name">${escapeHtml(name)}</h2>
+          <img src="${flagUrl}" alt="${escapeHtml(name)} flag" width="32" height="24" loading="lazy" class="leg-panel-flag" data-hide-on-error>
+          <div>
+            <h2 class="leg-panel-state-name">${escapeHtml(name)}</h2>
+            <div class="leg-panel-session">${escapeHtml(String(stateData.session || ''))} Session · ${totalBills} tracked</div>
+          </div>
         </div>
-        <button class="leg-panel-back" type="button" data-leg-back>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
-          Back to Map
+        <button class="leg-panel-close" type="button" data-leg-back aria-label="Close panel">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
-      </div>
+      </header>
       <div class="leg-panel-stats">
-        <span class="leg-panel-stat">Total Bills: <strong>${stateData.totalBills}</strong></span>
-        <span class="leg-panel-stat">Passed: <strong class="leg-stat-passed">${stateData.passed}</strong></span>
-        <span class="leg-panel-stat">Proposed: <strong class="leg-stat-proposed">${stateData.proposed}</strong></span>
-        <span class="leg-panel-stat">Session: <strong>${stateData.session}</strong></span>
+        <span class="leg-stat-chip leg-stat-chip--passed"><span class="leg-stat-dot"></span>${countPassed} Passed</span>
+        <span class="leg-stat-chip leg-stat-chip--inprocess"><span class="leg-stat-dot"></span>${countInProcess} In Process</span>
+        <span class="leg-stat-chip leg-stat-chip--proposed"><span class="leg-stat-dot"></span>${countProposed} Proposed</span>
       </div>
+      <div class="leg-panel-search-wrap">
+        <svg class="leg-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="search" class="leg-panel-search" id="legPanelSearch" placeholder="Search bills in ${escapeHtml(name)}…" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="leg-panel-body" id="legPanelBody"></div>
     </div>
-    <div class="leg-panel-controls">
-      <div class="leg-panel-filters-row">
-        <div class="leg-category-pills" id="legCategoryPills"></div>
-        <div class="leg-filter-divider"></div>
-        <div class="leg-status-pills" id="legStatusPills"></div>
-      </div>
-      <div class="leg-panel-search-row">
-        <div class="leg-panel-sort-wrap">
-          <select class="leg-panel-sort" id="legPanelSort">${LEG_SORTS.map(s => `<option value="${s.value}">${s.label}</option>`).join('')}</select>
-        </div>
-        <div class="leg-panel-search-wrap">
-          <svg class="leg-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="text" class="leg-panel-search" id="legPanelSearch" placeholder="Search bills..." autocomplete="off" spellcheck="false">
-          <span class="leg-panel-search-count" id="legSearchCount"></span>
-        </div>
-      </div>
-      <div class="leg-active-filters" id="legActiveFilters"></div>
-    </div>
-    <div class="leg-cards-grid" id="legCardsGrid"></div>
-    <div class="leg-load-more-wrap" id="legLoadMoreWrap"></div>
   `;
 
-  // Render category pills
-  const catContainer = panel.querySelector('#legCategoryPills');
-  LEG_CATEGORIES.forEach((cat) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'leg-pill' + (cat === 'All' ? ' leg-pill--active' : '');
-    btn.dataset.category = cat;
-    btn.setAttribute('aria-pressed', cat === 'All' ? 'true' : 'false');
-    const icon = cat !== 'All' ? (LEG_CATEGORY_ICONS[cat] || '') : '';
-    btn.innerHTML = `${icon}<span>${cat}</span>`;
-    catContainer.appendChild(btn);
-  });
+  wirePanelCloseHandlers(panel);
+  wirePanelSearch(panel, stateData);
+  renderBuckets(stateData);
 
-  // Render status pills
-  const statusContainer = panel.querySelector('#legStatusPills');
-  LEG_STATUSES.forEach((st) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'leg-status-pill' + (st === 'All' ? ' leg-status-pill--active' : '');
-    btn.dataset.status = st;
-    btn.setAttribute('aria-pressed', st === 'All' ? 'true' : 'false');
-    const dotClass = st === 'Passed' ? 'leg-dot-passed' : st === 'Proposed' ? 'leg-dot-proposed' : 'leg-dot-all';
-    btn.innerHTML = `<span class="leg-status-dot ${dotClass}"></span>${st}`;
-    statusContainer.appendChild(btn);
-  });
-
-  // Wire up event handlers
-  wireUpPanelEvents(panel, stateData);
-
-  // Initial render
-  renderFilteredCards(stateData);
-
-  // Animate panel in
   if (isNewPanel) {
-    panel.classList.add('leg-panel-active');
-  } else {
-    // Cross-fade: panel already visible, just fade content
-    panel.style.opacity = '0';
-    requestAnimationFrame(() => {
-      panel.style.transition = 'opacity 200ms ease';
-      panel.style.opacity = '1';
-      setTimeout(() => { panel.style.transition = ''; }, 250);
-    });
+    requestAnimationFrame(() => panel.classList.add('leg-panel-active'));
   }
-
-  // Scroll panel into view
-  setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 }
 
-function wireUpPanelEvents(panel, stateData) {
-  // Category pills
-  panel.querySelector('#legCategoryPills').addEventListener('click', (e) => {
-    const btn = e.target.closest('.leg-pill');
-    if (!btn) return;
-    const cat = btn.dataset.category;
-    if (cat === 'All') {
-      legPanelState.categories.clear();
-      panel.querySelectorAll('.leg-pill').forEach((b) => {
-        b.classList.remove('leg-pill--active');
-        b.setAttribute('aria-pressed', 'false');
-      });
-      btn.classList.add('leg-pill--active');
-      btn.setAttribute('aria-pressed', 'true');
-    } else {
-      const allBtn = panel.querySelector('.leg-pill[data-category="All"]');
-      allBtn.classList.remove('leg-pill--active');
-      allBtn.setAttribute('aria-pressed', 'false');
-      btn.classList.toggle('leg-pill--active');
-      const isActive = btn.classList.contains('leg-pill--active');
-      btn.setAttribute('aria-pressed', String(isActive));
-      if (isActive) {
-        legPanelState.categories.add(cat);
-      } else {
-        legPanelState.categories.delete(cat);
-      }
-      if (legPanelState.categories.size === 0) {
-        allBtn.classList.add('leg-pill--active');
-        allBtn.setAttribute('aria-pressed', 'true');
-      }
-    }
-    legPanelState.page = 1;
-    renderFilteredCards(stateData);
-  });
+function wirePanelCloseHandlers(panel) {
+  const closeBtn = panel.querySelector('[data-leg-back]');
+  if (closeBtn) closeBtn.addEventListener('click', () => clearMapSelection());
 
-  // Status pills
-  panel.querySelector('#legStatusPills').addEventListener('click', (e) => {
-    const btn = e.target.closest('.leg-status-pill');
-    if (!btn) return;
-    panel.querySelectorAll('.leg-status-pill').forEach((b) => {
-      b.classList.remove('leg-status-pill--active');
-      b.setAttribute('aria-pressed', 'false');
-    });
-    btn.classList.add('leg-status-pill--active');
-    btn.setAttribute('aria-pressed', 'true');
-    legPanelState.status = btn.dataset.status;
-    legPanelState.page = 1;
-    renderFilteredCards(stateData);
-  });
-
-  // Sort
-  panel.querySelector('#legPanelSort').addEventListener('change', (e) => {
-    legPanelState.sort = e.target.value;
-    legPanelState.page = 1;
-    renderFilteredCards(stateData);
-  });
-
-  // Search (debounced)
-  let searchTimer;
-  panel.querySelector('#legPanelSearch').addEventListener('input', (e) => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => {
-      legPanelState.search = e.target.value.trim().toLowerCase();
-      legPanelState.page = 1;
-      renderFilteredCards(stateData);
-    }, 200);
-  });
-
-  // Back to map
-  panel.querySelector('[data-leg-back]').addEventListener('click', () => {
-    clearMapSelection();
-  });
-
-  // Active filters — clear all / individual
-  panel.querySelector('#legActiveFilters').addEventListener('click', (e) => {
-    if (e.target.closest('.leg-filter-clear-all')) {
-      legPanelState.categories.clear();
-      legPanelState.status = 'All';
-      legPanelState.search = '';
-      panel.querySelector('#legPanelSearch').value = '';
-      panel.querySelectorAll('.leg-pill').forEach((b) => b.classList.remove('leg-pill--active'));
-      panel.querySelector('.leg-pill[data-category="All"]').classList.add('leg-pill--active');
-      panel.querySelectorAll('.leg-status-pill').forEach((b) => b.classList.remove('leg-status-pill--active'));
-      panel.querySelector('.leg-status-pill[data-status="All"]').classList.add('leg-status-pill--active');
-      legPanelState.page = 1;
-      renderFilteredCards(stateData);
-      return;
-    }
-    const tag = e.target.closest('.leg-filter-tag');
-    if (!tag) return;
-    const type = tag.dataset.filterType;
-    const val = tag.dataset.filterValue;
-    if (type === 'category') {
-      legPanelState.categories.delete(val);
-      const pillBtn = panel.querySelector(`.leg-pill[data-category="${val}"]`);
-      if (pillBtn) pillBtn.classList.remove('leg-pill--active');
-      if (legPanelState.categories.size === 0) {
-        panel.querySelector('.leg-pill[data-category="All"]').classList.add('leg-pill--active');
-      }
-    } else if (type === 'status') {
-      legPanelState.status = 'All';
-      panel.querySelectorAll('.leg-status-pill').forEach((b) => b.classList.remove('leg-status-pill--active'));
-      panel.querySelector('.leg-status-pill[data-status="All"]').classList.add('leg-status-pill--active');
-    }
-    legPanelState.page = 1;
-    renderFilteredCards(stateData);
-  });
-
-  // Image error fallback (replaces inline onerror)
+  // Error-image fallback (replaces inline onerror)
   panel.addEventListener('error', (e) => {
-    if (e.target.hasAttribute('data-hide-on-error')) e.target.style.display = 'none';
+    if (e.target && e.target.hasAttribute && e.target.hasAttribute('data-hide-on-error')) {
+      e.target.style.display = 'none';
+    }
   }, true);
 
-  // Card expand/collapse + load more (delegated)
-  function toggleCard(card) {
-    if (!card) return;
-    const id = card.dataset.billId;
-    if (legPanelState.expanded.has(id)) {
-      legPanelState.expanded.delete(id);
-      card.classList.remove('leg-card--expanded');
-      card.setAttribute('aria-expanded', 'false');
-    } else {
-      legPanelState.expanded.add(id);
-      card.classList.add('leg-card--expanded');
-      card.setAttribute('aria-expanded', 'true');
-    }
-  }
+  // Card expand/collapse (event delegation)
   panel.addEventListener('click', (e) => {
-    // Load more button
-    if (e.target.closest('.leg-load-more-btn')) {
-      legPanelState.page++;
-      renderFilteredCards(stateData, true);
-      return;
-    }
-    // Card expand (skip links)
     const card = e.target.closest('.leg-card');
-    if (card && !e.target.closest('a')) {
-      toggleCard(card);
-    }
+    if (!card || e.target.closest('a')) return;
+    toggleCardExpand(card);
   });
-
-  // Keyboard activation for cards (Enter/Space)
   panel.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       const card = e.target.closest('.leg-card');
       if (card && !e.target.closest('a')) {
         e.preventDefault();
-        toggleCard(card);
+        toggleCardExpand(card);
       }
     }
   });
 }
 
-function getFilteredBills(stateData) {
-  let bills = [...stateData.bills];
-  const { categories, status, search, sort } = legPanelState;
-
-  // Category filter
-  if (categories.size > 0) {
-    bills = bills.filter((b) => categories.has(b.category));
+function toggleCardExpand(card) {
+  const id = card.dataset.billId;
+  if (legPanelState.expanded.has(id)) {
+    legPanelState.expanded.delete(id);
+    card.classList.remove('leg-card--expanded');
+    card.setAttribute('aria-expanded', 'false');
+  } else {
+    legPanelState.expanded.add(id);
+    card.classList.add('leg-card--expanded');
+    card.setAttribute('aria-expanded', 'true');
   }
-  // Status filter
-  if (status !== 'All') {
-    bills = bills.filter((b) => b.status === status.toLowerCase());
-  }
-  // Search filter
-  if (search) {
-    bills = bills.filter((b) =>
-      b.title.toLowerCase().includes(search) ||
-      b.id.toLowerCase().includes(search) ||
-      b.sponsor.toLowerCase().includes(search) ||
-      b.summary.toLowerCase().includes(search)
-    );
-  }
-  // Sort
-  switch (sort) {
-    case 'newest': bills.sort((a, b) => new Date(b.introduced) - new Date(a.introduced)); break;
-    case 'oldest': bills.sort((a, b) => new Date(a.introduced) - new Date(b.introduced)); break;
-    case 'category': bills.sort((a, b) => a.category.localeCompare(b.category)); break;
-    case 'status': bills.sort((a, b) => a.status.localeCompare(b.status)); break;
-  }
-  return bills;
 }
 
-function renderFilteredCards(stateData, append = false) {
-  const grid = document.getElementById('legCardsGrid');
-  const loadMoreWrap = document.getElementById('legLoadMoreWrap');
-  const countEl = document.getElementById('legSearchCount');
-  const filtersEl = document.getElementById('legActiveFilters');
-  if (!grid) return;
+function wirePanelSearch(panel, stateData) {
+  const input = panel.querySelector('#legPanelSearch');
+  if (!input) return;
+  let timer;
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      legPanelState.search = input.value.trim().toLowerCase();
+      renderBuckets(stateData);
+    }, 150);
+  });
+}
 
-  const filtered = getFilteredBills(stateData);
-  const total = stateData.bills.length;
-  const visible = Math.min(filtered.length, legPanelState.page * LEG_PAGE_SIZE);
-
-  // Update search count
-  if (countEl) {
-    countEl.textContent = filtered.length !== total ? `Showing ${Math.min(visible, filtered.length)} of ${total} bills` : '';
+function getBillsForBucket(stateData, bucketKey) {
+  const bills = (stateData.bills || []).filter((b) => (b.status || '').toLowerCase() === bucketKey);
+  const bucket = LEG_BUCKETS.find((b) => b.key === bucketKey);
+  const search = legPanelState.search;
+  let filtered = bills;
+  if (search) {
+    filtered = bills.filter((b) =>
+      (b.title || '').toLowerCase().includes(search) ||
+      (b.id || '').toLowerCase().includes(search) ||
+      (b.sponsor || '').toLowerCase().includes(search) ||
+      (b.summary || '').toLowerCase().includes(search)
+    );
   }
+  // Sort by most recent relevant date DESC
+  filtered.sort((a, b) => {
+    const da = a[bucket.dateKey] || a[bucket.fallbackDate] || '';
+    const db = b[bucket.dateKey] || b[bucket.fallbackDate] || '';
+    return (db || '').localeCompare(da || '');
+  });
+  return filtered.slice(0, LEG_BUCKET_CAP);
+}
 
-  // Update active filters strip
-  if (filtersEl) {
-    const tags = [];
-    for (const cat of legPanelState.categories) {
-      tags.push(`<button class="leg-filter-tag" data-filter-type="category" data-filter-value="${cat}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>${cat}</button>`);
-    }
-    if (legPanelState.status !== 'All') {
-      tags.push(`<button class="leg-filter-tag" data-filter-type="status" data-filter-value="${legPanelState.status}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>${legPanelState.status}</button>`);
-    }
-    if (tags.length) {
-      tags.push('<button class="leg-filter-clear-all">Clear All</button>');
-    }
-    filtersEl.innerHTML = tags.join('');
-  }
+function renderBuckets(stateData) {
+  const body = document.getElementById('legPanelBody');
+  if (!body) return;
+  body.innerHTML = LEG_BUCKETS.map((bucket) => {
+    const bills = getBillsForBucket(stateData, bucket.key);
+    const cards = bills.length > 0
+      ? bills.map((b) => renderBillCard(b, bucket)).join('')
+      : `<div class="leg-bucket-empty">— No bills in this status —</div>`;
+    return `
+      <section class="leg-bucket leg-bucket--${bucket.key}" data-bucket="${bucket.key}">
+        <header class="leg-bucket-header">
+          <span class="leg-bucket-dot"></span>
+          <h3 class="leg-bucket-title">${bucket.label}</h3>
+          <span class="leg-bucket-count">${bills.length}${bills.length === LEG_BUCKET_CAP ? ' · top 10' : ''}</span>
+        </header>
+        <ol class="leg-bucket-list">${cards}</ol>
+      </section>
+    `;
+  }).join('<hr class="leg-bucket-rule" aria-hidden="true">');
+}
 
-  // Empty state
-  if (filtered.length === 0) {
-    grid.innerHTML = `
-      <div class="leg-panel-empty">
-        <svg class="leg-panel-empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3 10 4-6h10l4 6-4 6H7z"/><path d="M12 10v.01"/></svg>
-        <p class="leg-panel-empty-heading">No legislation found</p>
-        <p class="leg-panel-empty-sub">matching your current filters.</p>
-        <button class="leg-pill leg-pill--active leg-filter-clear-all" type="button">Clear All Filters</button>
-      </div>`;
-    if (loadMoreWrap) loadMoreWrap.innerHTML = '';
-    return;
-  }
+function renderBillCard(bill, bucket) {
+  const esc = escapeHtml;
+  const isExpanded = legPanelState.expanded.has(bill.id);
+  const dateLabel = bucket.key === 'passed' && bill.enacted
+    ? `Enacted ${fmtDate(bill.enacted)}`
+    : bucket.key === 'in_process' && bill.lastActionDate
+      ? `Last action ${fmtDate(bill.lastActionDate)}`
+      : `Introduced ${fmtDate(bill.introduced)}`;
+  const catSlug = (bill.category || 'Other').toLowerCase().replace(/[^a-z]/g, '');
+  const summaryShort = bill.summary && bill.summary.length > 140
+    ? bill.summary.slice(0, 140).trimEnd() + '…'
+    : (bill.summary || '');
 
-  // Render cards
-  const billsToShow = filtered.slice(0, visible);
-  const startIdx = append ? (legPanelState.page - 1) * LEG_PAGE_SIZE : 0;
-
-  if (!append) grid.innerHTML = '';
-
-  billsToShow.slice(append ? startIdx : 0).forEach((bill, i) => {
-    const card = document.createElement('div');
-    const isExpanded = legPanelState.expanded.has(bill.id);
-    card.className = 'leg-card' + (isExpanded ? ' leg-card--expanded' : '');
-    card.dataset.billId = bill.id;
-    card.setAttribute('role', 'button');
-    card.setAttribute('tabindex', '0');
-    card.setAttribute('aria-expanded', String(isExpanded));
-    if (append) card.style.animationDelay = `${i * 30}ms`;
-
-    const isPassed = bill.status === 'passed';
-    const statusClass = isPassed ? 'leg-badge-passed' : 'leg-badge-proposed';
-    const statusLabel = isPassed ? 'PASSED' : 'PROPOSED';
-    const dateLabel = isPassed && bill.enacted ? `Enacted: ${fmtDate(bill.enacted)}` : `Introduced: ${fmtDate(bill.introduced)}`;
-    const summaryShort = bill.summary.length > 120 ? bill.summary.slice(0, 120) + '...' : bill.summary;
-    const icon = LEG_CATEGORY_ICONS[bill.category] || LEG_CATEGORY_ICONS['Other'];
-
-    const esc = escapeHtml;
-    card.innerHTML = `
+  return `
+    <li class="leg-card ${isExpanded ? 'leg-card--expanded' : ''}" data-bill-id="${esc(bill.id)}" data-category="${catSlug}" role="button" tabindex="0" aria-expanded="${isExpanded}">
       <div class="leg-card-top">
         <span class="leg-card-bill-num">${esc(bill.id)}</span>
-        <span class="leg-card-status ${statusClass}">${statusLabel}</span>
+        <span class="leg-card-cat-tag" data-category="${catSlug}">${esc(bill.category || 'Other')}</span>
       </div>
-      <h3 class="leg-card-title">${esc(bill.title)}</h3>
+      <h4 class="leg-card-title">${esc(bill.title)}</h4>
       <div class="leg-card-meta">
-        <span class="leg-card-cat">${icon}<span>${esc(bill.category)}</span></span>
         <span class="leg-card-date">${dateLabel}</span>
+        <span class="leg-card-sep">·</span>
+        <span class="leg-card-sponsor">${esc(bill.sponsor || '')}</span>
       </div>
       <p class="leg-card-summary">${esc(summaryShort)}</p>
       <div class="leg-card-expanded-content">
-        <p class="leg-card-full-summary">${esc(bill.summary)}</p>
-        <div class="leg-card-detail-grid">
-          <div class="leg-card-detail"><span class="leg-card-detail-label">Sponsor</span><span>${esc(bill.sponsor)}</span></div>
-          <div class="leg-card-detail"><span class="leg-card-detail-label">Introduced</span><span>${fmtDate(bill.introduced)}</span></div>
-          <div class="leg-card-detail"><span class="leg-card-detail-label">Status</span><span>${isPassed && bill.enacted ? `Passed → Enacted ${fmtDate(bill.enacted)}` : 'Proposed'}</span></div>
-        </div>
+        <p class="leg-card-full-summary">${esc(bill.summary || '')}</p>
         ${bill.keyProvisions && bill.keyProvisions.length ? `
           <div class="leg-card-provisions">
             <div class="leg-card-provisions-title">Key Provisions</div>
@@ -2847,28 +2388,18 @@ function renderFilteredCards(stateData, append = false) {
           </div>` : ''}
         ${bill.fullTextUrl ? `<a href="${esc(bill.fullTextUrl)}" target="_blank" rel="noopener noreferrer" class="leg-card-link">Read Full Text <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></a>` : ''}
       </div>
-      <div class="leg-card-chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
-    `;
-    card.style.setProperty('--status-color', isPassed ? 'var(--leg-passed)' : 'var(--leg-proposed)');
-    grid.appendChild(card);
-  });
-
-  // Load more button
-  if (loadMoreWrap) {
-    const remaining = filtered.length - visible;
-    if (remaining > 0) {
-      loadMoreWrap.innerHTML = `<button class="leg-load-more-btn" type="button">Load ${Math.min(LEG_PAGE_SIZE, remaining)} More Bills (${remaining} remaining)</button>`;
-    } else {
-      loadMoreWrap.innerHTML = '';
-    }
-  }
+      <div class="leg-card-chevron" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+    </li>
+  `;
 }
 
 function fmtDate(dateStr) {
   if (!dateStr) return '—';
   const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d)) return '—';
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
+
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║  §L2  FEDERAL LEGISLATION DASHBOARD                                    ║
@@ -3373,4 +2904,363 @@ function initCardRevealObserver() {
     tile.style.transitionDelay = `${Math.min(i, 6) * 60}ms`;
     observer.observe(tile);
   });
+}
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  EDITORIAL BROADSHEET RENDERERS                                        ║
+// ║  Render dynamic story data into the editorial layout sections          ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+function mapTopicToClass(topic) {
+  const map = {
+    economy: 'topic-economic', finance: 'topic-economic', macroeconomics: 'topic-economic',
+    banking: 'topic-economic', global_trade: 'topic-economic',
+    geopolitics: 'topic-diplomatic', international: 'topic-diplomatic',
+    defense: 'topic-security', cyber: 'topic-security',
+    tech: 'topic-technology', ai: 'topic-technology', science: 'topic-technology', biotech: 'topic-technology',
+    uspolitics: 'topic-intelligence', law: 'topic-intelligence', elections: 'topic-intelligence',
+    health: 'topic-field', energy: 'topic-field', climate: 'topic-field',
+    labor: 'topic-field', housing: 'topic-field', education: 'topic-field',
+    infrastructure: 'topic-field', engineering: 'topic-field',
+  };
+  return map[topic] || '';
+}
+
+function formatDateEditorial(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase();
+}
+
+function formatTimeUTC(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+}
+
+function topicLabel(topic) {
+  const labels = {
+    economy: 'ECONOMY', finance: 'FINANCE', macroeconomics: 'ECONOMY',
+    banking: 'BANKING', global_trade: 'TRADE',
+    geopolitics: 'GEOPOLITICS', international: 'DIPLOMACY',
+    defense: 'DEFENSE', cyber: 'CYBERSECURITY',
+    tech: 'TECHNOLOGY', ai: 'ARTIFICIAL INTELLIGENCE', science: 'SCIENCE', biotech: 'BIOTECH',
+    uspolitics: 'U.S. POLITICS', law: 'LAW', elections: 'ELECTIONS',
+    health: 'HEALTH', energy: 'ENERGY', climate: 'CLIMATE',
+    labor: 'LABOR', housing: 'HOUSING', education: 'EDUCATION',
+    infrastructure: 'INFRASTRUCTURE', engineering: 'ENGINEERING',
+  };
+  return labels[topic] || (topic || 'INTELLIGENCE').toUpperCase().replace(/_/g, ' ');
+}
+
+function edImageHtml(story, sizeClass = '') {
+  if (!story.imageUrl) return '';
+  const cls = sizeClass ? `ed-image ${sizeClass}` : 'ed-image';
+  return `<div class="${cls}"><img src="${escapeHtml(upgradeImageUrl(story.imageUrl))}" alt="${escapeHtml(story.headline || '')}" loading="lazy"></div>`;
+}
+
+function edStoryLink(story) {
+  if (story.slug) return `/story/${escapeHtml(story.slug)}`;
+  if (story.url) return safeUrl(story.url);
+  return '#';
+}
+
+export function renderEditorialLead(store, claimed) {
+  const container = document.getElementById('editorialLead');
+  if (!container) return;
+  const lead = store.stories?.[0] || store.daily?.[0];
+  if (!lead) {
+    container.innerHTML = `<div class="ed-article-inner"><span class="ed-kicker">AWAITING BRIEFING</span><h2 class="ed-headline">No verified stories available yet</h2><p class="ed-excerpt">Run a refresh to ingest latest feeds and build the daily intelligence stack.</p></div>`;
+    return;
+  }
+  if (claimed && lead.id) claimed.add(lead.id);
+
+  const topic = lead.topics?.[0] || '';
+  const topicClass = mapTopicToClass(topic);
+  const firstChar = (lead.summary || lead.dek || 'T')[0];
+  const bodyText = (lead.summary || lead.dek || '').slice(1);
+  const source = lead.sources?.[0]?.name || lead.source || 'THE UNDERCURRENT';
+  const link = edStoryLink(lead);
+  const linkTarget = lead.slug ? '' : ' target="_blank" rel="noopener noreferrer"';
+
+  container.innerHTML = `
+    <div class="ed-article-inner">
+      <span class="ed-kicker ${topicClass}">${topicLabel(topic)}</span>
+      <h2 class="ed-headline"><a href="${link}"${linkTarget}>${escapeHtml(lead.headline || lead.title)}</a></h2>
+      <div class="ed-meta">
+        <span class="ed-byline">By ${escapeHtml(source)}</span>
+        <span class="ed-dateline">${formatDateEditorial(lead.updatedAt || lead.publishedAt)} &bull; ${formatTimeUTC(lead.updatedAt || lead.publishedAt)} UTC</span>
+      </div>
+      ${edImageHtml(lead)}
+      <div class="ed-body two-col">
+        <p><span class="ed-drop-cap">${escapeHtml(firstChar)}</span>${escapeHtml(bodyText)}</p>
+        ${lead.whyItMatters ? `<p>${escapeHtml(lead.whyItMatters)}</p>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+export function renderEditorialSecondary(store, claimed) {
+  const container = document.getElementById('editorialSecondary');
+  if (!container) return;
+  const stories = (store.stories || []).filter(s => !claimed || !claimed.has(s.id)).slice(0, 2);
+  if (!stories.length) { container.style.display = 'none'; return; }
+  container.style.display = '';
+  stories.forEach(s => { if (claimed && s.id) claimed.add(s.id); });
+
+  container.innerHTML = `<div class="ed-article-inner ed-grid-two">
+    ${stories.map((story, i) => {
+      const side = i === 0 ? 'left' : 'right';
+      const topicClass = mapTopicToClass(story.topics?.[0]);
+      const link = edStoryLink(story);
+      const linkTarget = story.slug ? '' : ' target="_blank" rel="noopener noreferrer"';
+      return `<div class="ed-card-${side}">
+        ${edImageHtml(story, 'ed-image-sm')}
+        <span class="ed-kicker ${topicClass}">${topicLabel(story.topics?.[0])}</span>
+        <h3 class="ed-headline-sm"><a href="${link}"${linkTarget}>${escapeHtml(story.headline)}</a></h3>
+        <div class="ed-meta">
+          <span class="ed-dateline">${formatDateEditorial(story.updatedAt || story.publishedAt)} &bull; ${formatTimeUTC(story.updatedAt || story.publishedAt)} UTC</span>
+        </div>
+        <p class="ed-excerpt">${escapeHtml(story.dek || story.summary || '')}</p>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+export function renderEditorialCategories(store, claimed) {
+  const unclaimed = (store.stories || []).filter(s => !claimed || !claimed.has(s.id));
+
+  const buckets = {
+    geopolitics: [], // geopolitics, defense, international
+    technology: [],  // tech, cyber, ai, science
+    economy: [],     // economy, finance, macroeconomics, banking, global_trade
+    analysis: null,  // first enriched story
+    dispatches: [],  // everything else
+  };
+
+  for (const s of unclaimed) {
+    const t = s.topics?.[0] || '';
+    if (['geopolitics', 'defense', 'international'].includes(t)) buckets.geopolitics.push(s);
+    else if (['tech', 'cyber', 'ai', 'science', 'biotech'].includes(t)) buckets.technology.push(s);
+    else if (['economy', 'finance', 'macroeconomics', 'banking', 'global_trade'].includes(t)) buckets.economy.push(s);
+    else buckets.dispatches.push(s);
+
+    if (!buckets.analysis && s.whyItMatters) buckets.analysis = s;
+  }
+
+  // Remove analysis story from its bucket to avoid duplication
+  if (buckets.analysis) {
+    const id = buckets.analysis.id;
+    for (const key of ['geopolitics', 'technology', 'economy', 'dispatches']) {
+      buckets[key] = buckets[key].filter(s => s.id !== id);
+    }
+  }
+
+  // Claim all stories being rendered
+  const allRendered = [...buckets.geopolitics, ...buckets.technology, ...buckets.economy, ...buckets.dispatches];
+  if (buckets.analysis) allRendered.push(buckets.analysis);
+  allRendered.forEach(s => { if (claimed && s.id) claimed.add(s.id); });
+
+  // Render World & Security (featured + 2)
+  renderFeaturedPlusTwo('editorialGeopolitics', 'World & Security', buckets.geopolitics);
+
+  // Render Analysis
+  renderAnalysisSection('editorialAnalysis', buckets.analysis);
+
+  // Render Technology (3-col)
+  renderThreeCol('editorialTechnology', 'Technology', buckets.technology);
+
+  // Render Dispatches
+  renderDispatches('editorialDispatches', buckets.dispatches);
+
+  // Render Economy (2-col)
+  renderTwoCol('editorialEconomy', 'Economy', buckets.economy);
+}
+
+function renderFeaturedPlusTwo(containerId, label, stories) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!stories.length) { el.style.display = 'none'; return; }
+  el.style.display = '';
+
+  const featured = stories[0];
+  const subs = stories.slice(1, 3);
+  const topicClass = mapTopicToClass(featured.topics?.[0]);
+  const link = edStoryLink(featured);
+  const linkTarget = featured.slug ? '' : ' target="_blank" rel="noopener noreferrer"';
+
+  const hasImage = !!featured.imageUrl;
+  const featuredHtml = hasImage
+    ? `<div class="ed-featured-article ed-featured-with-image">
+        <div class="ed-featured-text">
+          <span class="ed-kicker ${topicClass}">${topicLabel(featured.topics?.[0])}</span>
+          <h2 class="ed-headline"><a href="${link}"${linkTarget}>${escapeHtml(featured.headline)}</a></h2>
+          <div class="ed-meta">
+            <span class="ed-byline">By ${escapeHtml(featured.sources?.[0]?.name || featured.source || 'THE UNDERCURRENT')}</span>
+            <span class="ed-dateline">${formatDateEditorial(featured.updatedAt || featured.publishedAt)} &bull; ${formatTimeUTC(featured.updatedAt || featured.publishedAt)} UTC</span>
+          </div>
+          <p class="ed-excerpt">${escapeHtml(featured.dek || featured.summary || '')}</p>
+        </div>
+        ${edImageHtml(featured)}
+      </div>`
+    : `<div class="ed-featured-article">
+        <span class="ed-kicker ${topicClass}">${topicLabel(featured.topics?.[0])}</span>
+        <h2 class="ed-headline"><a href="${link}"${linkTarget}>${escapeHtml(featured.headline)}</a></h2>
+        <div class="ed-meta">
+          <span class="ed-byline">By ${escapeHtml(featured.sources?.[0]?.name || featured.source || 'THE UNDERCURRENT')}</span>
+          <span class="ed-dateline">${formatDateEditorial(featured.updatedAt || featured.publishedAt)} &bull; ${formatTimeUTC(featured.updatedAt || featured.publishedAt)} UTC</span>
+        </div>
+        <p class="ed-excerpt">${escapeHtml(featured.dek || featured.summary || '')}</p>
+      </div>`;
+
+  const subsHtml = subs.length ? `<div class="ed-sub-grid">
+    ${subs.map((s, i) => {
+      const tc = mapTopicToClass(s.topics?.[0]);
+      const sl = edStoryLink(s);
+      const slt = s.slug ? '' : ' target="_blank" rel="noopener noreferrer"';
+      return `<div class="ed-card-${i === 0 ? 'left' : 'right'}">
+        <span class="ed-kicker ${tc}">${topicLabel(s.topics?.[0])}</span>
+        <h3 class="ed-headline-sm"><a href="${sl}"${slt}>${escapeHtml(s.headline)}</a></h3>
+        <div class="ed-meta">
+          <span class="ed-dateline">${formatDateEditorial(s.updatedAt || s.publishedAt)} &bull; ${formatTimeUTC(s.updatedAt || s.publishedAt)} UTC</span>
+        </div>
+        <p class="ed-excerpt">${escapeHtml(s.dek || s.summary || '')}</p>
+      </div>`;
+    }).join('')}
+  </div>` : '';
+
+  el.innerHTML = `<div class="ed-article-inner ed-category-inner">
+    <span class="ed-section-label">${escapeHtml(label)}</span>
+    <div class="ed-grid-featured">${featuredHtml}${subsHtml}</div>
+  </div>`;
+}
+
+function renderAnalysisSection(containerId, story) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!story) { el.style.display = 'none'; return; }
+  el.style.display = '';
+
+  const topicClass = mapTopicToClass(story.topics?.[0]);
+  const firstChar = (story.whyItMatters || story.summary || story.dek || 'T')[0];
+  const bodyText = (story.whyItMatters || story.summary || story.dek || '').slice(1);
+  const link = edStoryLink(story);
+  const linkTarget = story.slug ? '' : ' target="_blank" rel="noopener noreferrer"';
+
+  el.innerHTML = `
+    <div class="ed-article-inner ed-article-narrow">
+      <span class="ed-kicker ${topicClass}">ANALYSIS</span>
+      <h2 class="ed-headline"><a href="${link}"${linkTarget}>${escapeHtml(story.headline)}</a></h2>
+      <div class="ed-meta">
+        <span class="ed-byline">By ${escapeHtml(story.sources?.[0]?.name || story.source || 'THE UNDERCURRENT')}</span>
+        <span class="ed-dateline">${formatDateEditorial(story.updatedAt || story.publishedAt)} &bull; ${formatTimeUTC(story.updatedAt || story.publishedAt)} UTC</span>
+      </div>
+      <div class="ed-body">
+        <p><span class="ed-drop-cap">${escapeHtml(firstChar)}</span>${escapeHtml(bodyText)}</p>
+        ${story.whatsNext ? `<p>${escapeHtml(story.whatsNext)}</p>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderThreeCol(containerId, label, stories) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!stories.length) { el.style.display = 'none'; return; }
+  el.style.display = '';
+
+  const items = stories.slice(0, 3);
+
+  el.innerHTML = `<div class="ed-article-inner ed-category-inner ed-category-inner-wide">
+    <span class="ed-section-label">${escapeHtml(label)}</span>
+    <div class="ed-grid-three">
+      ${items.map(s => {
+        const tc = mapTopicToClass(s.topics?.[0]);
+        const link = edStoryLink(s);
+        const linkTarget = s.slug ? '' : ' target="_blank" rel="noopener noreferrer"';
+        return `<div class="ed-grid-three-item">
+          ${edImageHtml(s, 'ed-image-xs')}
+          <span class="ed-kicker ${tc}">${topicLabel(s.topics?.[0])}</span>
+          <h3 class="ed-headline-sm"><a href="${link}"${linkTarget}>${escapeHtml(s.headline)}</a></h3>
+          <div class="ed-meta">
+            <span class="ed-dateline">${formatDateEditorial(s.updatedAt || s.publishedAt)} &bull; ${formatTimeUTC(s.updatedAt || s.publishedAt)} UTC</span>
+          </div>
+          <p class="ed-excerpt">${escapeHtml(s.dek || s.summary || '')}</p>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+function renderDispatches(containerId, stories) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!stories.length) { el.style.display = 'none'; return; }
+  el.style.display = '';
+
+  const items = stories.slice(0, 6);
+
+  el.innerHTML = `<div class="ed-article-inner">
+    <span class="ed-section-label">Latest Updates</span>
+    <div class="ed-dispatch-stack">
+      ${items.map((s, i) => {
+        const tc = mapTopicToClass(s.topics?.[0]);
+        const link = edStoryLink(s);
+        const linkTarget = s.slug ? '' : ' target="_blank" rel="noopener noreferrer"';
+        const rule = i > 0 ? '<div class="ed-dispatch-rule"></div>' : '';
+        return `${rule}<div class="ed-dispatch">
+          <span class="ed-kicker ${tc}">${topicLabel(s.topics?.[0])}</span>
+          <h3 class="ed-headline-sm"><a href="${link}"${linkTarget}>${escapeHtml(s.headline)}</a></h3>
+          <div class="ed-meta">
+            <span class="ed-dateline">${formatDateEditorial(s.updatedAt || s.publishedAt)} &bull; ${formatTimeUTC(s.updatedAt || s.publishedAt)} UTC</span>
+          </div>
+          <p class="ed-excerpt">${escapeHtml(s.dek || s.summary || '')}</p>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+function renderTwoCol(containerId, label, stories) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!stories.length) { el.style.display = 'none'; return; }
+  el.style.display = '';
+
+  const items = stories.slice(0, 2);
+
+  el.innerHTML = `<div class="ed-article-inner ed-category-inner">
+    <span class="ed-section-label">${escapeHtml(label)}</span>
+    <div class="ed-grid-two">
+      ${items.map((s, i) => {
+        const tc = mapTopicToClass(s.topics?.[0]);
+        const side = i === 0 ? 'left' : 'right';
+        const link = edStoryLink(s);
+        const linkTarget = s.slug ? '' : ' target="_blank" rel="noopener noreferrer"';
+        return `<div class="ed-card-${side}">
+          <span class="ed-kicker ${tc}">${topicLabel(s.topics?.[0])}</span>
+          <h3 class="ed-headline-sm"><a href="${link}"${linkTarget}>${escapeHtml(s.headline)}</a></h3>
+          <div class="ed-meta">
+            <span class="ed-dateline">${formatDateEditorial(s.updatedAt || s.publishedAt)} &bull; ${formatTimeUTC(s.updatedAt || s.publishedAt)} UTC</span>
+          </div>
+          <p class="ed-excerpt">${escapeHtml(s.dek || s.summary || '')}</p>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+export function renderEditorialCta() {
+  const el = document.getElementById('editorialCta');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="ed-article-inner ed-cta-centered">
+      <div class="ed-cta-rule"></div>
+      <span class="ed-cta-label">END OF BRIEFING</span>
+      <h2 class="ed-cta-heading">Subscribe to The UnderCurrent</h2>
+      <p class="ed-cta-body">Declassified intelligence delivered to your secure terminal every morning.<br>Stories scored by significance. Context added by analysis. Opinion excluded by design.</p>
+      <a class="ed-cta-button" href="#contact" data-nav="contact">REQUEST ACCESS</a>
+      <span class="ed-cta-classification">CLASSIFICATION: OPEN SOURCE &bull; DISTRIBUTION: UNRESTRICTED</span>
+    </div>
+  `;
 }

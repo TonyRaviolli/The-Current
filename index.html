@@ -26,13 +26,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" as="style">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,800;1,400;1,700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <meta name="theme-color" content="#F2EDE3">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self'; frame-ancestors 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self'; frame-ancestors 'none'">
 <link rel="stylesheet" href="/styles/federal-design-system.css">
 <link rel="stylesheet" href="/assets/styles.css">
 <style>
-html{font-size:16px;-webkit-font-smoothing:antialiased;scroll-behavior:smooth;color-scheme:light;overscroll-behavior:none}
+html{font-size:16px;-webkit-font-smoothing:antialiased;scroll-behavior:auto;color-scheme:light;overscroll-behavior:none}
 body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-deep,#F2EDE3);color:var(--text-primary,#241b11);line-height:1.7;min-height:100vh;min-height:100dvh;overflow-x:hidden}
 .loader-overlay{position:fixed;inset:0;z-index:10000;background:var(--bg-abyss,#fffdf8);display:flex;flex-direction:column;align-items:center;justify-content:center}
 </style>
@@ -108,122 +108,119 @@ body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-dee
 <main class="main">
 
 <!-- ===== DAILY BRIEFINGS ===== -->
-<div class="page active" id="page-home"><div class="container">
+<div class="page active" id="page-home">
 
-<section class="hero">
-<div class="hero-inner">
-  <div class="hero-text">
-  <div class="hero-kicker"><span id="heroKicker">Lead Intelligence &middot; Latest Run</span></div>
-  <div id="heroPriorityBar"></div>
-  <h1 class="hero-headline interactive-heading" id="heroHeadline">Loading today&rsquo;s lead story&hellip;</h1>
-  <p class="hero-subhead" id="heroSubhead">Refreshing signals, sources, and ranked priorities.</p>
-  <div class="hero-meta" id="heroMeta">
-    <span class="hero-meta-dot"></span>
-    <span>Awaiting refresh</span>
+<!-- Editorial Hero -->
+<section class="editorial-hero" id="editorialHero">
+  <div class="editorial-hero-inner">
+    <span class="editorial-hero-label">CLASSIFIED MORNING BRIEFING</span>
+    <h1 class="editorial-hero-heading">
+      <span class="hero-word">The</span>
+      <span class="hero-word">Daily</span>
+      <span class="hero-word">Briefings</span>
+    </h1>
+    <p class="editorial-hero-tagline" id="heroTagline">Intelligence scored by significance. Context added by analysis.<br>Opinion excluded by design.</p>
   </div>
-  <div class="hero-depth-layer hero-depth-layer-gold" aria-hidden="true"></div>
-  <div class="hero-depth-layer hero-depth-layer-teal" aria-hidden="true"></div>
-  <div class="citation" id="heroCitation" style="opacity:0;animation:fadeUp var(--dur-reveal) var(--ease-out) 0.5s forwards"></div>
-  </div>
-  <div class="hero-visual">
-    <figure id="heroThumb" class="hero-thumb"></figure>
-  </div>
-</div></section>
-
-<div class="section-break" aria-hidden="true"><span class="section-break-icon">&#9670;</span></div>
-
-<nav id="trending-bar" class="trending-bar" aria-label="Trending topics" style="display:none"></nav>
-
-
-<section class="top3-section">
-  <div class="section-header">
-    <span class="section-title">Top 3 &mdash; Priority Intelligence</span>
-    <span class="section-badge">Ranked by 7-criteria composite</span>
-  </div>
-  <div class="top3-grid reveal-group" id="topStories"></div>
-</section>
-
-
-
-<section id="cartoonsSection" style="display:none">
-  <div class="section-header" style="padding-top:var(--sp-6)">
-    <span class="section-title">Cartoons &amp; Commentary</span>
-    <span class="section-badge">Visual perspective</span>
-  </div>
-  <div class="cartoons-strip" id="cartoonsStrip"></div>
-</section>
-
-<section class="legis-section" id="legisSection" style="display:none">
-  <div class="legis-section-header">
-    <div class="legis-section-title-group">
-      <svg class="legis-section-icon" width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
-        <line x1="11" y1="2" x2="11" y2="20"/>
-        <line x1="5" y1="9" x2="17" y2="9"/>
-        <circle cx="5" cy="9" r="3.5" fill="none"/>
-        <circle cx="17" cy="9" r="3.5" fill="none"/>
+  <div class="scroll-indicator" id="scrollIndicator">
+    <span class="scroll-indicator-text">SCROLL TO BRIEF</span>
+    <div class="scroll-indicator-arrow">
+      <svg width="16" height="24" viewBox="0 0 16 24" fill="none">
+        <path d="M8 0v20M1 14l7 7 7-7" stroke="currentColor" stroke-width="1.5"/>
       </svg>
-      <h2 class="legis-section-title">Legislative Intelligence</h2>
     </div>
-    <span class="section-badge">Active Legislation</span>
   </div>
-  <div class="legis-grid" id="highImportanceList"></div>
 </section>
 
-<div class="section-break" aria-hidden="true"><span class="section-break-icon">&#9670;</span></div>
+<!-- Editorial Articles -->
+<div id="editorialArticles">
 
-<section class="tier-section">
-  <div class="section-header">
-    <span class="section-title">Intelligence Feed</span>
-    <div class="section-header-right">
-      <span class="section-badge" id="unreadCount"></span>
-      <button id="unreadToggle" class="unread-toggle" type="button">Unread Only</button>
-      <button class="unread-toggle" type="button" data-export-briefing title="Download briefing as JSON">&#8681; JSON</button>
-      <button class="unread-toggle" type="button" data-export-text title="Download briefing as plain text">&#8681; Text</button>
-      <button id="textViewToggle" class="unread-toggle" type="button" title="Toggle text-only view for accessibility">&#9776; Text View</button>
-      <span class="section-badge">Latest 48 hrs</span>
+  <!-- Section 1: Lead Article -->
+  <section class="ed-section-lead" id="editorialLead"></section>
+
+  <!-- Section 2: Secondary Stories (2-col grid) -->
+  <section class="ed-section-secondary" id="editorialSecondary"></section>
+
+  <!-- Section 3: World & Security (featured + 2) -->
+  <section class="ed-category-section ed-category-geopolitics" id="editorialGeopolitics"></section>
+
+  <!-- Section 4: Analysis -->
+  <section class="ed-section-analysis" id="editorialAnalysis"></section>
+
+  <!-- Section 5: Technology (3-col grid) -->
+  <section class="ed-category-section ed-category-technology" id="editorialTechnology"></section>
+
+  <!-- Section 6: Dispatches / Latest Updates -->
+  <section class="ed-section-dispatches" id="editorialDispatches"></section>
+
+  <!-- Section 7: Economy (2-col grid) -->
+  <section class="ed-category-section ed-category-economic" id="editorialEconomy"></section>
+
+  <!-- Section 8: Legislative Intelligence -->
+  <section class="ed-category-section" id="legisSection" style="display:none">
+    <div class="ed-article-inner ed-category-inner">
+      <span class="ed-section-label">Legislative Intelligence</span>
+      <div class="legis-grid" id="highImportanceList"></div>
     </div>
-  </div>
-  <div id="sinceLastVisit" class="since-last-visit" style="display:none" role="status" aria-live="polite"></div>
-  <div class="tier-tabs">
-    <button class="tier-tab active" data-tier="all" type="button">All Stories</button>
-    <button class="tier-tab" data-tier="1" type="button">Tier 1</button>
-    <button class="tier-tab" data-tier="2" type="button">Tier 2</button>
-    <button class="tier-tab" data-tier="3" type="button">Tier 3</button>
-  </div>
-  <div class="stories-grid">
-    <div class="story-list" id="storyList"></div>
-    <aside class="sidebar">
-      <div id="editors-picks" class="editors-picks-card" style="display:none">
-        <span class="editors-picks-label">EDITORS' PICKS</span>
-        <div id="editors-picks-list"></div>
-      </div>
-      <div class="sidebar-card">
-        <h4 class="sidebar-card-title">Source Spectrum &mdash; This Run</h4>
-        <div class="source-spectrum">
-          <div class="spectrum-row"><span class="spectrum-label">Left</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:18%;background:#4a90d9"></div></div><span class="spectrum-count">3</span></div>
-          <div class="spectrum-row"><span class="spectrum-label">Ctr-L</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:30%;background:#6eb5ff"></div></div><span class="spectrum-count">5</span></div>
-          <div class="spectrum-row"><span class="spectrum-label">Center</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:42%;background:#a0a0a0"></div></div><span class="spectrum-count">7</span></div>
-          <div class="spectrum-row"><span class="spectrum-label">Ctr-R</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:24%;background:#e8923a"></div></div><span class="spectrum-count">4</span></div>
-          <div class="spectrum-row"><span class="spectrum-label">Right</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:12%;background:#d45454"></div></div><span class="spectrum-count">2</span></div>
+  </section>
+
+  <!-- Section 9: Intelligence Feed (existing functional section) -->
+  <section class="tier-section ed-feed-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="ed-section-label" style="margin-bottom:0;padding-bottom:0">Intelligence Feed</span>
+        <div class="section-header-right">
+          <span class="section-badge" id="unreadCount"></span>
+          <button id="unreadToggle" class="unread-toggle" type="button">Unread Only</button>
+          <button class="unread-toggle" type="button" data-export-briefing title="Download briefing as JSON">&#8681; JSON</button>
+          <button class="unread-toggle" type="button" data-export-text title="Download briefing as plain text">&#8681; Text</button>
+          <button id="textViewToggle" class="unread-toggle" type="button" title="Toggle text-only view for accessibility">&#9776; Text View</button>
+          <span class="section-badge">Latest 48 hrs</span>
         </div>
       </div>
-      <div class="sidebar-card" style="display:none">
-        <h4 class="sidebar-card-title">Political Cartoons</h4>
-        <div class="cartoon-rail" id="cartoonsRail"></div>
+      <div id="sinceLastVisit" class="since-last-visit" style="display:none" role="status" aria-live="polite"></div>
+      <div class="tier-tabs">
+        <button class="tier-tab active" data-tier="all" type="button">All Stories</button>
+        <button class="tier-tab" data-tier="1" type="button">Tier 1</button>
+        <button class="tier-tab" data-tier="2" type="button">Tier 2</button>
+        <button class="tier-tab" data-tier="3" type="button">Tier 3</button>
       </div>
-      <div style="text-align:center;padding:var(--sp-3) 0"><span class="coord-label">36&deg;51.2&#8242;N 014&deg;31.4&#8242;E &middot; DEPTH 2,400M</span></div>
-    </aside>
-  </div>
-</section>
+      <div class="stories-grid">
+        <div class="story-list" id="storyList"></div>
+        <aside class="sidebar">
+          <div id="editors-picks" class="editors-picks-card" style="display:none">
+            <span class="editors-picks-label">EDITORS' PICKS</span>
+            <div id="editors-picks-list"></div>
+          </div>
+          <div class="sidebar-card">
+            <h4 class="sidebar-card-title">Source Spectrum &mdash; This Run</h4>
+            <div class="source-spectrum">
+              <div class="spectrum-row"><span class="spectrum-label">Left</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:18%;background:#4a90d9"></div></div><span class="spectrum-count">3</span></div>
+              <div class="spectrum-row"><span class="spectrum-label">Ctr-L</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:30%;background:#6eb5ff"></div></div><span class="spectrum-count">5</span></div>
+              <div class="spectrum-row"><span class="spectrum-label">Center</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:42%;background:#a0a0a0"></div></div><span class="spectrum-count">7</span></div>
+              <div class="spectrum-row"><span class="spectrum-label">Ctr-R</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:24%;background:#e8923a"></div></div><span class="spectrum-count">4</span></div>
+              <div class="spectrum-row"><span class="spectrum-label">Right</span><div class="spectrum-bar-track"><div class="spectrum-bar-fill" style="width:12%;background:#d45454"></div></div><span class="spectrum-count">2</span></div>
+            </div>
+          </div>
+          <div style="text-align:center;padding:var(--sp-3) 0"><span class="coord-label">36&deg;51.2&#8242;N 014&deg;31.4&#8242;E &middot; DEPTH 2,400M</span></div>
+        </aside>
+      </div>
+    </div>
+  </section>
 
-</div><footer class="site-footer"><div class="container"><div class="footer-inner">
+  <!-- Section 10: End of Briefing CTA -->
+  <section class="ed-section-cta" id="editorialCta"></section>
+
+</div>
+
+<footer class="site-footer"><div class="container"><div class="footer-inner">
   <div class="footer-left">&copy; 2026 THE UNDERCURRENT</div>
   <div class="footer-right">
     <a href="#about" data-nav="about">Methodology</a>
     <a href="#contact" data-nav="contact">Contact</a>
     <a href="#about" data-nav="about">Privacy</a>
   </div>
-</div></div></footer></div>
+</div></div></footer>
+</div>
 
 <!-- ===== STORY ===== -->
 <div class="page" id="page-story">
@@ -435,14 +432,20 @@ body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-dee
       </div>
     </div>
     <div class="leg-view" id="legStateView">
-      <div class="leg-view-inner">
-        <h1 class="leg-view-title">State Legislation</h1>
-        <p class="leg-view-subtitle">Select a state to explore its legislative activity and policy landscape.</p>
-        <div class="leg-map-section" id="legMapSection">
+      <div class="leg-view-inner leg-view-inner--map">
+        <header class="leg-state-header">
+          <h1 class="leg-view-title">State Legislation</h1>
+          <p class="leg-view-subtitle">Select a state on the map to explore its legislative activity.</p>
+        </header>
+        <div class="leg-map-stage" id="legMapStage">
+          <img class="leg-map-image" id="legMapImage" src="assets/us-map-topo.png" alt="Topographic map of the United States" />
           <div class="leg-map-container" id="legMapContainer"></div>
-          <div class="leg-sidebar" id="legSidebar"></div>
+          <div class="leg-map-search" id="legMapSearchWrap">
+            <svg class="leg-map-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="search" id="legStateSearch" class="leg-map-search-input" placeholder="Search a state…" autocomplete="off" spellcheck="false" aria-label="Search a state" />
+          </div>
+          <div id="legStatePanel" class="leg-state-panel" aria-live="polite"></div>
         </div>
-        <div id="legStatePanel"></div>
       </div>
     </div>
   </div>
@@ -679,6 +682,9 @@ body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-dee
 </main>
 
 {{BOOT_DATA}}
+<script src="https://cdn.jsdelivr.net/npm/lenis@1/dist/lenis.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/ScrollTrigger.min.js"></script>
 <script type="module" src="/assets/app.js"></script>
 </body>
 </html>
