@@ -2121,9 +2121,9 @@ function selectState(stateId, source = 'map') {
   const svg = document.querySelector('.leg-map-svg');
   if (svg) {
     const g = svg.querySelector(`.leg-state-group[data-state="${stateId}"]`);
-    const path = g ? g.querySelector('.leg-state-path') : null;
+    const path = g ? g.querySelector('.leg-state-hit') : null;
     if (path) {
-      path.classList.add('leg-state-path--selected');
+      path.classList.add('leg-state-hit--selected');
       path.setAttribute('aria-pressed', 'true');
       // Re-append to end for SVG paint order (selected state renders on top)
       if (g && g.parentNode) g.parentNode.appendChild(g);
@@ -2153,8 +2153,8 @@ function selectState(stateId, source = 'map') {
 
 function clearAllSelections() {
   // Map: clear --selected
-  document.querySelectorAll('.leg-state-path--selected').forEach((p) => {
-    p.classList.remove('leg-state-path--selected');
+  document.querySelectorAll('.leg-state-hit--selected').forEach((p) => {
+    p.classList.remove('leg-state-hit--selected');
     p.setAttribute('aria-pressed', 'false');
   });
   // Sidebar: clear --selected
@@ -2176,7 +2176,6 @@ export function clearMapSelection() {
 // ║  §L.3  STATE LEGISLATION PANEL — 3-bucket (Passed / In Process / Proposed)
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
-const LEG_BUCKET_CAP = 10;
 const LEG_BUCKETS = [
   { key: 'passed',     label: 'Passed',       dateKey: 'enacted',         fallbackDate: 'introduced' },
   { key: 'in_process', label: 'In Process',   dateKey: 'lastActionDate',  fallbackDate: 'introduced' },
@@ -2210,7 +2209,7 @@ async function renderLegislationPanel(stateId) {
     return;
   }
 
-  legPanelState = { stateId, search: '', expanded: new Set() };
+  legPanelState = { stateId, search: '', expanded: new Set(), selectedCategory: null };
 
   const isNewPanel = !panel.classList.contains('leg-panel-active');
   const stateCode = stateId.toLowerCase();
@@ -2249,7 +2248,8 @@ async function renderLegislationPanel(stateId) {
 
   wirePanelCloseHandlers(panel);
   wirePanelSearch(panel, stateData);
-  renderBuckets(stateData);
+  wireCategoryHandlers(panel, stateData);
+  renderCategoryView(stateData);
 
   if (isNewPanel) {
     requestAnimationFrame(() => panel.classList.add('leg-panel-active'));
@@ -2305,52 +2305,140 @@ function wirePanelSearch(panel, stateData) {
     clearTimeout(timer);
     timer = setTimeout(() => {
       legPanelState.search = input.value.trim().toLowerCase();
-      renderBuckets(stateData);
+      renderCategoryView(stateData);
     }, 150);
   });
 }
 
-function getBillsForBucket(stateData, bucketKey) {
-  const bills = (stateData.bills || []).filter((b) => (b.status || '').toLowerCase() === bucketKey);
-  const bucket = LEG_BUCKETS.find((b) => b.key === bucketKey);
-  const search = legPanelState.search;
-  let filtered = bills;
-  if (search) {
-    filtered = bills.filter((b) =>
-      (b.title || '').toLowerCase().includes(search) ||
-      (b.id || '').toLowerCase().includes(search) ||
-      (b.sponsor || '').toLowerCase().includes(search) ||
-      (b.summary || '').toLowerCase().includes(search)
-    );
-  }
-  // Sort by most recent relevant date DESC
-  filtered.sort((a, b) => {
-    const da = a[bucket.dateKey] || a[bucket.fallbackDate] || '';
-    const db = b[bucket.dateKey] || b[bucket.fallbackDate] || '';
-    return (db || '').localeCompare(da || '');
+/** Group a state's bills by category (preserving display order from TOPIC_CONFIG). */
+function groupBillsByCategory(stateData) {
+  const bills = stateData.bills || [];
+  const groups = new Map();
+  bills.forEach((b) => {
+    const key = b.category || 'Other';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(b);
   });
-  return filtered.slice(0, LEG_BUCKET_CAP);
+  // Sort: TOPIC_CONFIG order first, then any extras alphabetically
+  const topicOrder = Object.keys(TOPIC_CONFIG);
+  const known = topicOrder.filter((k) => groups.has(k));
+  const extras = [...groups.keys()].filter((k) => !topicOrder.includes(k)).sort();
+  return [...known, ...extras].map((key) => ({ key, bills: groups.get(key) }));
 }
 
-function renderBuckets(stateData) {
+function filterBillsBySearch(bills, search) {
+  if (!search) return bills;
+  return bills.filter((b) =>
+    (b.title || '').toLowerCase().includes(search) ||
+    (b.id || '').toLowerCase().includes(search) ||
+    (b.sponsor || '').toLowerCase().includes(search) ||
+    (b.summary || '').toLowerCase().includes(search) ||
+    (b.category || '').toLowerCase().includes(search)
+  );
+}
+
+function bucketForBill(bill) {
+  const status = (bill.status || '').toLowerCase();
+  return LEG_BUCKETS.find((b) => b.key === status) || LEG_BUCKETS[2];
+}
+
+function renderCategoryView(stateData) {
   const body = document.getElementById('legPanelBody');
   if (!body) return;
-  body.innerHTML = LEG_BUCKETS.map((bucket) => {
-    const bills = getBillsForBucket(stateData, bucket.key);
-    const cards = bills.length > 0
-      ? bills.map((b) => renderBillCard(b, bucket)).join('')
-      : `<div class="leg-bucket-empty">— No bills in this status —</div>`;
-    return `
-      <section class="leg-bucket leg-bucket--${bucket.key}" data-bucket="${bucket.key}">
-        <header class="leg-bucket-header">
-          <span class="leg-bucket-dot"></span>
-          <h3 class="leg-bucket-title">${bucket.label}</h3>
-          <span class="leg-bucket-count">${bills.length}${bills.length === LEG_BUCKET_CAP ? ' · top 10' : ''}</span>
+  const search = legPanelState.search;
+  const groups = groupBillsByCategory(stateData);
+
+  // Search mode: flat filtered results across all categories
+  if (search) {
+    const allBills = filterBillsBySearch(stateData.bills || [], search);
+    if (allBills.length === 0) {
+      body.innerHTML = `<div class="leg-bucket-empty">No bills match "${escapeHtml(search)}"</div>`;
+      return;
+    }
+    const cards = allBills.map((b) => renderBillCard(b, bucketForBill(b))).join('');
+    body.innerHTML = `
+      <section class="leg-ribbon leg-ribbon--search">
+        <header class="leg-ribbon-header">
+          <span class="leg-ribbon-label">Search results</span>
+          <span class="leg-ribbon-count">${allBills.length}</span>
         </header>
-        <ol class="leg-bucket-list">${cards}</ol>
+        <ol class="leg-ribbon-list">${cards}</ol>
       </section>
     `;
-  }).join('<hr class="leg-bucket-rule" aria-hidden="true">');
+    return;
+  }
+
+  // Ribbon mode: one category expanded
+  if (legPanelState.selectedCategory) {
+    const group = groups.find((g) => g.key === legPanelState.selectedCategory);
+    if (!group) {
+      legPanelState.selectedCategory = null;
+      renderCategoryView(stateData);
+      return;
+    }
+    const color = TOPIC_CONFIG[group.key]?.color || 'oklch(0.62 0.14 70)';
+    const cards = group.bills
+      .slice()
+      .sort((a, b) => (b.introduced || '').localeCompare(a.introduced || ''))
+      .map((b) => renderBillCard(b, bucketForBill(b)))
+      .join('');
+    body.innerHTML = `
+      <div class="leg-ribbon-back">
+        <button type="button" class="leg-ribbon-back-btn" data-cat-back aria-label="Back to all categories">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          All categories
+        </button>
+      </div>
+      <section class="leg-ribbon" style="--ribbon-color:${color}">
+        <header class="leg-ribbon-header">
+          <span class="leg-ribbon-label">${escapeHtml(group.key)}</span>
+          <span class="leg-ribbon-count">${group.bills.length}</span>
+        </header>
+        <ol class="leg-ribbon-list">${cards}</ol>
+      </section>
+    `;
+    return;
+  }
+
+  // Masthead mode: grid of category squares
+  const totalBills = (stateData.bills || []).length;
+  const tiles = groups.map((g) => {
+    const color = TOPIC_CONFIG[g.key]?.color || 'oklch(0.62 0.14 70)';
+    const shortLabel = (TOPIC_CONFIG[g.key]?.label || g.key);
+    return `
+      <button type="button"
+        class="leg-cat-tile"
+        data-cat-key="${escapeHtml(g.key)}"
+        style="--tile-color:${color}"
+        aria-label="${escapeHtml(g.key)} — ${g.bills.length} bill${g.bills.length !== 1 ? 's' : ''}">
+        <span class="leg-cat-tile-label">${escapeHtml(shortLabel)}</span>
+        <span class="leg-cat-tile-count">${String(g.bills.length).padStart(2, '0')}</span>
+      </button>
+    `;
+  }).join('');
+
+  body.innerHTML = `
+    <div class="leg-masthead-summary">${totalBills} bill${totalBills !== 1 ? 's' : ''} across ${groups.length} categor${groups.length !== 1 ? 'ies' : 'y'}</div>
+    <div class="leg-cat-grid">${tiles}</div>
+  `;
+}
+
+function wireCategoryHandlers(panel, stateData) {
+  panel.addEventListener('click', (e) => {
+    const tile = e.target.closest('.leg-cat-tile');
+    if (tile) {
+      legPanelState.selectedCategory = tile.dataset.catKey;
+      legPanelState.expanded = new Set();
+      renderCategoryView(stateData);
+      return;
+    }
+    const back = e.target.closest('[data-cat-back]');
+    if (back) {
+      legPanelState.selectedCategory = null;
+      legPanelState.expanded = new Set();
+      renderCategoryView(stateData);
+    }
+  });
 }
 
 function renderBillCard(bill, bucket) {

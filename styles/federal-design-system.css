@@ -196,7 +196,7 @@
 
 .ltg-header {
   margin-bottom: 0;
-  padding: clamp(1.5rem, 3vw, 2.5rem) var(--ltg-pad) 0;
+  padding: clamp(1.5rem, 3vw, 2.5rem) var(--ltg-pad) clamp(0.75rem, 1.5vw, 1rem);
 }
 .ltg-title {
   font-family: var(--ltg-font-serif);
@@ -206,6 +206,7 @@
   letter-spacing: 0.02em;
   text-transform: uppercase;
   margin: 0;
+  line-height: 1.15;
 }
 .ltg-rule { display: none; }
 .ltg-subtitle {
@@ -213,7 +214,8 @@
   font-size: clamp(0.85rem, 1.5vw, 1rem);
   color: var(--ltg-text-muted);
   line-height: 1.6;
-  margin: 0.5rem 0 0;
+  margin: 0.65rem 0 0;
+  max-width: 64ch;
 }
 
 
@@ -230,7 +232,7 @@
 
 .ltg-tile-grid {
   display: flex;
-  gap: 0;
+  gap: 2px;
   margin-bottom: 0;
   text-align: left;
   position: relative;
@@ -241,9 +243,12 @@
   scrollbar-width: none;
   padding: 0.75rem var(--ltg-pad);
   background: var(--leg-bg-deep);
+  border-top: 1px solid oklch(1 0 0 / 0.04);
   border-bottom: 1px solid oklch(1 0 0 / 0.06);
   justify-content: flex-start;
   flex-wrap: nowrap;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
 }
 .ltg-tile-grid::-webkit-scrollbar { display: none; }
 .ltg-tile-grid::before { display: none; }
@@ -741,12 +746,15 @@
    §12  RESPONSIVE BREAKPOINTS
    ══════════════════════════════════════════════════════════════════════════ */
 
+@media (max-width: 1100px) {
+  .ltg-card-flow-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 900px) {
   .ltg-card-hero-row {
     grid-template-columns: 1fr 1fr;
-  }
-  .ltg-card-flow-grid {
-    grid-template-columns: repeat(2, 1fr);
   }
 }
 

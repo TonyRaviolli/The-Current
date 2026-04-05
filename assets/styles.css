@@ -3075,74 +3075,14 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
 }
 /* noise overlay removed — clean state fills */
 
-/* ── State paths — ghostly white borders on dark jewel fills ───────── */
-.leg-state-path {
-  stroke: var(--map-border);
-  stroke-width: 0.8px;
-  cursor: pointer;
-  transition: fill 180ms ease, stroke 180ms ease, stroke-width 180ms ease, filter 180ms ease;
-  animation: legStateEnter 400ms ease both;
-  outline: none;
-}
-.leg-state-c1 { fill: var(--map-fill-1); }
-.leg-state-c2 { fill: var(--map-fill-2); }
-.leg-state-c3 { fill: var(--map-fill-3); }
-.leg-state-c4 { fill: var(--map-fill-4); }
-.leg-state-c5 { fill: var(--map-fill-5); }
-.leg-state-c6 { fill: var(--map-fill-6); }
-
-/* Channel 1: Map hover — warm amber lift with drop shadow */
-.leg-state-path--hovered {
-  fill: var(--map-hover-fill);
-  stroke: var(--map-hover-stroke);
-  stroke-width: 1.8px;
-  filter: drop-shadow(0 0 12px oklch(0.55 0.16 75 / 0.4));
-}
-.leg-state-path:focus-visible {
-  outline: 2px solid var(--map-hover-stroke);
-  outline-offset: 2px;
-}
-
-/* Channels 2 & 3: Map selection — full gold with stronger glow */
-.leg-state-path--selected {
-  fill: var(--map-selected-fill);
-  stroke: var(--map-selected-stroke);
-  stroke-width: 2.2px;
-  filter: drop-shadow(0 0 16px oklch(0.58 0.20 75 / 0.45));
-}
-/* Both can coexist: selected + hovered keeps gold glow with brightness lift */
-.leg-state-path--selected.leg-state-path--hovered {
-  filter: brightness(1.08) drop-shadow(0 0 16px oklch(0.58 0.20 75 / 0.45));
-}
-
-/* Active/live-data: same border as all states */
-.leg-state-path.leg-state-active {
-  animation: legStateEnter 400ms ease both;
-}
-
+/* Keyframes reused by .leg-state-hit (definitions live near that rule) */
 @keyframes legStateEnter {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
-
-/* Labels/leaders removed — state identification via hover tooltip */
-
-/* MAP PRECISION v2 — Search-driven map highlight (pulsing ring) */
-.leg-state-path--search-match {
-  stroke: oklch(0.58 0.18 75);
-  stroke-width: 1.8;
-  animation: legSearchPulse 1.2s ease-in-out infinite;
-}
 @keyframes legSearchPulse {
   0%, 100% { stroke-opacity: 0.6; stroke-width: 1.8; }
   50%      { stroke-opacity: 1;   stroke-width: 2.4; }
-}
-
-/* MAP PRECISION v2 — Pinned state indicator */
-.leg-state-path--pinned {
-  stroke: oklch(0.58 0.18 75);
-  stroke-width: 2.5;
-  stroke-dasharray: 4 2;
 }
 
 /* MAP PRECISION v2 — Screen-reader-only utility */
@@ -5397,31 +5337,20 @@ html { scroll-behavior: auto !important; }
   max-width: 52ch;
 }
 
-/* ── Map stage: PNG backdrop + interactive SVG overlay ─────────────────── */
+/* ── Map stage: pure SVG (PNG underlay removed) ────────────────────────── */
 .leg-map-stage {
   position: relative;
   width: 100%;
   aspect-ratio: 600 / 327;
   border-radius: 6px;
   overflow: hidden;
-  background: oklch(0.14 0.02 240);
+  background:
+    radial-gradient(ellipse at 50% 40%, oklch(0.18 0.02 240) 0%, oklch(0.10 0.01 240) 70%);
   box-shadow:
     0 1px 0 oklch(0.30 0.02 240 / 0.4) inset,
     0 30px 80px -20px oklch(0.05 0.01 240 / 0.6),
     0 2px 0 oklch(0.05 0.01 240 / 0.3);
   isolation: isolate;
-}
-.leg-map-image {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  user-select: none;
-  pointer-events: none;
-  -webkit-user-drag: none;
-  z-index: 1;
 }
 /* Override old .leg-map-container positioning for overlay use */
 .leg-map-stage .leg-map-container {
@@ -5444,11 +5373,15 @@ html { scroll-behavior: auto !important; }
   overflow: visible;
 }
 
-/* ── Interactive state hit polygons (transparent → tint on interaction) ── */
+/* ── Interactive state hit polygons ──
+   Single CSS system: non-scaling strokes, rounded joins, tight stroke-width ramp.
+   SVG is sole source of truth (PNG underlay removed).                       */
 .leg-state-hit {
-  fill: oklch(0.95 0.08 70 / 0);
-  stroke: oklch(0.90 0.04 70 / 0);
+  fill: oklch(0.22 0.02 250 / 0.92);
+  stroke: oklch(0.90 0.04 70 / 0.22);
   stroke-width: 0.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
   cursor: pointer;
   transition:
     fill var(--dur-base, 200ms) var(--ease-out-expo, ease-out),
@@ -5456,30 +5389,31 @@ html { scroll-behavior: auto !important; }
     stroke-width var(--dur-fast, 120ms) ease-out;
   pointer-events: all;
   vector-effect: non-scaling-stroke;
+  animation: legStateEnter 400ms ease both;
 }
 .leg-state-hit:hover,
 .leg-state-hit--hovered {
-  fill: oklch(0.95 0.08 70 / 0.26);
+  fill: oklch(0.38 0.06 70 / 0.55);
   stroke: oklch(0.93 0.06 70 / 0.85);
-  stroke-width: 0.9;
+  stroke-width: 1.0;
 }
 .leg-state-hit:focus-visible {
-  fill: oklch(0.95 0.08 70 / 0.26);
+  fill: oklch(0.38 0.06 70 / 0.55);
   stroke: oklch(0.93 0.06 70 / 0.95);
   stroke-width: 1.2;
   outline: none;
 }
 .leg-state-hit--selected,
 .leg-state-hit--selected:hover {
-  fill: oklch(0.70 0.16 70 / 0.42) !important;
+  fill: oklch(0.55 0.14 70 / 0.55) !important;
   stroke: oklch(0.95 0.10 70) !important;
   stroke-width: 1.4 !important;
-  filter: drop-shadow(0 0 6px oklch(0.80 0.14 70 / 0.55));
 }
 .leg-state-hit--search-match {
   fill: oklch(0.88 0.10 85 / 0.32);
   stroke: oklch(0.92 0.08 85 / 0.8);
   stroke-width: 1;
+  animation: legSearchPulse 1.2s ease-in-out infinite;
 }
 
 /* ── Floating search bar (over the Atlantic) ───────────────────────────── */
@@ -5780,6 +5714,164 @@ html { scroll-behavior: auto !important; }
   color: oklch(0.55 0.02 265);
   padding: 10px 4px;
   text-align: center;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   STATE PANEL — CATEGORY MASTHEAD (squares) → EXPANDED RIBBON
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Summary line above the masthead */
+.leg-masthead-summary {
+  font-family: var(--font-mono, 'JetBrains Mono'), monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: oklch(0.45 0.02 265);
+  padding: 10px 0 14px;
+  border-bottom: 1px solid oklch(0.92 0.01 70);
+  margin-bottom: 14px;
+}
+
+/* Masthead grid — newspaper-section-header squares */
+.leg-cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.leg-cat-tile {
+  --tile-color: oklch(0.62 0.14 70);
+  position: relative;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 12px 10px 16px;
+  background: oklch(1 0 0);
+  border: 1px solid oklch(0.90 0.01 70);
+  border-left: 4px solid var(--tile-color);
+  border-radius: 3px;
+  cursor: pointer;
+  outline: none;
+  text-align: left;
+  font-family: inherit;
+  transition:
+    border-color var(--dur-fast, 120ms) ease,
+    box-shadow var(--dur-base, 200ms) var(--ease-out-expo, ease-out),
+    transform var(--dur-base, 200ms) var(--ease-spring, ease-out),
+    background-color var(--dur-fast, 120ms) ease;
+}
+.leg-cat-tile:hover {
+  border-color: oklch(0.78 0.04 70);
+  background: oklch(0.995 0.003 70);
+  box-shadow: 0 2px 8px -2px oklch(0.05 0.01 240 / 0.10), 0 1px 0 oklch(0.95 0 0) inset;
+  transform: translateY(-2px);
+}
+.leg-cat-tile:focus-visible {
+  border-color: var(--tile-color);
+  box-shadow: 0 0 0 2px oklch(from var(--tile-color) l c h / 0.25);
+}
+.leg-cat-tile:active { transform: translateY(-1px); }
+
+.leg-cat-tile-label {
+  font-family: var(--font-ui, Inter), sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: oklch(0.22 0.02 265);
+  line-height: 1.25;
+  max-width: 100%;
+  word-break: break-word;
+}
+.leg-cat-tile-count {
+  font-family: var(--font-display, 'Playfair Display'), serif;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--tile-color);
+  align-self: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Expanded ribbon (single category) */
+.leg-ribbon-back {
+  padding: 4px 0 12px;
+}
+.leg-ribbon-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 0;
+  padding: 4px 8px 4px 0;
+  cursor: pointer;
+  font-family: var(--font-ui, Inter), sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: oklch(0.45 0.02 265);
+  transition: color var(--dur-fast, 120ms) ease, transform var(--dur-fast, 120ms) ease;
+}
+.leg-ribbon-back-btn:hover {
+  color: oklch(0.20 0.02 265);
+  transform: translateX(-2px);
+}
+.leg-ribbon-back-btn:focus-visible {
+  outline: 2px solid oklch(0.65 0.14 70);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.leg-ribbon {
+  --ribbon-color: oklch(0.62 0.14 70);
+  position: relative;
+  padding: 14px 0 8px 16px;
+  border-left: 4px solid var(--ribbon-color);
+  background: linear-gradient(90deg, oklch(from var(--ribbon-color) l c h / 0.04) 0%, transparent 60%);
+  border-radius: 0 3px 3px 0;
+}
+.leg-ribbon-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid oklch(0.92 0.01 70);
+  margin-bottom: 12px;
+}
+.leg-ribbon-label {
+  font-family: var(--font-ui, Inter), sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: oklch(0.20 0.02 265);
+}
+.leg-ribbon-count {
+  font-family: var(--font-display, 'Playfair Display'), serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ribbon-color);
+  font-variant-numeric: tabular-nums;
+}
+.leg-ribbon-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (max-width: 480px) {
+  .leg-cat-grid { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px; }
+  .leg-cat-tile { padding: 10px 10px 8px 12px; }
+  .leg-cat-tile-count { font-size: 28px; }
 }
 
 /* ── Bill card (list item) ─────────────────────────────────────────────── */
