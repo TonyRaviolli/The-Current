@@ -2046,6 +2046,9 @@ export function renderUSMap(container) {
 
   // ── Floating Atlantic-side search bar ──
   wireUpMapSearch(svg);
+
+  // ── Initial Legislation Desk empty state ──
+  renderEmptyDesk();
 }
 
 // ── Search bar wiring ──
@@ -2149,6 +2152,16 @@ function selectState(stateId, source = 'map') {
   document.dispatchEvent(new CustomEvent('leg-state-selected', { detail: { id: stateId, name } }));
   // Render legislation panel
   renderLegislationPanel(stateId);
+  // Smooth-scroll page to the Legislation Desk (skip if user reached state via sidebar, they're already looking there)
+  if (source !== 'sidebar') {
+    const panel = document.getElementById('legStatePanel');
+    if (panel) {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      requestAnimationFrame(() => {
+        panel.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+      });
+    }
+  }
 }
 
 function clearAllSelections() {
@@ -2168,8 +2181,21 @@ export function clearMapSelection() {
   clearAllSelections();
   clearMapHover();
   legMapSelectedState = null;
+  renderEmptyDesk();
+}
+
+function renderEmptyDesk() {
   const panel = document.getElementById('legStatePanel');
-  if (panel) { panel.classList.remove('leg-panel-active'); setTimeout(() => { panel.innerHTML = ''; }, 350); }
+  if (!panel) return;
+  panel.classList.add('leg-panel-active');
+  panel.innerHTML = `
+    <div class="leg-panel-inner">
+      <div class="leg-panel-empty-prompt">
+        <span class="leg-panel-empty-prompt-label">Legislation Desk</span>
+        <h2 class="leg-panel-empty-prompt-heading">Select a state to read its tracked legislation</h2>
+        <p class="leg-panel-empty-prompt-sub">Click a state on the map above, or use the search bar to jump to one. Bills are organized by policy category.</p>
+      </div>
+    </div>`;
 }
 
 // ╔══════════════════════════════════════════════════════════════════════════╗

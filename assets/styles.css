@@ -3316,18 +3316,9 @@ body{background:linear-gradient(180deg,var(--bg-body-start) 0%,var(--bg-body-end
    ╚══════════════════════════════════════════════════════════════════╝ */
 
 #legStatePanel {
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  transform: translateY(32px);
-  transition: max-height 0ms 350ms, opacity 320ms cubic-bezier(0.16,1,0.3,1), transform 320ms cubic-bezier(0.16,1,0.3,1);
-}
-#legStatePanel.leg-panel-active {
-  max-height: none;
-  overflow: visible;
   opacity: 1;
-  transform: translateY(0);
-  transition: opacity 320ms cubic-bezier(0.16,1,0.3,1), transform 320ms cubic-bezier(0.16,1,0.3,1);
+  transform: none;
+  transition: none;
 }
 
 /* ── Panel header ────────────────────────────────────────────────────── */
@@ -5337,20 +5328,31 @@ html { scroll-behavior: auto !important; }
   max-width: 52ch;
 }
 
-/* ── Map stage: pure SVG (PNG underlay removed) ────────────────────────── */
+/* ── Map stage: PNG backdrop + interactive SVG overlay ─────────────────── */
 .leg-map-stage {
   position: relative;
   width: 100%;
   aspect-ratio: 600 / 327;
   border-radius: 6px;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse at 50% 40%, oklch(0.18 0.02 240) 0%, oklch(0.10 0.01 240) 70%);
+  background: oklch(0.14 0.02 240);
   box-shadow:
     0 1px 0 oklch(0.30 0.02 240 / 0.4) inset,
     0 30px 80px -20px oklch(0.05 0.01 240 / 0.6),
     0 2px 0 oklch(0.05 0.01 240 / 0.3);
   isolation: isolate;
+}
+.leg-map-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  user-select: none;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  z-index: 1;
 }
 /* Override old .leg-map-container positioning for overlay use */
 .leg-map-stage .leg-map-container {
@@ -5373,12 +5375,12 @@ html { scroll-behavior: auto !important; }
   overflow: visible;
 }
 
-/* ── Interactive state hit polygons ──
+/* ── Interactive state hit polygons (over PNG underlay) ──
    Single CSS system: non-scaling strokes, rounded joins, tight stroke-width ramp.
-   SVG is sole source of truth (PNG underlay removed).                       */
+   Base fill is transparent so the us-map-topo.png shows through.            */
 .leg-state-hit {
-  fill: oklch(0.22 0.02 250 / 0.92);
-  stroke: oklch(0.90 0.04 70 / 0.22);
+  fill: oklch(0.95 0.08 70 / 0);
+  stroke: oklch(0.95 0.04 70 / 0.18);
   stroke-width: 0.6;
   stroke-linejoin: round;
   stroke-linecap: round;
@@ -5389,29 +5391,28 @@ html { scroll-behavior: auto !important; }
     stroke-width var(--dur-fast, 120ms) ease-out;
   pointer-events: all;
   vector-effect: non-scaling-stroke;
-  animation: legStateEnter 400ms ease both;
 }
 .leg-state-hit:hover,
 .leg-state-hit--hovered {
-  fill: oklch(0.38 0.06 70 / 0.55);
-  stroke: oklch(0.93 0.06 70 / 0.85);
+  fill: oklch(0.95 0.08 70 / 0.28);
+  stroke: oklch(0.95 0.06 70 / 0.90);
   stroke-width: 1.0;
 }
 .leg-state-hit:focus-visible {
-  fill: oklch(0.38 0.06 70 / 0.55);
-  stroke: oklch(0.93 0.06 70 / 0.95);
+  fill: oklch(0.95 0.08 70 / 0.28);
+  stroke: oklch(0.95 0.06 70 / 0.98);
   stroke-width: 1.2;
   outline: none;
 }
 .leg-state-hit--selected,
 .leg-state-hit--selected:hover {
-  fill: oklch(0.55 0.14 70 / 0.55) !important;
+  fill: oklch(0.70 0.16 70 / 0.48) !important;
   stroke: oklch(0.95 0.10 70) !important;
   stroke-width: 1.4 !important;
 }
 .leg-state-hit--search-match {
-  fill: oklch(0.88 0.10 85 / 0.32);
-  stroke: oklch(0.92 0.08 85 / 0.8);
+  fill: oklch(0.88 0.10 85 / 0.34);
+  stroke: oklch(0.92 0.08 85 / 0.85);
   stroke-width: 1;
   animation: legSearchPulse 1.2s ease-in-out infinite;
 }
@@ -5467,40 +5468,63 @@ html { scroll-behavior: auto !important; }
 }
 .leg-map-search-input::-webkit-search-cancel-button { display: none; }
 
-/* ── State policy panel (floats over map) ──────────────────────────────── */
+/* ── Legislation Desk — below-the-map flow section ─────────────────────── */
 .leg-state-panel {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  bottom: 16px;
-  width: min(520px, 42%);
-  z-index: 20;
-  pointer-events: none;
-  opacity: 0;
-  transform: translateX(24px);
-  transition:
-    opacity var(--dur-base, 200ms) var(--ease-out-expo, ease-out),
-    transform var(--dur-base, 200ms) var(--ease-out-expo, ease-out);
+  position: relative;
+  width: 100%;
+  margin-top: clamp(20px, 2.5vw, 32px);
+  scroll-margin-top: clamp(16px, 2vw, 24px);
 }
 .leg-state-panel.leg-panel-active {
-  pointer-events: auto;
-  opacity: 1;
-  transform: translateX(0);
+  /* no-op — flow-positioned; JS keeps the class for back-compat toggles */
 }
 .leg-panel-inner {
-  height: 100%;
   display: flex;
   flex-direction: column;
-  background: oklch(0.985 0.005 70 / 0.97);
-  backdrop-filter: blur(18px) saturate(1.15);
-  -webkit-backdrop-filter: blur(18px) saturate(1.15);
-  border: 1px solid oklch(0.82 0.015 70);
-  border-radius: 6px;
+  background: oklch(0.985 0.005 70);
+  border: 1px solid oklch(0.88 0.015 70);
+  border-top: 3px solid var(--accent-gold, oklch(0.62 0.13 75));
+  border-radius: 4px;
   box-shadow:
     0 1px 0 oklch(1 0 0 / 0.7) inset,
-    0 24px 60px -16px oklch(0.05 0.01 240 / 0.55),
-    0 4px 12px -4px oklch(0.05 0.01 240 / 0.35);
+    0 12px 32px -12px oklch(0.05 0.01 240 / 0.22);
   overflow: hidden;
+  min-height: 280px;
+}
+
+/* Empty state before any state has been selected */
+.leg-panel-empty-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: clamp(36px, 5vw, 56px) 24px;
+  text-align: center;
+}
+.leg-panel-empty-prompt-label {
+  font-family: var(--font-ui, Inter), sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-gold, oklch(0.62 0.13 75));
+}
+.leg-panel-empty-prompt-heading {
+  font-family: var(--font-display, 'Playfair Display'), serif;
+  font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+  font-weight: 600;
+  line-height: 1.25;
+  color: oklch(0.22 0.02 265);
+  margin: 0;
+  max-width: 44ch;
+}
+.leg-panel-empty-prompt-sub {
+  font-family: var(--font-body, 'Source Serif 4'), serif;
+  font-size: 13px;
+  color: oklch(0.48 0.02 265);
+  margin: 0;
+  max-width: 52ch;
 }
 
 /* ── Panel header ──────────────────────────────────────────────────────── */
@@ -5640,18 +5664,10 @@ html { scroll-behavior: auto !important; }
   font-style: italic;
 }
 
-/* ── Panel body (scrollable bucket list) ───────────────────────────────── */
+/* ── Panel body (flows naturally — page handles scrolling) ─────────────── */
 .leg-panel-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px 22px 20px;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: oklch(0.75 0.02 70) transparent;
+  padding: 14px clamp(16px, 2vw, 26px) clamp(20px, 2.5vw, 28px);
 }
-.leg-panel-body::-webkit-scrollbar { width: 6px; }
-.leg-panel-body::-webkit-scrollbar-thumb { background: oklch(0.80 0.02 70); border-radius: 3px; }
-.leg-panel-body::-webkit-scrollbar-thumb:hover { background: oklch(0.65 0.03 70); }
 
 /* ── Buckets ───────────────────────────────────────────────────────────── */
 .leg-bucket {
@@ -6109,21 +6125,8 @@ html { scroll-behavior: auto !important; }
     margin: 12px 0 0;
     order: 99;
   }
-  /* Move search out of absolute positioning on mobile by stacking below map */
   .leg-view-inner--map { gap: 12px; }
-  .leg-state-panel {
-    position: fixed;
-    top: auto;
-    right: 0;
-    left: 0;
-    bottom: 0;
-    width: 100%;
-    max-height: 78vh;
-    z-index: 100;
-    transform: translateY(100%);
-  }
-  .leg-state-panel.leg-panel-active { transform: translateY(0); }
-  .leg-panel-inner { border-radius: 8px 8px 0 0; border-bottom: 0; }
+  .leg-state-panel { margin-top: 16px; }
 }
 
 @media (max-width: 640px) {
