@@ -970,7 +970,11 @@ function navigateTo(page) {
     const target = document.getElementById(`page-${page}`);
     if (target) {
       target.classList.add('active');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (window.__ucLenis) {
+        window.__ucLenis.scrollTo(0, { immediate: true });
+      } else {
+        window.scrollTo({ top: 0 });
+      }
       // Stage 8: Focus management for accessibility
       const heading = target.querySelector('h1');
       if (heading) {

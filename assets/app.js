@@ -25,7 +25,7 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
 import { fetchFeed, runRefresh, fetchResources, fetchSearch, fetchStory, fetchDigest, trackEvent, fetchSources, toggleSource, addSource, deleteSource, fetchScoring, saveScoring, invalidateFeedCache, adminQuerySuffix, setAdminToken } from './api.js';
-import { renderHero, renderTopStories, renderDailyFeed, renderHighImportance, renderTopics, renderDailyInsight, renderResources, renderWeeklyDigest, renderMetaRibbon, renderTodayBrief, renderDeveloping, renderTopicBlocks, renderGlobalSearchResults, renderStoryPage, renderDigestPage, renderOps, renderSinceLastVisit, renderArchiveDays, renderSourceManager, renderScoringPanel, renderMarketIntel, renderCartoons, renderMarketHeatmap, renderTopicBreakdownStrip, renderSourceSpectrum, computeTopicDegrees, renderUSMap, clearMapSelection, renderFederalDashboard } from './render.js';
+import { renderHero, renderTopStories, renderDailyFeed, renderHighImportance, renderTopics, renderDailyInsight, renderResources, renderWeeklyDigest, renderMetaRibbon, renderTodayBrief, renderDeveloping, renderTopicBlocks, renderGlobalSearchResults, renderStoryPage, renderDigestPage, renderOps, renderSinceLastVisit, renderArchiveDays, renderSourceManager, renderScoringPanel, renderMarketIntel, renderCartoons, renderMarketHeatmap, renderTopicBreakdownStrip, renderSourceSpectrum, computeTopicDegrees, renderUSMap, clearMapSelection, renderFederalDashboard, renderEditorialLead, renderEditorialSecondary, renderEditorialCategories, renderEditorialCta } from './render.js';
 import { initNavigation, initRunSelector, initTierTabs, initTopicFilters, initSearchFilter, initForms, initCtas, initSaveFollow, getSavedStories, getFollowedTopics, initReaderMode, initShortcuts, initGlobalSearch, applySaveFollowState, initArchiveWeekToggles, recordVisitAndGetLastTime, exportBriefing, exportBriefingText, copyStoryLink, initMyTopicsFilter, getWatches, initKeywordWatches, markAsRead, applyReadState, initUnreadFilter, initNavMore, initAlertStrip, renderTrendingBar, renderEditorsPicks, initTopicBreakdownStrip } from './ui.js';
 
 const refreshButton = document.getElementById('refreshButton');
@@ -102,23 +102,20 @@ async function loadAll() {
     const claimed = new Set();
     renderMetaRibbon(store);
     renderTodayBrief(store);
-    renderHero(store, claimed);
-    renderTopStories(store, claimed);
-    renderDeveloping(store, claimed);
-    renderTopicBlocks(store, claimed);
-    renderDailyInsight(store);
+
+    // Editorial broadsheet sections (replaces old hero/top3/topicBlocks)
+    renderEditorialLead(store, claimed);
+    renderEditorialSecondary(store, claimed);
+    renderEditorialCategories(store, claimed);
+    renderEditorialCta();
+
+    // Remaining functional sections
     renderMarketIntel(store);
     const topicDegrees = computeTopicDegrees(store.stories);
-    renderMarketHeatmap(store.stories, document.getElementById('market-heatmap-container'), topicDegrees);
-    initAlertStrip(store.stories);
-    renderTrendingBar(store.stories, topicDegrees);
-    renderTopicBreakdownStrip(store, topicDegrees);
-    renderEditorsPicks(store.stories, claimed);
-    renderCartoons(store);
+    renderSourceSpectrum(store.stories || []);
     const feedResult = renderDailyFeed(store, saved, followed, lastVisitAt, claimed);
     renderSinceLastVisit(feedResult?.newCount || 0, lastVisitAt);
     renderHighImportance(store, claimed);
-    renderSourceSpectrum(store.stories || []);
     await loadAndRenderArchive();
     renderTopics(store);
     initTopicDateNav();
@@ -135,6 +132,7 @@ async function loadAll() {
     initMarketTiles();
     initReveal();
     initShareButtons();
+    initEditorialAnimations();
     console.info('[uc] loadAll:done', { stories: store.stories?.length || 0, updated: store.lastUpdated || null });
   } catch (err) {
     console.error(err);
@@ -817,6 +815,71 @@ function initMarketTiles() {
   });
 }
 
+// ── Editorial Broadsheet Animations (GSAP + Lenis) ──
+let lenisInstance = null;
+
+function initEditorialAnimations() {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduceMotion) return;
+  if (typeof gsap === 'undefined' || typeof Lenis === 'undefined') {
+    console.warn('[uc] GSAP/Lenis not loaded — editorial animations disabled');
+    return;
+  }
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  // Lenis smooth scroll
+  if (lenisInstance) { lenisInstance.destroy(); lenisInstance = null; }
+  lenisInstance = new Lenis({
+    duration: 1.2,
+    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+    smoothWheel: true,
+  });
+  lenisInstance.on('scroll', ScrollTrigger.update);
+  gsap.ticker.add((time) => { if (lenisInstance) lenisInstance.raf(time * 1000); });
+  gsap.ticker.lagSmoothing(0);
+  // Expose for navigateTo in ui.js
+  window.__ucLenis = lenisInstance;
+
+  const hero = document.getElementById('editorialHero');
+  const scrollIndicator = document.getElementById('scrollIndicator');
+  const nav = document.querySelector('.nav');
+
+  if (hero) {
+    // Hero fade on scroll
+    ScrollTrigger.create({
+      trigger: hero,
+      start: 'top top',
+      end: 'bottom top',
+      scrub: true,
+      onUpdate: (self) => {
+        hero.style.opacity = Math.max(0, 1 - self.progress * 2.5);
+        if (scrollIndicator) scrollIndicator.style.opacity = Math.max(0, 1 - self.progress * 5);
+      },
+    });
+
+    // Nav shadow on scroll past hero
+    ScrollTrigger.create({
+      trigger: hero,
+      start: 'bottom top',
+      onEnter: () => nav?.classList.add('scrolled'),
+      onLeaveBack: () => nav?.classList.remove('scrolled'),
+    });
+
+    // Hero entrance animation
+    const words = hero.querySelectorAll('.hero-word');
+    const label = hero.querySelector('.editorial-hero-label');
+    const tagline = hero.querySelector('.editorial-hero-tagline');
+
+    if (label) gsap.from(label, { y: 20, opacity: 0, duration: 0.8, ease: 'power3.out', delay: 0.2 });
+    if (words.length) gsap.from(words, { y: 80, opacity: 0, rotationX: 15, stagger: 0.12, duration: 1.0, ease: 'power3.out', delay: 0.4 });
+    if (tagline) gsap.from(tagline, { y: 30, opacity: 0, duration: 0.9, ease: 'power3.out', delay: 0.9 });
+    if (scrollIndicator) gsap.from(scrollIndicator, { opacity: 0, duration: 0.6, ease: 'power2.out', delay: 1.4 });
+  }
+
+  console.info('[uc] editorial animations initialized');
+}
+
 function initDepthInteractions() {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduceMotion) return;
@@ -952,6 +1015,11 @@ function applyArchiveFilters() {
     const visible = section.querySelectorAll('.archive-grid-card:not([style*="display: none"]):not([style*="display:none"])');
     section.style.display = visible.length ? '' : 'none';
   });
+  // Hide month sections where all day sections are hidden
+  document.querySelectorAll('.archive-month-section').forEach((monthSection) => {
+    const visibleDays = monthSection.querySelectorAll('.archive-day-section:not([style*="display: none"]):not([style*="display:none"])');
+    monthSection.style.display = visibleDays.length ? '' : 'none';
+  });
 }
 
 function initArchiveSearch() {
@@ -997,19 +1065,47 @@ function initArchiveSearch() {
     applyArchiveFilters();
   });
 
-  // "Show N more" expand button
+  // Delegated archive interactions: show-more, month chips, month headers
   document.getElementById('archiveContent')?.addEventListener('click', (e) => {
+    // "Show N more" expand button
     const btn = e.target.closest('.archive-show-more');
-    if (!btn) return;
-    const dayDate = btn.dataset.expandDay;
-    const section = document.querySelector(`.archive-day-section[data-date="${dayDate}"]`);
-    if (section) {
-      section.querySelectorAll('.archive-card--overflow').forEach((card) => {
-        card.classList.add('archive-card--expanded');
-      });
-      applyArchiveFilters(); // re-run to show newly expanded cards
+    if (btn) {
+      const dayDate = btn.dataset.expandDay;
+      const section = document.querySelector(`.archive-day-section[data-date="${dayDate}"]`);
+      if (section) {
+        section.querySelectorAll('.archive-card--overflow').forEach((card) => {
+          card.classList.add('archive-card--expanded');
+        });
+        applyArchiveFilters();
+      }
+      btn.remove();
+      return;
     }
-    btn.remove();
+
+    // Month chip: expand target month, collapse others, scroll to it
+    const chip = e.target.closest('.archive-month-chip');
+    if (chip) {
+      const monthKey = chip.dataset.monthTarget;
+      document.querySelectorAll('.archive-month-chip').forEach((c) => c.classList.remove('active'));
+      chip.classList.add('active');
+      document.querySelectorAll('.archive-month-section').forEach((section) => {
+        if (section.dataset.month === monthKey) {
+          section.classList.remove('archive-month--collapsed');
+          section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          section.classList.add('archive-month--collapsed');
+        }
+      });
+      return;
+    }
+
+    // Month header: toggle collapse state
+    const header = e.target.closest('.archive-month-header');
+    if (header) {
+      const section = header.closest('.archive-month-section');
+      if (section) section.classList.toggle('archive-month--collapsed');
+      return;
+    }
   });
 }
 
@@ -1173,6 +1269,14 @@ document.body.addEventListener('click', (e) => {
     e.preventDefault();
     const slug = storyLink.dataset.openStory;
     if (slug && window.openStory) window.openStory(slug);
+    return;
+  }
+  // Intercept editorial /story/ links for SPA routing
+  const storyAnchor = e.target.closest('a[href^="/story/"]');
+  if (storyAnchor) {
+    e.preventDefault();
+    const match = storyAnchor.getAttribute('href').match(/\/story\/(.+)/);
+    if (match?.[1] && window.openStory) window.openStory(match[1]);
     return;
   }
   const entityChip = e.target.closest('[data-search-entity]');
