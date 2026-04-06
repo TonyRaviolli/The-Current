@@ -398,37 +398,7 @@ body{margin:0;font-family:'Source Serif 4',Georgia,serif;background:var(--bg-dee
   <div class="leg-views">
     <div class="leg-view active" id="legFederalView">
       <div class="leg-view-inner ltg-inner">
-
-        <!-- Section header — editorial serif + decorative rule -->
-        <header class="ltg-header">
-          <h1 class="ltg-title">Federal Legislation</h1>
-          <div class="ltg-rule" aria-hidden="true"></div>
-          <p class="ltg-subtitle">Tracking proposed and enacted bills across <span id="ltgTopicCount">9</span> policy areas</p>
-        </header>
-
-        <!-- Decorative glassmorphism background blobs -->
-        <div class="ltg-blobs" aria-hidden="true">
-          <div class="ltg-blob ltg-blob--1"></div>
-          <div class="ltg-blob ltg-blob--2"></div>
-          <div class="ltg-blob ltg-blob--3"></div>
-          <div class="ltg-blob ltg-blob--4"></div>
-        </div>
-
-        <!-- Topic category tile grid -->
-        <div class="ltg-tile-grid" id="ltgTileGrid" role="group" aria-label="Filter by policy topic"></div>
-
-        <!-- Legislation card grid -->
-        <section class="ltg-cards-section" aria-label="Legislation items">
-          <div class="ltg-latest-label">Featured Policy Voices &amp; In-Depth Reports</div>
-          <hr class="ltg-latest-rule" aria-hidden="true">
-          <div class="ltg-card-grid" id="ltgCardGrid"></div>
-          <div class="ltg-empty" id="ltgEmpty" hidden>
-            <svg class="ltg-empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            <p class="ltg-empty-text">No legislation tracked for this topic</p>
-            <button type="button" class="ltg-empty-cta" id="ltgEmptyCta">Clear Filters</button>
-          </div>
-        </section>
-
+        <!-- Federal content rendered dynamically by renderFederalDashboard() -->
       </div>
     </div>
     <div class="leg-view" id="legStateView">

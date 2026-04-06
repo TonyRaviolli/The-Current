@@ -941,6 +941,9 @@ export function renderHighImportance(store, claimed) {
 // ║  collapse, date navigation pills, cluster intros                       ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
+/** Topics split layout state */
+let topicPanelState = { selectedTopic: null, search: '' };
+
 export function renderTopics(store) {
   const container = document.getElementById('topicsContent');
   if (!container) return;
@@ -949,70 +952,307 @@ export function renderTopics(store) {
     container.innerHTML = '<div class="story-empty-state"><p>No topic clusters available yet. Trigger a refresh to generate category views.</p></div>';
     return;
   }
-  const today = new Date().toISOString().slice(0, 10);
-  container.innerHTML = topics.map((topic) => {
-    const todayCount = topic.items.filter((story) => String(story.updatedAt || story.publishedAt || '').slice(0, 10) === today).length;
-    const dateGroups = groupStoriesByDate(topic.items);
-    const clusterIntro = (topic.items[0]?.whyItMatters || topic.items[0]?.whatsNext)
-      ? `<div class="topic-cluster-intro">
-          ${topic.items[0].whyItMatters ? `<p class="topic-cluster-lead">${escapeHtml(topic.items[0].whyItMatters)}</p>` : ''}
-          ${topic.items[0].whatsNext ? `<p class="topic-cluster-watch"><strong>Watch for:</strong> ${escapeHtml(topic.items[0].whatsNext)}</p>` : ''}
-          <span class="topic-story-count">${topic.items.length} stor${topic.items.length !== 1 ? 'ies' : 'y'}</span>
-        </div>`
-      : '';
-    const groups = dateGroups.map((group, gi) => {
-      const items = group.items.map((story) => {
-        const storyDate = String(story.updatedAt || story.publishedAt || '').slice(0, 10);
-        const storyTime = formatTime(story.updatedAt || story.publishedAt);
-        const slug = escapeHtml(story.slug || '');
-        const hasSlug = Boolean(story.slug);
-        const { open, external } = renderStoryActions(story);
-        const thumb = renderStoryThumb(story.imageUrl, 'topic-story-thumb', story.headline || story.title || '', story.topics);
-        return `<article class="topic-story topic-story--has-thumb" data-story-date="${escapeHtml(storyDate)}">
-          <div class="topic-story-score"><span class="topic-story-score-value">${scoreLabel(story.score).value}</span><span class="topic-story-score-scale">/10</span></div>
-          ${thumb}
-          <div class="topic-story-main">
-            <div class="topic-story-head">
-              <div class="topic-story-title">${hasSlug ? `<a href="/story/${slug}" data-open-story="${slug}">${escapeHtml(story.headline || story.title)}</a>` : escapeHtml(story.headline || story.title)}</div>
-            </div>
-            <div class="topic-story-excerpt">${escapeHtml(story.dek || story.summary || '')}</div>
-            <div class="topic-story-footer">
-              <div class="topic-story-info">${escapeHtml(story.sources?.[0]?.name || story.source || '')}${storyDate ? ` &middot; ${escapeHtml(formatDate(story.updatedAt || story.publishedAt))}` : ''}${storyTime ? ` &middot; ${escapeHtml(storyTime)}` : ''}</div>
-              <div class="topic-story-actions">${open}${external}</div>
-            </div>
-          </div>
-        </article>`;
-      }).join('');
-      return `<section class="topic-date-group${gi > 0 ? ' collapsed' : ''}" data-topic-date="${escapeHtml(group.date)}"><div class="topic-date-group-header" data-toggle-topic-group><span class="topic-date-group-title">${escapeHtml(group.label)}</span><span class="topic-date-group-meta">${group.items.length} stor${group.items.length === 1 ? 'y' : 'ies'}</span><span class="topic-date-group-toggle" aria-hidden="true">&#9662;</span></div>${items}</section>`;
-    }).join('');
-    const datePills = dateGroups.map((group, gi) => {
-      const short = group.date && group.date !== 'unknown'
-        ? new Date(group.date + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-        : group.label;
-      return `<button class="topic-date-pill${gi === 0 ? ' active' : ''}" data-target-date="${escapeHtml(group.date || '')}" type="button">${escapeHtml(short)}</button>`;
-    }).join('');
-    const dateNav = dateGroups.length > 1
-      ? `<div class="topic-date-nav" data-topic-nav="${escapeHtml(topic.topic)}"><button class="topic-date-nav-arrow" data-dir="left" type="button" aria-label="Scroll dates left">&#8249;</button><div class="topic-date-nav-strip">${datePills}</div><button class="topic-date-nav-arrow" data-dir="right" type="button" aria-label="Scroll dates right">&#8250;</button></div>`
-      : '';
 
-    const sectionColor = TOPIC_PASTEL[topic.topic] || 'oklch(0.50 0.01 250)';
-    return `<div class="topic-section topic-section--collapsed" data-topic-section="${escapeHtml(topic.topic)}" style="border-left: 4px solid ${sectionColor}">
-      <div class="topic-section-header">
-        <h2 class="topic-section-title" style="color: ${sectionColor}">${escapeHtml(topic.label || topic.topic)}</h2>
-        <span class="topic-section-meta">${todayCount ? `${todayCount} today` : 'No stories today'}</span>
-      </div>
-      ${clusterIntro}
-      <div class="topic-preview">
-        <ul class="topic-preview-list">
-          ${topic.items.slice(0, 3).map((s) => `<li class="topic-preview-item"><span class="topic-preview-score">${s.score != null ? scoreOutOfTen(s.score) : '--'}</span><a href="/story/${escapeHtml(s.slug || '')}" data-open-story="${escapeHtml(s.slug || '')}">${escapeHtml(s.headline || s.title || '')}</a><span class="topic-preview-source">${escapeHtml(s.sources?.[0]?.name || s.source || '')}</span></li>`).join('')}
-        </ul>
-        ${todayCount > 0 ? `<button class="topic-expand-btn" data-expand-topic="${escapeHtml(topic.topic)}" type="button">Browse all ${todayCount} stories \u2192</button>` : '<span class="topic-expand-empty">No stories today</span>'}
-      </div>
-      <div class="topic-full">
-        ${dateNav}${groups}
-      </div>
-    </div>`;
+  // Flatten all stories and sort by most recent
+  const allStories = [];
+  for (const topic of topics) {
+    for (const story of (topic.items || [])) {
+      allStories.push({ ...story, _topic: topic.topic, _topicLabel: topic.label || topic.topic });
+    }
+  }
+  allStories.sort((a, b) => {
+    const da = String(a.updatedAt || a.publishedAt || '');
+    const db = String(b.updatedAt || b.publishedAt || '');
+    return db.localeCompare(da);
+  });
+
+  // Store for re-rendering
+  container._topicStories = allStories;
+  container._topics = topics;
+
+  const esc = escapeHtml;
+
+  // Sort topics by most recent story date
+  const topicsByRecent = topics.slice().sort((a, b) => {
+    const da = String(a.items[0]?.updatedAt || a.items[0]?.publishedAt || '');
+    const db = String(b.items[0]?.updatedAt || b.items[0]?.publishedAt || '');
+    return db.localeCompare(da);
+  });
+
+  // Build topic tiles
+  const tilesHtml = topicsByRecent.map(topic => {
+    const color = TOPIC_PASTEL[topic.topic] || 'oklch(0.50 0.01 250)';
+    const label = TOPIC_LABELS[topic.topic] || topic.label || topic.topic;
+    return `<button type="button" class="leg-cat-tile topic-split-tile" data-topic-tile="${esc(topic.topic)}" style="--tile-color:${color}" aria-label="${esc(label)}">
+      <span class="leg-cat-tile-label">${esc(label)}</span>
+    </button>`;
   }).join('');
+
+  // Lead story (most recent globally)
+  const lead = allStories[0];
+  const leadSlug = esc(lead?.slug || '');
+  const leadHasSlug = Boolean(lead?.slug);
+  const leadImg = lead ? renderStoryThumb(lead.imageUrl, 'topic-lead-thumb', lead.headline || lead.title || '', lead.topics) : '';
+  const leadDate = lead ? formatDate(lead.updatedAt || lead.publishedAt) : '';
+  const leadSource = esc(lead?.sources?.[0]?.name || lead?.source || '');
+  const leadColor = TOPIC_PASTEL[lead?._topic] || 'oklch(0.50 0.01 250)';
+
+  const leadHtml = lead ? `
+    <div class="topic-lead-story" style="--lead-color:${leadColor}">
+      ${leadImg}
+      <div class="topic-lead-body">
+        <div class="topic-lead-headline">${leadHasSlug ? `<a href="/story/${leadSlug}" data-open-story="${leadSlug}">${esc(lead.headline || lead.title)}</a>` : esc(lead.headline || lead.title)}</div>
+        <div class="topic-lead-dateline">${leadSource}${leadDate ? ` &middot; ${leadDate}` : ''}</div>
+      </div>
+    </div>` : '';
+
+  // Stories 2-5
+  const nextStories = allStories.slice(1, 5);
+  const nextHtml = nextStories.map(story => {
+    const slug = esc(story.slug || '');
+    const hasSlug = Boolean(story.slug);
+    const src = esc(story.sources?.[0]?.name || story.source || '');
+    const dt = formatDate(story.updatedAt || story.publishedAt);
+    const color = TOPIC_PASTEL[story._topic] || 'oklch(0.50 0.01 250)';
+    return `<li class="topic-split-row" style="--row-color:${color}">
+      <span class="topic-split-row-title">${hasSlug ? `<a href="/story/${slug}" data-open-story="${slug}">${esc(story.headline || story.title)}</a>` : esc(story.headline || story.title)}</span>
+      <span class="topic-split-row-source">${src}</span>
+      <span class="topic-split-row-date">${dt}</span>
+    </li>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="leg-desk-split topic-desk-split">
+      <div class="leg-desk-recent">
+        <div class="leg-desk-section-label">Latest</div>
+        ${leadHtml}
+        <ol class="topic-split-recent-list">${nextHtml}</ol>
+      </div>
+      <div class="leg-desk-categories">
+        <div class="leg-desk-section-label">Browse by Topic</div>
+        <div class="leg-cat-grid topic-tile-grid">${tilesHtml}</div>
+      </div>
+    </div>
+
+    <div class="topic-date-nav-wrap" id="topicDateNavWrap"></div>
+
+    <div class="leg-archive-section" id="topicArchiveSection">
+      <div class="leg-archive-header">
+        <div class="leg-desk-section-label" id="topicArchiveLabel">Archive</div>
+        <div class="leg-archive-filters">
+          <div class="leg-panel-search-wrap">
+            <svg class="leg-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="search" class="leg-panel-search" id="topicArchiveSearch" placeholder="Search stories…" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+      </div>
+      <div id="topicArchiveBody" class="leg-archive-body"></div>
+    </div>
+  `;
+
+  // Wire events
+  wireTopicTileHandlers(container);
+  wireTopicSearch(container);
+  renderTopicArchive(container);
+}
+
+function renderTopicArchive(container) {
+  const body = document.getElementById('topicArchiveBody');
+  const label = document.getElementById('topicArchiveLabel');
+  const navWrap = document.getElementById('topicDateNavWrap');
+  if (!body) return;
+
+  const allStories = container._topicStories || [];
+  const selTopic = topicPanelState.selectedTopic;
+  const search = topicPanelState.search;
+
+  if (label) {
+    label.textContent = selTopic ? `Archive — ${TOPIC_LABELS[selTopic] || selTopic}` : 'Archive';
+  }
+
+  // Highlight active tile
+  container.querySelectorAll('.topic-split-tile').forEach(tile => {
+    tile.classList.toggle('leg-cat-tile--active', tile.dataset.topicTile === selTopic);
+  });
+
+  let stories = allStories;
+  if (selTopic) stories = stories.filter(s => s._topic === selTopic);
+  if (search) {
+    const q = search.toLowerCase();
+    stories = stories.filter(s =>
+      (s.headline || s.title || '').toLowerCase().includes(q) ||
+      (s.sources?.[0]?.name || s.source || '').toLowerCase().includes(q)
+    );
+  }
+
+  if (stories.length === 0) {
+    body.innerHTML = `<div class="leg-bucket-empty">${search ? `No stories match "${escapeHtml(search)}"` : 'No stories for this topic'}</div>`;
+    if (navWrap) navWrap.innerHTML = '';
+    return;
+  }
+
+  // Group by date
+  const dateGroups = groupStoriesByDate(stories);
+
+  // Build date pills
+  if (navWrap && dateGroups.length > 1) {
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const pillColor = selTopic ? (TOPIC_PASTEL[selTopic] || 'oklch(0.50 0.01 250)') : '';
+    const pillStyle = pillColor ? ` style="--pill-active-color:${pillColor}"` : '';
+    const pills = dateGroups.map((g, i) => {
+      let pillLabel = g.label;
+      if (g.date === today) pillLabel = 'Today';
+      else if (g.date === yesterday) pillLabel = 'Yesterday';
+      else if (g.date && g.date !== 'unknown') {
+        pillLabel = new Date(g.date + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      }
+      return `<button class="topic-date-pill${i === 0 ? ' active' : ''}" data-target-date="${escapeHtml(g.date || '')}" type="button">${escapeHtml(pillLabel)}</button>`;
+    }).join('');
+    navWrap.innerHTML = `<div class="topic-date-nav"${pillStyle}>
+      <button class="topic-date-nav-arrow" data-dir="left" type="button" aria-label="Scroll dates left">&#8249;</button>
+      <div class="topic-date-nav-strip">${pills}</div>
+      <button class="topic-date-nav-arrow" data-dir="right" type="button" aria-label="Scroll dates right">&#8250;</button>
+    </div>`;
+  } else if (navWrap) {
+    navWrap.innerHTML = '';
+  }
+
+  // Render date groups
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const esc = escapeHtml;
+  let html = '';
+  dateGroups.forEach((group, gi) => {
+    let groupLabel = group.label;
+    if (group.date === today) groupLabel = 'Today';
+    else if (group.date === yesterday) groupLabel = 'Yesterday';
+
+    const collapsed = gi > 0 ? ' leg-year-collapsed' : '';
+    const storyRows = group.items.map(story => {
+      const slug = esc(story.slug || '');
+      const hasSlug = Boolean(story.slug);
+      const src = esc(story.sources?.[0]?.name || story.source || '');
+      const dt = formatDate(story.updatedAt || story.publishedAt);
+      const tm = formatTime(story.updatedAt || story.publishedAt);
+      const color = TOPIC_PASTEL[story._topic] || 'oklch(0.50 0.01 250)';
+      return `<li class="topic-split-row topic-archive-row" style="--row-color:${color}">
+        <span class="topic-split-row-title">${hasSlug ? `<a href="/story/${slug}" data-open-story="${slug}">${esc(story.headline || story.title)}</a>` : esc(story.headline || story.title)}</span>
+        <span class="topic-split-row-source">${src}</span>
+        <span class="topic-split-row-date">${dt}${tm ? ' ' + tm : ''}</span>
+      </li>`;
+    }).join('');
+
+    html += `<div class="leg-archive-year-group${collapsed}" data-year-group data-topic-date="${esc(group.date || '')}">
+      <div class="leg-archive-year-label" data-year-toggle>
+        <span>${esc(groupLabel)}</span>
+        <svg class="leg-year-chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 6 8 10 12 6"/></svg>
+      </div>
+      <ol class="leg-archive-year-list">${storyRows}</ol>
+    </div>`;
+  });
+
+  body.innerHTML = html;
+  wireYearCollapseHandlers(body);
+  wireTopicDatePills(container);
+}
+
+function wireTopicTileHandlers(container) {
+  container.addEventListener('click', (e) => {
+    const tile = e.target.closest('.topic-split-tile');
+    if (!tile) return;
+    const key = tile.dataset.topicTile;
+    topicPanelState.selectedTopic = topicPanelState.selectedTopic === key ? null : key;
+    renderTopicArchive(container);
+    // Update latest section too
+    updateTopicLatest(container);
+    const archive = document.getElementById('topicArchiveSection');
+    if (archive) archive.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
+
+function updateTopicLatest(container) {
+  const allStories = container._topicStories || [];
+  const selTopic = topicPanelState.selectedTopic;
+  const filtered = selTopic ? allStories.filter(s => s._topic === selTopic) : allStories;
+  const esc = escapeHtml;
+
+  // Update lead story
+  const lead = filtered[0];
+  const leadEl = container.querySelector('.topic-lead-story');
+  if (leadEl && lead) {
+    const leadColor = TOPIC_PASTEL[lead._topic] || 'oklch(0.50 0.01 250)';
+    const leadSlug = esc(lead.slug || '');
+    const hasSlug = Boolean(lead.slug);
+    const leadImg = renderStoryThumb(lead.imageUrl, 'topic-lead-thumb', lead.headline || lead.title || '', lead.topics);
+    const leadDate = formatDate(lead.updatedAt || lead.publishedAt);
+    const leadSrc = esc(lead.sources?.[0]?.name || lead.source || '');
+    leadEl.style.setProperty('--lead-color', leadColor);
+    leadEl.innerHTML = `
+      ${leadImg}
+      <div class="topic-lead-body">
+        <div class="topic-lead-headline">${hasSlug ? `<a href="/story/${leadSlug}" data-open-story="${leadSlug}">${esc(lead.headline || lead.title)}</a>` : esc(lead.headline || lead.title)}</div>
+        <div class="topic-lead-dateline">${leadSrc}${leadDate ? ` &middot; ${leadDate}` : ''}</div>
+      </div>`;
+  }
+
+  // Update rows 2-5
+  const nextStories = filtered.slice(1, 5);
+  const listEl = container.querySelector('.topic-split-recent-list');
+  if (listEl) {
+    listEl.innerHTML = nextStories.map(story => {
+      const slug = esc(story.slug || '');
+      const hasSlug = Boolean(story.slug);
+      const src = esc(story.sources?.[0]?.name || story.source || '');
+      const dt = formatDate(story.updatedAt || story.publishedAt);
+      const color = TOPIC_PASTEL[story._topic] || 'oklch(0.50 0.01 250)';
+      return `<li class="topic-split-row" style="--row-color:${color}">
+        <span class="topic-split-row-title">${hasSlug ? `<a href="/story/${slug}" data-open-story="${slug}">${esc(story.headline || story.title)}</a>` : esc(story.headline || story.title)}</span>
+        <span class="topic-split-row-source">${src}</span>
+        <span class="topic-split-row-date">${dt}</span>
+      </li>`;
+    }).join('');
+  }
+}
+
+function wireTopicSearch(container) {
+  const input = document.getElementById('topicArchiveSearch');
+  if (!input) return;
+  let timer;
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      topicPanelState.search = input.value.trim();
+      renderTopicArchive(container);
+    }, 200);
+  });
+}
+
+function wireTopicDatePills(container) {
+  const nav = container.querySelector('.topic-date-nav');
+  if (!nav) return;
+  nav.querySelectorAll('.topic-date-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      const dateKey = pill.dataset.targetDate;
+      const group = container.querySelector(`.leg-archive-year-group[data-topic-date="${dateKey}"]`);
+      if (group) {
+        group.classList.remove('leg-year-collapsed');
+        group.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      nav.querySelectorAll('.topic-date-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+    });
+  });
+
+  // Arrow scroll
+  nav.querySelectorAll('.topic-date-nav-arrow').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const strip = nav.querySelector('.topic-date-nav-strip');
+      if (!strip) return;
+      const dir = btn.dataset.dir === 'left' ? -1 : 1;
+      strip.scrollBy({ left: dir * 120, behavior: 'smooth' });
+    });
+  });
 }
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
@@ -2310,6 +2550,7 @@ async function renderLegislationPanel(stateId) {
   wirePanelCloseHandlers(panel);
   wirePanelSearch(panel, stateData);
   wireCategoryHandlers(panel, stateData);
+  wireBillRowExpand(panel);
   renderArchive(stateData);
 
   if (isNewPanel) {
@@ -2399,7 +2640,7 @@ function filterBillsBySearch(bills, search) {
 }
 
 
-/** Render a compact bill row: bill ID, title, date, status badge */
+/** Render a compact bill row with expandable citation detail */
 function renderBillRow(bill) {
   const esc = escapeHtml;
   const status = (bill.status || 'proposed').toLowerCase();
@@ -2407,13 +2648,55 @@ function renderBillRow(bill) {
   const statusClass = status === 'passed' ? 'passed' : status === 'in_process' ? 'inprocess' : 'proposed';
   const dateStr = bill.enacted ? fmtDate(bill.enacted) : fmtDate(bill.introduced);
   const catSlug = (bill.category || 'Other').toLowerCase().replace(/[^a-z]/g, '');
+  const catColor = TOPIC_CONFIG[bill.category]?.color || 'oklch(0.62 0.14 70)';
+  const url = bill.fullTextUrl || bill.url || '';
 
-  return `<li class="leg-bill-row" data-category="${catSlug}">
-    <span class="leg-bill-row-id">${esc(bill.id)}</span>
-    <span class="leg-bill-row-title">${esc(bill.title)}</span>
-    <span class="leg-bill-row-date">${dateStr}</span>
-    <span class="leg-bill-row-status leg-bill-row-status--${statusClass}">${statusLabel}</span>
+  // Build provisions HTML if available
+  const provisions = Array.isArray(bill.keyProvisions) && bill.keyProvisions.length > 0
+    ? `<div class="leg-bill-detail-provisions">
+        <span class="leg-bill-detail-label">Key Provisions</span>
+        <ul class="leg-bill-detail-prov-list">${bill.keyProvisions.map(p => `<li style="--prov-color:${catColor}">${esc(p)}</li>`).join('')}</ul>
+      </div>` : '';
+
+  // Build detail grid
+  const sponsor = bill.sponsor ? `<div class="leg-bill-detail-item"><span class="leg-bill-detail-label">Sponsor</span><span class="leg-bill-detail-value">${esc(bill.sponsor)}</span></div>` : '';
+  const introduced = bill.introduced ? `<div class="leg-bill-detail-item"><span class="leg-bill-detail-label">Introduced</span><span class="leg-bill-detail-value">${fmtDate(bill.introduced)}</span></div>` : '';
+  const category = bill.category ? `<div class="leg-bill-detail-item"><span class="leg-bill-detail-label">Category</span><span class="leg-bill-detail-value">${esc(bill.category)}</span></div>` : '';
+
+  // Bill ID is the citation link
+  const idHtml = url
+    ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" class="leg-bill-row-id leg-bill-row-id--link" style="--cat-color:${catColor}" title="View official source">${esc(bill.id)}<svg class="leg-bill-link-icon" width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 3h8v8M13 3L6 10"/></svg></a>`
+    : `<span class="leg-bill-row-id">${esc(bill.id)}</span>`;
+
+  return `<li class="leg-bill-row" data-category="${catSlug}" data-bill-expand style="--cat-color:${catColor}">
+    <div class="leg-bill-row-main">
+      ${idHtml}
+      <span class="leg-bill-row-title">${esc(bill.title)}</span>
+      <span class="leg-bill-row-date">${dateStr}</span>
+      <span class="leg-bill-row-status leg-bill-row-status--${statusClass}">${statusLabel}</span>
+      <svg class="leg-bill-row-chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="4 6 8 10 12 6"/></svg>
+    </div>
+    <div class="leg-bill-row-detail">
+      <div class="leg-bill-detail-grid">${sponsor}${introduced}${category}</div>
+      ${provisions}
+    </div>
   </li>`;
+}
+
+/** Wire bill row expand/collapse (accordion — one at a time) */
+function wireBillRowExpand(container) {
+  if (!container) return;
+  container.addEventListener('click', (e) => {
+    // Don't interfere with citation link clicks
+    if (e.target.closest('.leg-bill-row-id--link')) return;
+    const row = e.target.closest('[data-bill-expand]');
+    if (!row) return;
+    const wasExpanded = row.classList.contains('leg-bill-row--expanded');
+    // Collapse all sibling rows
+    container.querySelectorAll('.leg-bill-row--expanded').forEach(r => r.classList.remove('leg-bill-row--expanded'));
+    // Toggle clicked row
+    if (!wasExpanded) row.classList.add('leg-bill-row--expanded');
+  });
 }
 
 /** Render the archive section — grouped by year, filtered by selected category + search */
@@ -2503,7 +2786,7 @@ function fmtDate(dateStr) {
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
 /* ══════════════════════════════════════════════════════════════════════════
-   FEDERAL LEGISLATION — Topic Grid + Glassmorphism
+   FEDERAL LEGISLATION — Split Layout with Institution Categories
    ══════════════════════════════════════════════════════════════════════════ */
 
 const TOPIC_CONFIG = {
@@ -2519,11 +2802,27 @@ const TOPIC_CONFIG = {
   'Law':              { label: 'Law',                color: 'oklch(0.62 0.14 250)', dark: 'oklch(0.30 0.08 250)', glow: 'oklch(0.62 0.18 250 / 0.25)', svg: '<path d="M4 2h9l3 3v13H4z"/><path d="M13 2v3h3"/><line x1="7" y1="8" x2="13" y2="8"/><line x1="7" y1="11" x2="13" y2="11"/>' },
 };
 
+/** Federal institution categories with source IDs, colors, icons, hero image paths */
+const FEDERAL_CAT_CONFIG = {
+  'Supreme Court':     { sourceIds: ['supreme-court-opinions'],                    color: 'oklch(0.55 0.14 250)', label: 'Supreme Court',     svg: '<path d="M2 16h16M3 8l7-5 7 5M5 8v8M9 8v8M11 8v8M15 8v8"/><line x1="2" y1="18" x2="18" y2="18" stroke-width="2"/>', heroAlt: 'United States Supreme Court' },
+  'White House':       { sourceIds: ['whitehouse-briefing', 'whitehouse-archive'], color: 'oklch(0.58 0.14 45)',  label: 'White House',       svg: '<path d="M3 12h14M5 12V8l5-4 5 4v4"/><rect x="8" y="9" width="4" height="3"/><path d="M2 14h16"/>', heroAlt: 'The White House' },
+  'Congress':          { sourceIds: ['congress-bills-api', 'govinfo-bills-api'],   color: 'oklch(0.55 0.12 210)', label: 'Congress',          svg: '<path d="M10 2v4M3 10h14M5 10v6M15 10v6M2 16h16"/><circle cx="10" cy="7" r="3" fill="none"/>', heroAlt: 'United States Capitol' },
+  'Federal Register':  { sourceIds: ['federal-register-api'],                      color: 'oklch(0.55 0.14 165)', label: 'Federal Register',  svg: '<path d="M4 2h9l3 3v13H4z"/><path d="M13 2v3h3"/><line x1="7" y1="8" x2="13" y2="8"/><line x1="7" y1="11" x2="13" y2="11"/><line x1="7" y1="14" x2="11" y2="14"/>', heroAlt: 'Federal Register' },
+  'Federal Reserve':   { sourceIds: ['federal-reserve', 'fed-reserve-press'],      color: 'oklch(0.55 0.12 150)', label: 'Federal Reserve',   svg: '<circle cx="10" cy="10" r="7" fill="none"/><path d="M10 6v8M7 8h6M7 12h6"/>', heroAlt: 'Federal Reserve' },
+  'FEMA':              { sourceIds: ['fema-openfema-api'],                         color: 'oklch(0.55 0.16 27)',  label: 'FEMA',              svg: '<path d="M10 2L3 6v5c0 4.5 3 8 7 9 4-1 7-4.5 7-9V6z"/>', heroAlt: 'FEMA Emergency Management' },
+  'Dept. of Defense':  { sourceIds: ['dod-releases'],                              color: 'oklch(0.55 0.10 220)', label: 'Dept. of Defense',  svg: '<polygon points="10,2 18,7 18,13 10,18 2,13 2,7" fill="none"/><line x1="10" y1="7" x2="10" y2="13"/><line x1="7" y1="10" x2="13" y2="10"/>', heroAlt: 'U.S. Department of Defense' },
+  'CDC / Health':      { sourceIds: ['cdc-mmwr'],                                  color: 'oklch(0.55 0.14 155)', label: 'CDC / Health',       svg: '<path d="M7 3h6v4h4v6h-4v4H7v-4H3V7h4z"/>', heroAlt: 'Centers for Disease Control and Prevention' },
+  'Treasury':          { sourceIds: ['treasury-news'],                             color: 'oklch(0.55 0.12 75)',  label: 'Treasury',          svg: '<path d="M3 7h14M5 7v9M10 7v9M15 7v9M2 16h16M7 3h6l1 4H6z"/>', heroAlt: 'U.S. Department of the Treasury' },
+  'FBI':               { sourceIds: ['fbi-news'],                                  color: 'oklch(0.55 0.14 290)', label: 'FBI',               svg: '<path d="M10 2L3 6v5c0 4.5 3 8 7 9 4-1 7-4.5 7-9V6z"/><path d="M8 10h4M10 8v4"/>', heroAlt: 'Federal Bureau of Investigation' },
+  'SEC':               { sourceIds: ['sec-press'],                                 color: 'oklch(0.55 0.10 60)',  label: 'SEC',               svg: '<circle cx="10" cy="10" r="7" fill="none"/><path d="M7 12c0-2 1.5-3 3-3s3 1 3 3"/><circle cx="10" cy="7" r="1.5"/>', heroAlt: 'Securities and Exchange Commission' },
+  'Dept. of Education':{ sourceIds: ['ed-gov-press'],                              color: 'oklch(0.55 0.12 310)', label: 'Dept. of Education', svg: '<path d="M2 8l8-4 8 4-8 4z"/><path d="M5 10v4l5 3 5-3v-4"/>', heroAlt: 'U.S. Department of Education' },
+};
+
 let fedState = {
   initialized: false,
   allItems: [],
-  activeTopics: new Set(),
-  recentOpen: false,
+  selectedInstitution: null,
+  search: '',
 };
 
 function getTopicColor(cat) {
@@ -2533,63 +2832,13 @@ function getTopicDark(cat) {
   return TOPIC_CONFIG[cat]?.dark || 'hsl(0,0%,40%)';
 }
 
-/** Slugify a topic key for URL params (e.g. "Economy & Taxes" → "economy-taxes") */
-function topicToSlug(key) {
-  return key.toLowerCase().replace(/[&\s]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-}
-/** Reverse: slug → original TOPIC_CONFIG key */
-const _slugToKey = Object.fromEntries(
-  Object.keys(TOPIC_CONFIG).map(k => [topicToSlug(k), k])
-);
-function slugToTopic(slug) {
-  return _slugToKey[slug] || null;
+/* ── Build source→institution reverse map ── */
+const _sourceToInstitution = {};
+for (const [instKey, cfg] of Object.entries(FEDERAL_CAT_CONFIG)) {
+  for (const sid of cfg.sourceIds) _sourceToInstitution[sid] = instKey;
 }
 
-/* ── Topic-Grid Federal Dashboard ────────────────────────────── */
-
-// Federal source IDs (from config/sources.json) → dashboard item type.
-// `bill` covers bills/rules/announcements; `eo` covers White House press/EOs;
-// `scotus` covers Supreme Court opinions.
-const FEDERAL_SOURCE_TYPE = {
-  'federal-register-api': 'bill',
-  'congress-bills-api': 'bill',
-  'govinfo-bills-api': 'bill',
-  'federal-reserve': 'bill',
-  'whitehouse-briefing': 'eo',
-  'whitehouse-archive': 'eo',
-  'supreme-court-opinions': 'scotus',
-};
-
-// Canonical feed topic → TOPIC_CONFIG category (priority: first match wins).
-const FEED_TOPIC_TO_CATEGORY = [
-  ['health', 'Healthcare'],
-  ['healthcare', 'Healthcare'],
-  ['education', 'Education'],
-  ['labor', 'Economy & Taxes'],
-  ['housing', 'Infrastructure'],
-  ['infrastructure', 'Infrastructure'],
-  ['energy', 'Environment'],
-  ['climate', 'Environment'],
-  ['defense', 'Public Safety'],
-  ['cyber', 'Public Safety'],
-  ['finance', 'Economy & Taxes'],
-  ['banking', 'Economy & Taxes'],
-  ['macroeconomics', 'Economy & Taxes'],
-  ['economy', 'Economy & Taxes'],
-  ['global_trade', 'Economy & Taxes'],
-  ['law', 'Law'],
-  ['elections', 'Civil Rights'],
-  ['uspolitics', 'Law'],
-];
-
-function articleCategory(article) {
-  const topics = Array.isArray(article.topics) ? article.topics : [];
-  for (const [feedTopic, cat] of FEED_TOPIC_TO_CATEGORY) {
-    if (topics.includes(feedTopic)) return cat;
-  }
-  return 'Law';
-}
-
+/* ── Federal Data Loader ── */
 async function loadFederalData() {
   try {
     const res = await fetch('/api/feed');
@@ -2598,418 +2847,210 @@ async function loadFederalData() {
     const articles = payload.articles || payload.items || payload.stories || [];
     const items = [];
     for (const a of articles) {
-      const type = FEDERAL_SOURCE_TYPE[a.sourceId];
-      if (!type) continue;
+      const institution = _sourceToInstitution[a.sourceId];
+      if (!institution) continue;
+      const cfg = FEDERAL_CAT_CONFIG[institution];
+      const isScotus = institution === 'Supreme Court';
+      const isWH = institution === 'White House';
       items.push({
-        type,
-        id: a.id,
+        institution,
+        id: a.id || '',
         title: a.title,
-        summary: a.summary || '',
-        category: articleCategory(a),
-        status: type === 'scotus' ? 'pending' : type === 'eo' ? 'signed' : 'proposed',
-        date: a.publishedAt ? String(a.publishedAt).slice(0, 10) : null,
-        sponsor: a.source || '',
-        chamber: null,
-        impact: null,
-        voteSplit: null,
-        opinion: null,
-        url: a.url || null,
+        category: institution,
+        status: isScotus ? 'pending' : isWH ? 'signed' : 'proposed',
+        introduced: a.publishedAt ? String(a.publishedAt).slice(0, 10) : null,
+        sponsor: a.source || cfg.label,
+        fullTextUrl: a.url || null,
+        keyProvisions: [],
       });
     }
-    items.sort((a, b) => {
-      if (!a.date && !b.date) return 0;
-      if (!a.date) return 1;
-      if (!b.date) return -1;
-      return new Date(b.date) - new Date(a.date);
-    });
+    items.sort((a, b) => (b.introduced || '').localeCompare(a.introduced || ''));
     return items;
   } catch {
     return [];
   }
 }
 
+/* ── Federal Split Layout Dashboard ── */
 export async function renderFederalDashboard() {
   if (fedState.initialized) return;
 
-  // Show skeleton loaders
-  insertCardSkeletons();
+  const view = document.getElementById('legFederalView');
+  if (!view) return;
+  const inner = view.querySelector('.leg-view-inner');
+  if (!inner) return;
 
-  // Load federal data live from /api/feed (filters 7 federal source IDs).
+  // Loading state
+  inner.innerHTML = `<div class="leg-fed-loading"><p>Loading federal data…</p></div>`;
+
   fedState.allItems = await loadFederalData();
   fedState.initialized = true;
 
-  // Sync from URL params
-  syncFromUrl();
-
-  // Build topic tiles
-  buildTopicTiles();
-
-  // Render card grid
-  renderCardGrid();
-  initCardRevealObserver();
-
-  // Update topic count
-  const countEl = document.getElementById('ltgTopicCount');
-  if (countEl) {
-    const topics = new Set(fedState.allItems.map(it => it.category));
-    countEl.textContent = topics.size;
-  }
-
-  // Wire all events
-  wireFederalEvents();
-}
-
-/**
- * Build the topic tile grid
- */
-function buildTopicTiles() {
-  const grid = document.getElementById('ltgTileGrid');
-  if (!grid) return;
-
-  // Collect unique categories from data
-  const categories = new Set(fedState.allItems.map(it => it.category));
   const esc = escapeHtml;
 
-  let html = '';
-  for (const [key, cfg] of Object.entries(TOPIC_CONFIG)) {
-    if (key === 'most-recent') continue; // Most Recent has its own panel
-    if (!categories.has(key)) continue;
+  // Build institution tiles
+  const tilesHtml = Object.entries(FEDERAL_CAT_CONFIG).map(([key, cfg]) => {
+    return `<button type="button" class="leg-cat-tile leg-fed-inst-tile" data-fed-inst="${esc(key)}" style="--tile-color:${cfg.color}" aria-label="${esc(cfg.label)}">
+      <svg class="leg-cat-tile-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${cfg.svg}</svg>
+      <span class="leg-cat-tile-label">${esc(cfg.label)}</span>
+    </button>`;
+  }).join('');
 
-    const count = fedState.allItems.filter(it => it.category === key).length;
-    const isActive = fedState.activeTopics.has(key);
+  // 5 most recent items
+  const recentItems = fedState.allItems.slice(0, 5);
+  const recentHtml = recentItems.map(item => renderBillRow(item)).join('');
 
-    html += buildTile(key, cfg, count, isActive);
-  }
+  inner.innerHTML = `
+    <header class="ltg-header">
+      <h1 class="ltg-title">Federal Legislation</h1>
+      <div class="ltg-rule" aria-hidden="true"></div>
+      <p class="ltg-subtitle">Tracking policy across federal institutions</p>
+    </header>
 
-  grid.innerHTML = html;
-}
+    <div class="leg-desk-split">
+      <div class="leg-desk-recent">
+        <div class="leg-desk-section-label">Most Recent</div>
+        <ol class="leg-recent-list">${recentHtml}</ol>
+      </div>
+      <div class="leg-desk-categories">
+        <div class="leg-desk-section-label">Browse by Institution</div>
+        <div class="leg-cat-grid leg-fed-inst-grid">${tilesHtml}</div>
+      </div>
+    </div>
 
-function buildTile(key, cfg, count, isActive) {
-  const esc = escapeHtml;
-  return `<button type="button"
-    class="ltg-tile"
-    data-topic="${esc(key)}"
-    aria-pressed="${isActive}"
-    aria-label="${esc(cfg.label)}">
-    <span class="ltg-tile-name">${esc(cfg.label)}</span>
-  </button>`;
-}
+    <div class="leg-fed-hero-wrap" id="legFedHero" hidden>
+      <div class="leg-fed-hero-image" id="legFedHeroImg"></div>
+      <div class="leg-fed-hero-caption" id="legFedHeroCaption"></div>
+    </div>
 
-/**
- * Build the "Most Recent" ranked list inside the <details> panel
- */
-function buildMostRecentPanel() {
-  const panel = document.getElementById('ltgRecentPanel');
-  if (!panel) return;
-
-  const top10 = fedState.allItems.slice(0, 10);
-  const esc = escapeHtml;
-  const dtf = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
-
-  let html = '';
-  top10.forEach((item, i) => {
-    const dateStr = item.date ? dtf.format(new Date(item.date + 'T12:00:00')) : '';
-    const topicCfg = TOPIC_CONFIG[item.category];
-    const color = topicCfg?.color || 'oklch(0.5 0 0)';
-    const glow = topicCfg?.glow || 'oklch(0.5 0 0 / 0.15)';
-    const badgeClass = getStatusBadgeClass(item.status);
-    const typeLabel = item.type === 'bill' ? (item.chamber || 'Bill') : item.type === 'eo' ? 'Exec. Order' : 'SCOTUS';
-
-    html += `<div class="ltg-rank-row" role="listitem" tabindex="0" style="--row-index:${i};--row-accent:${color};--row-hover-bg:${glow}"${item.url ? ` data-href="${esc(item.url)}"` : ''}>
-      <span class="ltg-rank-num">${i + 1}</span>
-      <div class="ltg-rank-content">
-        <span class="ltg-rank-bill">${esc(typeLabel)}</span>
-        <span class="ltg-rank-title">${esc(item.title)}</span>
-        <div class="ltg-rank-meta">
-          <span class="ltg-rank-topic-dot" style="background:${color}"></span>
-          <span class="ltg-rank-topic-name">${esc(TOPIC_CONFIG[item.category]?.label || item.category)}</span>
-          <span class="ltg-badge ${badgeClass}" aria-label="Bill status: ${esc(item.status)}">${esc(item.status.replace('_', ' ').toUpperCase())}</span>
-          <span class="ltg-rank-date">${dateStr}</span>
+    <div class="leg-archive-section" id="legFedArchiveSection">
+      <div class="leg-archive-header">
+        <div class="leg-desk-section-label" id="legFedArchiveLabel">Archive</div>
+        <div class="leg-archive-filters">
+          <div class="leg-panel-search-wrap">
+            <svg class="leg-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="search" class="leg-panel-search" id="legFedSearch" placeholder="Search federal items…" autocomplete="off" spellcheck="false">
+          </div>
         </div>
       </div>
-      <svg class="ltg-rank-arrow" viewBox="0 0 16 16" aria-hidden="true"><polyline points="5 3 11 8 5 13"/></svg>
-    </div>`;
+      <div id="legFedArchiveBody" class="leg-archive-body"></div>
+    </div>
+  `;
+
+  // Wire events
+  wireBillRowExpand(inner);
+  wireFedInstitutionHandlers(inner);
+  wireFedSearch(inner);
+  renderFedArchive();
+}
+
+function renderFedArchive() {
+  const body = document.getElementById('legFedArchiveBody');
+  const label = document.getElementById('legFedArchiveLabel');
+  if (!body) return;
+
+  const inst = fedState.selectedInstitution;
+  const search = fedState.search;
+
+  if (label) {
+    label.textContent = inst ? `Archive — ${inst}` : 'Archive';
+  }
+
+  // Highlight active tile
+  document.querySelectorAll('.leg-fed-inst-tile').forEach(tile => {
+    tile.classList.toggle('leg-cat-tile--active', tile.dataset.fedInst === inst);
   });
 
-  panel.innerHTML = html;
-}
-
-function getStatusBadgeClass(status) {
-  const map = {
-    proposed: 'ltg-badge--proposed',
-    passed: 'ltg-badge--passed',
-    signed: 'ltg-badge--signed',
-    decided: 'ltg-badge--decided',
-    pending: 'ltg-badge--pending',
-    committee: 'ltg-badge--committee',
-    in_committee: 'ltg-badge--committee',
-    cert_granted: 'ltg-badge--cert',
-  };
-  return map[status] || 'ltg-badge--proposed';
-}
-
-/**
- * Render filtered card grid
- */
-function renderCardGrid() {
-  const grid = document.getElementById('ltgCardGrid');
-  const empty = document.getElementById('ltgEmpty');
-  if (!grid) return;
-
-  // Filter by active topics (if any)
   let items = fedState.allItems;
-  if (fedState.activeTopics.size > 0) {
-    items = items.filter(it => fedState.activeTopics.has(it.category));
+  if (inst) items = items.filter(it => it.institution === inst);
+  if (search) {
+    const q = search.toLowerCase();
+    items = items.filter(it =>
+      (it.title || '').toLowerCase().includes(q) ||
+      (it.sponsor || '').toLowerCase().includes(q) ||
+      (it.id || '').toLowerCase().includes(q)
+    );
   }
 
   if (items.length === 0) {
-    grid.innerHTML = '';
-    if (empty) empty.hidden = false;
+    body.innerHTML = `<div class="leg-bucket-empty">${search ? `No items match "${escapeHtml(search)}"` : 'No items for this institution'}</div>`;
     return;
   }
 
-  if (empty) empty.hidden = true;
-
-  const esc = escapeHtml;
-  const dtf = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-  // Build card HTML for a single item
-  function buildCard(item, i) {
-    const topicCfg = TOPIC_CONFIG[item.category];
-    const color = topicCfg?.color || 'oklch(0.5 0 0)';
-    const dark = topicCfg?.dark || 'oklch(0.30 0.08 250)';
-    const dateStr = item.date ? dtf.format(new Date(item.date + 'T12:00:00')) : '';
-    const badgeClass = getStatusBadgeClass(item.status);
-    const statusText = item.status.replace('_', ' ').toUpperCase();
-    const summaryShort = item.summary.length > 220 ? item.summary.slice(0, 220) + '\u2026' : item.summary;
-    const cardTitleId = `ltg-card-title-${i}`;
-
-    // Type label based on item type
-    const typeLabel = item.type === 'bill'
-      ? 'THE STORIES BEHIND THE BILLS:'
-      : item.type === 'eo'
-        ? 'EXECUTIVE ACTION:'
-        : 'SUPREME COURT:';
-
-    // CTA text based on type
-    const ctaText = item.type === 'bill'
-      ? 'Read Full Analysis'
-      : item.type === 'eo'
-        ? 'Read Executive Order'
-        : 'Read Opinion';
-
-    // SVG topic illustration for image zone
-    const iconSvg = topicCfg?.svg || '';
-    const illustration = `<svg class="ltg-card-illustration" viewBox="0 0 20 20" fill="none" stroke="oklch(1 0 0 / 0.15)" stroke-width="1.2" aria-hidden="true">${iconSvg}</svg>`;
-
-    return `<article class="ltg-card" style="--card-index:${i}" tabindex="0" aria-labelledby="${cardTitleId}" data-category="${esc(item.category)}"${item.url ? ` data-href="${esc(item.url)}"` : ''}>
-      <div class="ltg-card-header" style="background:${color}">
-        ${illustration}
-        <div class="ltg-card-badges">
-          <span class="ltg-badge ${badgeClass}" aria-label="Status: ${esc(statusText)}">${esc(statusText)}</span>
-          ${item.chamber ? `<span class="ltg-badge ltg-badge--chamber">${esc(item.chamber)}</span>` : ''}
-        </div>
-      </div>
-      <div class="ltg-card-body">
-        <span class="ltg-card-type-label">${typeLabel}</span>
-        <h3 class="ltg-card-title" id="${cardTitleId}">${esc(item.title)}</h3>
-        <p class="ltg-card-summary">${esc(summaryShort)}</p>
-        <div class="ltg-card-footer">
-          <span class="ltg-card-more">${esc(ctaText)} <svg class="ltg-card-more-arrow" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></span>
-        </div>
-      </div>
-    </article>`;
+  // Group by year
+  const byYear = new Map();
+  for (const it of items) {
+    const yr = (it.introduced || '').slice(0, 4) || 'Undated';
+    if (!byYear.has(yr)) byYear.set(yr, []);
+    byYear.get(yr).push(it);
   }
-
-  // Hero row: first 2 items in asymmetric 7fr/5fr grid
-  let html = '<div class="ltg-card-hero-row">';
-  const heroCount = Math.min(items.length, 2);
-  for (let i = 0; i < heroCount; i++) {
-    html += buildCard(items[i], i);
-  }
-  html += '</div>';
-
-  // Remaining items: 3-column grid
-  if (items.length > 2) {
-    html += '<div class="ltg-card-flow-grid">';
-    for (let i = 2; i < items.length; i++) {
-      html += buildCard(items[i], i);
-    }
-    html += '</div>';
-  }
-
-  grid.innerHTML = html;
-}
-
-/**
- * Show skeleton cards while data loads
- */
-function insertCardSkeletons() {
-  const grid = document.getElementById('ltgCardGrid');
-  if (!grid) return;
 
   let html = '';
-  for (let i = 0; i < 6; i++) {
-    html += `<div class="ltg-card-skeleton" aria-hidden="true">
-      <div class="ltg-skel-header">
-        <div class="ltg-skel-line ltg-skel-line--label"></div>
-        <div class="ltg-skel-line ltg-skel-line--badge"></div>
+  let first = true;
+  for (const [year, yearItems] of byYear) {
+    const collapsed = !first ? ' leg-year-collapsed' : '';
+    html += `<div class="leg-archive-year-group${collapsed}" data-year-group>
+      <div class="leg-archive-year-label" data-year-toggle>
+        <span>${escapeHtml(year)}</span>
+        <svg class="leg-year-chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 6 8 10 12 6"/></svg>
       </div>
-      <div class="ltg-skel-body">
-        <div class="ltg-skel-line ltg-skel-line--title"></div>
-        <div class="ltg-skel-line ltg-skel-line--title2"></div>
-        <div class="ltg-skel-line ltg-skel-line--body"></div>
-        <div class="ltg-skel-line ltg-skel-line--footer"></div>
-      </div>
+      <ol class="leg-archive-year-list">${yearItems.map(it => renderBillRow(it)).join('')}</ol>
     </div>`;
+    first = false;
   }
-  grid.innerHTML = html;
+
+  body.innerHTML = html;
+  wireYearCollapseHandlers(body);
 }
 
-/**
- * Sync active topics from URL search params
- */
-function syncFromUrl() {
-  const params = new URLSearchParams(window.location.search);
-  const topics = params.get('topics');
-  if (topics) {
-    fedState.activeTopics = new Set(
-      topics.split(',').map(slugToTopic).filter(Boolean)
-    );
-  }
-}
+function wireFedInstitutionHandlers(container) {
+  container.addEventListener('click', (e) => {
+    const tile = e.target.closest('.leg-fed-inst-tile');
+    if (!tile) return;
+    const key = tile.dataset.fedInst;
+    fedState.selectedInstitution = fedState.selectedInstitution === key ? null : key;
 
-/**
- * Sync active topics to URL search params (slugified for clean URLs)
- */
-function syncToUrl() {
-  const params = new URLSearchParams(window.location.search);
-  if (fedState.activeTopics.size > 0) {
-    params.set('topics', [...fedState.activeTopics].map(topicToSlug).join(','));
-  } else {
-    params.delete('topics');
-  }
-  const qs = params.toString();
-  const url = window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
-  history.replaceState(null, '', url);
-}
-
-/**
- * Wire all event handlers for the topic-grid federal dashboard
- */
-function wireFederalEvents() {
-  const view = document.getElementById('legFederalView');
-  if (!view) return;
-
-  // Topic tile clicks (event delegation)
-  const tileGrid = document.getElementById('ltgTileGrid');
-  if (tileGrid) {
-    tileGrid.addEventListener('click', (e) => {
-      const tile = e.target.closest('.ltg-tile');
-      if (!tile) return;
-
-      const topic = tile.dataset.topic;
-      if (fedState.activeTopics.has(topic)) {
-        fedState.activeTopics.delete(topic);
+    // Show/hide hero image
+    const heroWrap = document.getElementById('legFedHero');
+    const heroImg = document.getElementById('legFedHeroImg');
+    const heroCaption = document.getElementById('legFedHeroCaption');
+    if (heroWrap && heroImg && heroCaption) {
+      if (fedState.selectedInstitution) {
+        const cfg = FEDERAL_CAT_CONFIG[fedState.selectedInstitution];
+        heroImg.style.background = `linear-gradient(135deg, ${cfg.color}, oklch(0.35 0.08 250))`;
+        heroCaption.textContent = cfg.heroAlt;
+        heroWrap.hidden = false;
       } else {
-        fedState.activeTopics.add(topic);
+        heroWrap.hidden = true;
       }
+    }
 
-      // Re-render tiles and cards
-      buildTopicTiles();
-      renderCardGrid();
-      initCardRevealObserver();
-      syncToUrl();
-    });
-
-    // Keyboard support for tiles
-    tileGrid.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        const tile = e.target.closest('.ltg-tile');
-        if (tile) {
-          e.preventDefault();
-          tile.click();
-        }
-      }
-    });
-  }
-
-  // Card clicks → navigate to URL if available
-  const cardGrid = document.getElementById('ltgCardGrid');
-  if (cardGrid) {
-    cardGrid.addEventListener('click', (e) => {
-      const card = e.target.closest('.ltg-card[data-href]');
-      if (card) window.open(card.dataset.href, '_blank', 'noopener');
-    });
-    cardGrid.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        const card = e.target.closest('.ltg-card[data-href]');
-        if (card) { e.preventDefault(); window.open(card.dataset.href, '_blank', 'noopener'); }
-      }
-    });
-  }
-
-  // Empty state CTA — clear all topic filters
-  const emptyCta = document.getElementById('ltgEmptyCta');
-  if (emptyCta) {
-    emptyCta.addEventListener('click', () => {
-      fedState.activeTopics.clear();
-      buildTopicTiles();
-      renderCardGrid();
-      initCardRevealObserver();
-      syncToUrl();
-    });
-  }
-
-  // Intersection Observer for scroll entrance animations on cards
-  initCardRevealObserver();
+    renderFedArchive();
+    const archive = document.getElementById('legFedArchiveSection');
+    if (archive) archive.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 }
 
-/**
- * Intersection Observer — staggered reveal on scroll for cards & tiles
- */
-function initCardRevealObserver() {
-  if (typeof IntersectionObserver === 'undefined') return;
-
-  // Respect prefers-reduced-motion
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.setAttribute('data-reveal', 'visible');
-        observer.unobserve(entry.target);
-      }
-    });
-  }, {
-    threshold: 0.1,
-    rootMargin: '0px 0px -40px 0px',
+function wireFedSearch(container) {
+  const input = document.getElementById('legFedSearch');
+  if (!input) return;
+  let timer;
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      fedState.search = input.value.trim();
+      renderFedArchive();
+    }, 200);
   });
+}
 
-  // Observe all cards in the grid with stagger delay
-  const cards = document.querySelectorAll('#ltgCardGrid .ltg-card');
-  cards.forEach((card, i) => {
-    if (reducedMotion) {
-      card.style.opacity = '1';
-      card.style.transform = 'none';
-      return;
-    }
-    card.setAttribute('data-reveal', '');
-    card.style.transitionDelay = `${Math.min(i, 6) * 60}ms`;
-    observer.observe(card);
-  });
-
-  // Observe all tiles with stagger delay
-  const tiles = document.querySelectorAll('.ltg-tile-grid .ltg-tile');
-  tiles.forEach((tile, i) => {
-    if (reducedMotion) {
-      tile.style.opacity = '1';
-      tile.style.transform = 'none';
-      return;
-    }
-    tile.setAttribute('data-reveal', '');
-    tile.style.transitionDelay = `${Math.min(i, 6) * 60}ms`;
-    observer.observe(tile);
+/** Wire collapsible year groups */
+function wireYearCollapseHandlers(container) {
+  container.addEventListener('click', (e) => {
+    const toggle = e.target.closest('[data-year-toggle]');
+    if (!toggle) return;
+    const group = toggle.closest('[data-year-group]');
+    if (group) group.classList.toggle('leg-year-collapsed');
   });
 }
 

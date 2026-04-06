@@ -247,7 +247,7 @@
         "weight": 1,
         "orientation": "center",
         "sourceType": "primary",
-        "enabled": false
+        "enabled": true
       },
       {
         "id": "federal-register-api",
@@ -371,7 +371,7 @@
         "id": "fbi-news",
         "name": "FBI News",
         "type": "rss",
-        "url": "https://www.fbi.gov/services/operational-technology/news/RSS",
+        "url": "https://www.fbi.gov/wanted/fugitives/@@rss",
         "topics": [
           "law",
           "defense",
@@ -381,7 +381,7 @@
         "weight": 0.97,
         "orientation": "center",
         "sourceType": "primary",
-        "enabled": false,
+        "enabled": true,
         "region": "US"
       },
       {
