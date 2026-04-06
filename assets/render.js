@@ -2242,10 +2242,29 @@ async function renderLegislationPanel(stateId) {
   const isNewPanel = !panel.classList.contains('leg-panel-active');
   const stateCode = stateId.toLowerCase();
   const flagUrl = `https://flagcdn.com/w40/us-${stateCode}.png`;
-  const totalBills = (stateData.bills || []).length;
-  const countPassed = stateData.passed ?? 0;
-  const countInProcess = stateData.inProcess ?? 0;
-  const countProposed = stateData.proposed ?? 0;
+  const bills = stateData.bills || [];
+  const groups = groupBillsByCategory(stateData);
+
+  // 5 most recent bills (sorted by date descending)
+  const recentBills = bills
+    .slice()
+    .sort((a, b) => (b.introduced || '').localeCompare(a.introduced || ''))
+    .slice(0, 5);
+
+  const recentCardsHtml = recentBills.length > 0
+    ? recentBills.map((b) => renderBillRow(b)).join('')
+    : '<p class="leg-recent-empty">No bills tracked yet</p>';
+
+  // Category tiles (no counts — label + icon only)
+  const tilesHtml = groups.map((g) => {
+    const color = TOPIC_CONFIG[g.key]?.color || 'oklch(0.62 0.14 70)';
+    const iconSvg = TOPIC_CONFIG[g.key]?.svg || '';
+    const shortLabel = TOPIC_CONFIG[g.key]?.label || g.key;
+    return `<button type="button" class="leg-cat-tile" data-cat-key="${escapeHtml(g.key)}" style="--tile-color:${color}" aria-label="${escapeHtml(g.key)}">
+      <svg class="leg-cat-tile-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${iconSvg}</svg>
+      <span class="leg-cat-tile-label">${escapeHtml(shortLabel)}</span>
+    </button>`;
+  }).join('');
 
   panel.innerHTML = `
     <div class="leg-panel-inner">
@@ -2254,30 +2273,44 @@ async function renderLegislationPanel(stateId) {
           <img src="${flagUrl}" alt="${escapeHtml(name)} flag" width="32" height="24" loading="lazy" class="leg-panel-flag" data-hide-on-error>
           <div>
             <h2 class="leg-panel-state-name">${escapeHtml(name)}</h2>
-            <div class="leg-panel-session">${escapeHtml(String(stateData.session || ''))} Session · ${totalBills} tracked</div>
+            <div class="leg-panel-session">${escapeHtml(String(stateData.session || ''))} Session</div>
           </div>
         </div>
         <button class="leg-panel-close" type="button" data-leg-back aria-label="Close panel">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
       </header>
-      <div class="leg-panel-stats">
-        <span class="leg-stat-chip leg-stat-chip--passed"><span class="leg-stat-dot"></span>${countPassed} Passed</span>
-        <span class="leg-stat-chip leg-stat-chip--inprocess"><span class="leg-stat-dot"></span>${countInProcess} In Process</span>
-        <span class="leg-stat-chip leg-stat-chip--proposed"><span class="leg-stat-dot"></span>${countProposed} Proposed</span>
+
+      <div class="leg-desk-split">
+        <div class="leg-desk-recent">
+          <div class="leg-desk-section-label">Most Recent</div>
+          <ol class="leg-recent-list">${recentCardsHtml}</ol>
+        </div>
+        <div class="leg-desk-categories">
+          <div class="leg-desk-section-label">Browse by Category</div>
+          <div class="leg-cat-grid">${tilesHtml}</div>
+        </div>
       </div>
-      <div class="leg-panel-search-wrap">
-        <svg class="leg-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="search" class="leg-panel-search" id="legPanelSearch" placeholder="Search bills in ${escapeHtml(name)}…" autocomplete="off" spellcheck="false">
+
+      <div class="leg-archive-section" id="legArchiveSection">
+        <div class="leg-archive-header">
+          <div class="leg-desk-section-label" id="legArchiveLabel">Archive</div>
+          <div class="leg-archive-filters">
+            <div class="leg-panel-search-wrap">
+              <svg class="leg-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <input type="search" class="leg-panel-search" id="legPanelSearch" placeholder="Search bills…" autocomplete="off" spellcheck="false">
+            </div>
+          </div>
+        </div>
+        <div id="legArchiveBody" class="leg-archive-body"></div>
       </div>
-      <div class="leg-panel-body" id="legPanelBody"></div>
     </div>
   `;
 
   wirePanelCloseHandlers(panel);
   wirePanelSearch(panel, stateData);
   wireCategoryHandlers(panel, stateData);
-  renderCategoryView(stateData);
+  renderArchive(stateData);
 
   if (isNewPanel) {
     requestAnimationFrame(() => panel.classList.add('leg-panel-active'));
@@ -2333,7 +2366,7 @@ function wirePanelSearch(panel, stateData) {
     clearTimeout(timer);
     timer = setTimeout(() => {
       legPanelState.search = input.value.trim().toLowerCase();
-      renderCategoryView(stateData);
+      renderArchive(stateData);
     }, 150);
   });
 }
@@ -2365,149 +2398,97 @@ function filterBillsBySearch(bills, search) {
   );
 }
 
-function bucketForBill(bill) {
-  const status = (bill.status || '').toLowerCase();
-  return LEG_BUCKETS.find((b) => b.key === status) || LEG_BUCKETS[2];
+
+/** Render a compact bill row: bill ID, title, date, status badge */
+function renderBillRow(bill) {
+  const esc = escapeHtml;
+  const status = (bill.status || 'proposed').toLowerCase();
+  const statusLabel = status === 'passed' ? 'Passed' : status === 'in_process' ? 'In Process' : 'Proposed';
+  const statusClass = status === 'passed' ? 'passed' : status === 'in_process' ? 'inprocess' : 'proposed';
+  const dateStr = bill.enacted ? fmtDate(bill.enacted) : fmtDate(bill.introduced);
+  const catSlug = (bill.category || 'Other').toLowerCase().replace(/[^a-z]/g, '');
+
+  return `<li class="leg-bill-row" data-category="${catSlug}">
+    <span class="leg-bill-row-id">${esc(bill.id)}</span>
+    <span class="leg-bill-row-title">${esc(bill.title)}</span>
+    <span class="leg-bill-row-date">${dateStr}</span>
+    <span class="leg-bill-row-status leg-bill-row-status--${statusClass}">${statusLabel}</span>
+  </li>`;
 }
 
-function renderCategoryView(stateData) {
-  const body = document.getElementById('legPanelBody');
+/** Render the archive section — grouped by year, filtered by selected category + search */
+function renderArchive(stateData) {
+  const body = document.getElementById('legArchiveBody');
+  const label = document.getElementById('legArchiveLabel');
   if (!body) return;
+
+  let bills = stateData.bills || [];
   const search = legPanelState.search;
-  const groups = groupBillsByCategory(stateData);
+  const cat = legPanelState.selectedCategory;
 
-  // Search mode: flat filtered results across all categories
+  // Update archive label
+  if (label) {
+    label.textContent = cat ? `Archive — ${cat}` : 'Archive';
+  }
+
+  // Highlight active category tile
+  document.querySelectorAll('.leg-cat-tile').forEach((tile) => {
+    tile.classList.toggle('leg-cat-tile--active', tile.dataset.catKey === cat);
+  });
+
+  // Filter by category
+  if (cat) {
+    bills = bills.filter((b) => (b.category || 'Other') === cat);
+  }
+
+  // Filter by search
   if (search) {
-    const allBills = filterBillsBySearch(stateData.bills || [], search);
-    if (allBills.length === 0) {
-      body.innerHTML = `<div class="leg-bucket-empty">No bills match "${escapeHtml(search)}"</div>`;
-      return;
-    }
-    const cards = allBills.map((b) => renderBillCard(b, bucketForBill(b))).join('');
-    body.innerHTML = `
-      <section class="leg-ribbon leg-ribbon--search">
-        <header class="leg-ribbon-header">
-          <span class="leg-ribbon-label">Search results</span>
-          <span class="leg-ribbon-count">${allBills.length}</span>
-        </header>
-        <ol class="leg-ribbon-list">${cards}</ol>
-      </section>
-    `;
+    bills = filterBillsBySearch(bills, search);
+  }
+
+  if (bills.length === 0) {
+    body.innerHTML = `<div class="leg-bucket-empty">${search ? `No bills match "${escapeHtml(search)}"` : 'No bills in this category'}</div>`;
     return;
   }
 
-  // Ribbon mode: one category expanded
-  if (legPanelState.selectedCategory) {
-    const group = groups.find((g) => g.key === legPanelState.selectedCategory);
-    if (!group) {
-      legPanelState.selectedCategory = null;
-      renderCategoryView(stateData);
-      return;
-    }
-    const color = TOPIC_CONFIG[group.key]?.color || 'oklch(0.62 0.14 70)';
-    const cards = group.bills
-      .slice()
-      .sort((a, b) => (b.introduced || '').localeCompare(a.introduced || ''))
-      .map((b) => renderBillCard(b, bucketForBill(b)))
-      .join('');
-    body.innerHTML = `
-      <div class="leg-ribbon-back">
-        <button type="button" class="leg-ribbon-back-btn" data-cat-back aria-label="Back to all categories">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-          All categories
-        </button>
-      </div>
-      <section class="leg-ribbon" style="--ribbon-color:${color}">
-        <header class="leg-ribbon-header">
-          <span class="leg-ribbon-label">${escapeHtml(group.key)}</span>
-          <span class="leg-ribbon-count">${group.bills.length}</span>
-        </header>
-        <ol class="leg-ribbon-list">${cards}</ol>
-      </section>
-    `;
-    return;
+  // Sort newest first
+  const sorted = bills.slice().sort((a, b) => (b.introduced || '').localeCompare(a.introduced || ''));
+
+  // Group by year
+  const byYear = new Map();
+  for (const b of sorted) {
+    const yr = (b.introduced || b.enacted || '').slice(0, 4) || 'Undated';
+    if (!byYear.has(yr)) byYear.set(yr, []);
+    byYear.get(yr).push(b);
   }
 
-  // Masthead mode: grid of category squares
-  const totalBills = (stateData.bills || []).length;
-  const tiles = groups.map((g) => {
-    const color = TOPIC_CONFIG[g.key]?.color || 'oklch(0.62 0.14 70)';
-    const shortLabel = (TOPIC_CONFIG[g.key]?.label || g.key);
-    return `
-      <button type="button"
-        class="leg-cat-tile"
-        data-cat-key="${escapeHtml(g.key)}"
-        style="--tile-color:${color}"
-        aria-label="${escapeHtml(g.key)} — ${g.bills.length} bill${g.bills.length !== 1 ? 's' : ''}">
-        <span class="leg-cat-tile-label">${escapeHtml(shortLabel)}</span>
-        <span class="leg-cat-tile-count">${String(g.bills.length).padStart(2, '0')}</span>
-      </button>
-    `;
-  }).join('');
+  let html = '';
+  for (const [year, yearBills] of byYear) {
+    html += `<div class="leg-archive-year-group">
+      <div class="leg-archive-year-label">${escapeHtml(year)}</div>
+      <ol class="leg-archive-year-list">${yearBills.map((b) => renderBillRow(b)).join('')}</ol>
+    </div>`;
+  }
 
-  body.innerHTML = `
-    <div class="leg-masthead-summary">${totalBills} bill${totalBills !== 1 ? 's' : ''} across ${groups.length} categor${groups.length !== 1 ? 'ies' : 'y'}</div>
-    <div class="leg-cat-grid">${tiles}</div>
-  `;
+  body.innerHTML = html;
 }
 
 function wireCategoryHandlers(panel, stateData) {
   panel.addEventListener('click', (e) => {
     const tile = e.target.closest('.leg-cat-tile');
-    if (tile) {
-      legPanelState.selectedCategory = tile.dataset.catKey;
-      legPanelState.expanded = new Set();
-      renderCategoryView(stateData);
-      return;
-    }
-    const back = e.target.closest('[data-cat-back]');
-    if (back) {
-      legPanelState.selectedCategory = null;
-      legPanelState.expanded = new Set();
-      renderCategoryView(stateData);
-    }
+    if (!tile) return;
+    const key = tile.dataset.catKey;
+    // Toggle: click same tile again → clear filter
+    legPanelState.selectedCategory = legPanelState.selectedCategory === key ? null : key;
+    renderArchive(stateData);
+    // Scroll archive into view
+    const archive = document.getElementById('legArchiveSection');
+    if (archive) archive.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 }
 
-function renderBillCard(bill, bucket) {
-  const esc = escapeHtml;
-  const isExpanded = legPanelState.expanded.has(bill.id);
-  const dateLabel = bucket.key === 'passed' && bill.enacted
-    ? `Enacted ${fmtDate(bill.enacted)}`
-    : bucket.key === 'in_process' && bill.lastActionDate
-      ? `Last action ${fmtDate(bill.lastActionDate)}`
-      : `Introduced ${fmtDate(bill.introduced)}`;
-  const catSlug = (bill.category || 'Other').toLowerCase().replace(/[^a-z]/g, '');
-  const summaryShort = bill.summary && bill.summary.length > 140
-    ? bill.summary.slice(0, 140).trimEnd() + '…'
-    : (bill.summary || '');
 
-  return `
-    <li class="leg-card ${isExpanded ? 'leg-card--expanded' : ''}" data-bill-id="${esc(bill.id)}" data-category="${catSlug}" role="button" tabindex="0" aria-expanded="${isExpanded}">
-      <div class="leg-card-top">
-        <span class="leg-card-bill-num">${esc(bill.id)}</span>
-        <span class="leg-card-cat-tag" data-category="${catSlug}">${esc(bill.category || 'Other')}</span>
-      </div>
-      <h4 class="leg-card-title">${esc(bill.title)}</h4>
-      <div class="leg-card-meta">
-        <span class="leg-card-date">${dateLabel}</span>
-        <span class="leg-card-sep">·</span>
-        <span class="leg-card-sponsor">${esc(bill.sponsor || '')}</span>
-      </div>
-      <p class="leg-card-summary">${esc(summaryShort)}</p>
-      <div class="leg-card-expanded-content">
-        <p class="leg-card-full-summary">${esc(bill.summary || '')}</p>
-        ${bill.keyProvisions && bill.keyProvisions.length ? `
-          <div class="leg-card-provisions">
-            <div class="leg-card-provisions-title">Key Provisions</div>
-            <ul>${bill.keyProvisions.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>
-          </div>` : ''}
-        ${bill.fullTextUrl ? `<a href="${esc(bill.fullTextUrl)}" target="_blank" rel="noopener noreferrer" class="leg-card-link">Read Full Text <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></a>` : ''}
-      </div>
-      <div class="leg-card-chevron" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
-    </li>
-  `;
-}
+
 
 function fmtDate(dateStr) {
   if (!dateStr) return '—';
